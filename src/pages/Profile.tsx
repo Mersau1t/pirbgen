@@ -310,6 +310,75 @@ export default function Profile() {
           </div>
         </motion.div>
       </main>
+
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {avatarPickerOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[200] flex items-center justify-center bg-background/80 backdrop-blur-md p-4"
+              onClick={() => setAvatarPickerOpen(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.92, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.92, opacity: 0 }}
+                onClick={e => e.stopPropagation()}
+                className="glass-panel border border-border/40 rounded-sm p-8 w-full max-w-2xl space-y-6"
+              >
+                <div className="flex items-center justify-between">
+                  <p className="font-display text-base tracking-[0.2em] text-foreground text-glow-green uppercase">Choose Avatar</p>
+                  <button onClick={() => setAvatarPickerOpen(false)} className="text-muted-foreground hover:text-foreground text-xl">✕</button>
+                </div>
+
+                <div className="grid grid-cols-4 sm:grid-cols-6 gap-3">
+                  {AVATARS.map(av => (
+                    <motion.button
+                      key={av.id}
+                      whileHover={{ scale: 1.08 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => handleSelectAvatar(av.id)}
+                      className={`flex flex-col items-center gap-2 p-4 rounded-sm border transition-all cursor-pointer ${
+                        profile.avatar === av.id && !profile.avatar_url
+                          ? 'border-primary/60 bg-primary/10 box-glow-green'
+                          : 'border-border/20 bg-muted/10 hover:border-border/40'
+                      }`}
+                    >
+                      <span className="text-3xl">{av.emoji}</span>
+                      <span className="text-[10px] text-muted-foreground font-display tracking-wider">{av.label}</span>
+                    </motion.button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="w-full py-3 bg-primary/10 border border-primary/40 text-foreground font-display text-sm tracking-[0.2em] hover:bg-primary/20 hover:box-glow-green transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {uploading ? '⏳ UPLOADING...' : '📷 UPLOAD PHOTO'}
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleUploadAvatar}
+                />
+
+                <button
+                  onClick={() => setAvatarPickerOpen(false)}
+                  className="w-full py-2.5 bg-muted/30 border border-border/30 text-muted-foreground font-display text-xs tracking-[0.2em] hover:text-foreground hover:border-border/60 transition-all cursor-pointer"
+                >
+                  ← BACK
+                </button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body,
+      )}
     </div>
   );
 }
