@@ -124,39 +124,42 @@ export default function PirbTerminal() {
     }
   }, [activePos, entryPrice, status]);
 
-  // Price simulation — tick every 1s, candle every 2 ticks
+  // Real-time Pyth price streaming
   useEffect(() => {
     if (status !== 'PLAYING' || !activePos) return;
-    const interval = setInterval(() => {
-      setCurrentPrice(prev => {
-        if (!prev) return 100;
-        const volatility = prev * (0.002 + (activePos.leverage / 5000));
-        const newPrice = prev + (Math.random() - 0.5) * volatility;
 
-        candleRef.current.ticks.push(newPrice);
+    const cleanup = streamPythPrice(activePos.ticker, (newPrice) => {
+      setCurrentPrice(newPrice);
 
-        if (candleRef.current.ticks.length >= 2) {
-          const ticks = candleRef.current.ticks;
-          const candle: Candle = {
-            open: ticks[0],
-            high: Math.max(...ticks),
-            low: Math.min(...ticks),
-            close: ticks[ticks.length - 1],
-            time: 0, // will be set below
-          };
-          setCandles(c => {
-            const liveCount = c.filter(x => x.time >= 0).length;
-            candle.time = (liveCount + 1) * 2;
-            return [...c.slice(-27), candle];
-          });
-          candleRef.current.ticks = [];
-        }
+      candleRef.current.ticks.push(newPrice);
 
-        return newPrice;
-      });
+      if (candleRef.current.ticks.length >= 2) {
+        const ticks = candleRef.current.ticks;
+        const candle: Candle = {
+          open: ticks[0],
+          high: Math.max(...ticks),
+          low: Math.min(...ticks),
+          close: ticks[ticks.length - 1],
+          time: 0,
+        };
+        setCandles(c => {
+          const liveCount = c.filter(x => x.time >= 0).length;
+          candle.time = (liveCount + 1) * 2;
+          return [...c.slice(-27), candle];
+        });
+        candleRef.current.ticks = [];
+      }
+    });
+
+    // Elapsed time counter
+    const timer = setInterval(() => {
       setElapsedTime(t => t + 1);
     }, 1000);
-    return () => clearInterval(interval);
+
+    return () => {
+      cleanup();
+      clearInterval(timer);
+    };
   }, [status, activePos]);
 
   // PnL calculation
