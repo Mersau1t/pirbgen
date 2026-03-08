@@ -66,7 +66,8 @@ function formatVolume(v: number): string {
 }
 
 
-  const tickers = ['PYTH LIVE FEEDS 🔴', '500+ CRYPTO PAIRS', 'VOLATILITY WEIGHTED 📊', 'ANY TOKEN ANY TIME', 'POWERED BY PYTH NETWORK ⚡'];
+const TickerMarquee = () => {
+  const tickers = ['PYTH LIVE FEEDS 🔴', '500+ CRYPTO PAIRS', 'VOLUME RANKED 📊', 'ANY TOKEN ANY TIME', 'POWERED BY PYTH NETWORK ⚡'];
   const doubled = [...tickers, ...tickers];
   return (
     <div className="overflow-hidden border-b-2 border-neon-purple/30 bg-background/80 py-1.5">
