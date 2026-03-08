@@ -406,7 +406,7 @@ export default function PirbTerminal() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex flex-col items-center justify-center gap-6 pt-20"
+              className="flex flex-col items-center justify-center gap-6 flex-1"
             >
               <motion.img
                 src={pirbMascot}
