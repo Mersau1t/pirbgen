@@ -214,7 +214,16 @@ export default function PirbTerminal() {
   }, []);
 
   const exitEarly = useCallback(() => {
-    if (status !== 'PLAYING') return;
+    if (status !== 'PLAYING' || !activePos) return;
+    // Save to leaderboard
+    supabase.from('leaderboard').insert({
+      player_name: 'Anonymous',
+      ticker: activePos.ticker,
+      direction: activePos.direction,
+      leverage: activePos.leverage,
+      pnl_percent: Number(pnl.toFixed(1)),
+      rarity: activePos.rarity,
+    }).then(() => {});
     if (pnl >= 0) {
       setStatus('WIN');
       playWinSound();
@@ -222,7 +231,7 @@ export default function PirbTerminal() {
       setStatus('REKT');
       playRektSound();
     }
-  }, [status, pnl]);
+  }, [status, pnl, activePos]);
 
   const resetTerminal = () => {
     setStatus('IDLE');
