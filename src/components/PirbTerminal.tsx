@@ -337,21 +337,23 @@ export default function PirbTerminal() {
 
   const handleTradeResult = useCallback((result: 'WIN' | 'REKT', pnl: number) => {
     setFinalPnl(pnl);
-    setStatus(result);
     if (result === 'WIN') setStreak(recordWin());
     else setStreak(recordLoss());
     if (isDaily) markDailyDone();
     setDailyDone(hasDoneDaily());
+    // Delay switching to result screen so user sees the chart hit TP/SL
+    setTimeout(() => setStatus(result), 3000);
   }, [isDaily]);
 
   const handleExitEarly = useCallback((pnl: number) => {
     setFinalPnl(pnl);
     const r = pnl >= 0 ? 'WIN' : 'REKT';
-    setStatus(r);
     if (r === 'WIN') setStreak(recordWin());
     else setStreak(recordLoss());
     if (isDaily) markDailyDone();
     setDailyDone(hasDoneDaily());
+    // Delay switching to result screen so user sees the chart result
+    setTimeout(() => setStatus(r), 3000);
   }, [isDaily]);
 
   const resetTerminal = () => {
