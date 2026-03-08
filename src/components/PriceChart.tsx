@@ -13,11 +13,14 @@ interface PriceChartProps {
   entryPrice: number;
   positive: boolean;
   direction: 'LONG' | 'SHORT';
+  stopLoss: number;   // e.g. -100 (percent PnL)
+  takeProfit: number;  // e.g. +500 (percent PnL)
+  leverage: number;
 }
 
 const MAX_CANDLES = 20;
 
-export default function PriceChart({ candles, entryPrice, positive, direction }: PriceChartProps) {
+export default function PriceChart({ candles, entryPrice, positive, direction, stopLoss, takeProfit, leverage }: PriceChartProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
@@ -53,11 +56,22 @@ export default function PriceChart({ candles, entryPrice, positive, direction }:
     const chartW = w - pad.left - pad.right;
     const chartH = h - pad.top - pad.bottom;
 
-    // Price range
-    const allPrices = candles.flatMap(c => [c.high, c.low]).concat(entryPrice);
+    // Calculate SL/TP price levels
+    // PnL% = priceChange% * leverage (for LONG), so priceChange% = PnL% / leverage
+    const slPriceChange = stopLoss / leverage / 100; // e.g. -100/50/100 = -0.02
+    const tpPriceChange = takeProfit / leverage / 100;
+    const slPrice = direction === 'LONG'
+      ? entryPrice * (1 + slPriceChange)
+      : entryPrice * (1 - slPriceChange);
+    const tpPrice = direction === 'LONG'
+      ? entryPrice * (1 + tpPriceChange)
+      : entryPrice * (1 - tpPriceChange);
+
+    // Price range must include SL, TP, and all candle data
+    const allPrices = candles.flatMap(c => [c.high, c.low]).concat([entryPrice, slPrice, tpPrice]);
     const dataMin = Math.min(...allPrices);
     const dataMax = Math.max(...allPrices);
-    const pricePad = (dataMax - dataMin) * 0.25 || entryPrice * 0.004;
+    const pricePad = (dataMax - dataMin) * 0.08 || entryPrice * 0.002;
     const min = dataMin - pricePad;
     const max = dataMax + pricePad;
     const range = max - min || 1;
@@ -120,7 +134,39 @@ export default function PriceChart({ candles, entryPrice, positive, direction }:
     ctx.fillStyle = '#F5F5FF';
     ctx.fillText('$' + entryPrice.toFixed(2), pad.left + chartW + 5, entryLabelY);
 
-    // Current price highlight
+    // Take Profit line
+    const tpY = toY(tpPrice);
+    ctx.strokeStyle = '#07e46e80';
+    ctx.setLineDash([6, 3]);
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(pad.left, tpY); ctx.lineTo(pad.left + chartW, tpY); ctx.stroke();
+    ctx.setLineDash([]);
+    // TP label
+    ctx.fillStyle = '#07e46e';
+    ctx.fillRect(pad.left + chartW + 2, tpY - 7, priceAxisW - 4, 14);
+    ctx.fillStyle = '#0a0a0a';
+    ctx.font = 'bold 8px monospace';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('TP ' + tpPrice.toFixed(1), pad.left + chartW + 4, tpY);
+    // TP zone fill
+    const tpZoneTop = direction === 'LONG' ? Math.min(tpY, entryY) : Math.min(entryY, tpY);
+    const tpZoneBot = direction === 'LONG' ? entryY : tpY;
+
+    // Stop Loss line
+    const slY = toY(slPrice);
+    ctx.strokeStyle = '#ef444480';
+    ctx.setLineDash([6, 3]);
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(pad.left, slY); ctx.lineTo(pad.left + chartW, slY); ctx.stroke();
+    ctx.setLineDash([]);
+    // SL label
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(pad.left + chartW + 2, slY - 7, priceAxisW - 4, 14);
+    ctx.fillStyle = '#F5F5FF';
+    ctx.font = 'bold 8px monospace';
+    ctx.fillText('SL ' + slPrice.toFixed(1), pad.left + chartW + 4, slY);
+
     if (candles.length > 0) {
       const lastClose = candles[candles.length - 1].close;
       const curY = toY(lastClose);
