@@ -10,6 +10,7 @@ interface DegenPosition {
   id: number;
   asset: string;
   ticker: string;
+  feedId: string;
   direction: 'LONG' | 'SHORT';
   leverage: number;
   stopLoss: number;
