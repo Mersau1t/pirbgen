@@ -363,7 +363,7 @@ export default function PirbTerminal() {
                 transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
               />
 
-              <div className="text-center space-y-4">
+              <div className="text-center space-y-2">
                 <h1 className="font-display text-3xl sm:text-5xl tracking-wider text-neon-purple text-glow-purple">
                   <GlitchText>PIRBGEN</GlitchText>
                 </h1>
