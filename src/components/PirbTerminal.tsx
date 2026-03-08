@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import pirbMascot from '@/assets/pirb-mascot.png';
 import { playGenerateClick, playCoinSound, startBgMusic, stopBgMusic, isBgMusicPlaying } from '@/lib/sounds';
 import { type Candle } from '@/components/PriceChart';
-import { pickVolatileFeed, fetchHistoricalCandles, fetchPythPriceById } from '@/lib/pyth';
+import { pickVolatileFeed, fetchHistoricalCandles, fetchPythPriceById, getTopVolatileTokens } from '@/lib/pyth';
 import { supabase } from '@/integrations/supabase/client';
 import { useWallet } from '@/contexts/WalletContext';
 import { getAvatarEmoji } from '@/pages/Profile';
