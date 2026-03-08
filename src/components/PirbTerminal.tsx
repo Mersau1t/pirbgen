@@ -169,14 +169,15 @@ export default function PirbTerminal() {
       }
     }, 1000);
 
-    // Elapsed time counter
-    const timer = setInterval(() => {
+    // Elapsed time counter (reuse same interval)
+    const elapsedTimer = setInterval(() => {
       setElapsedTime(t => t + 1);
     }, 1000);
 
     return () => {
       cleanup();
-      clearInterval(timer);
+      clearInterval(tick);
+      clearInterval(elapsedTimer);
     };
   }, [status, activePos]);
 
