@@ -311,10 +311,39 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
 
   }, [candles, entryPrice, positive, size, direction, stopLoss, takeProfit, leverage]);
 
+  const glowColor = positive ? '#07e46e' : '#ef4444';
+  const glowFilter = positive
+    ? 'drop-shadow(0 0 8px #07e46e) drop-shadow(0 0 20px #07e46eaa)'
+    : 'drop-shadow(0 0 8px #ef4444) drop-shadow(0 0 20px #ef4444aa)';
+
   return (
-    <div ref={containerRef} className="w-full h-full relative">
-      <canvas ref={canvasRef} className="w-full h-full" style={{ display: 'block' }} />
-      <div className="absolute top-1 left-3 text-[9px] text-muted-foreground/40 font-mono tracking-wider">PYTH LIVE · CONFIDENCE BAND</div>
+    <div className="w-full h-full flex flex-col relative">
+      {/* Mascot row above chart */}
+      <div className="flex items-center gap-2 px-3 py-1 shrink-0">
+        <motion.img
+          src={mascotSrc}
+          alt="PIRB"
+          className="w-14 h-14 object-contain pointer-events-none"
+          animate={{
+            y: [0, -6, 0, 4, 0],
+            rotate: [0, -8, 0, 8, 0],
+            scale: [1, 1.08, 1, 0.95, 1],
+          }}
+          transition={{
+            duration: 2.5,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+          style={{
+            filter: glowFilter,
+          }}
+        />
+        <div className="text-[9px] text-muted-foreground/40 font-mono tracking-wider">PYTH LIVE · CONFIDENCE BAND</div>
+      </div>
+      {/* Chart */}
+      <div ref={containerRef} className="w-full flex-1 relative min-h-0">
+        <canvas ref={canvasRef} className="w-full h-full" style={{ display: 'block' }} />
+      </div>
     </div>
   );
 }
