@@ -117,12 +117,36 @@ export default function PirbTerminal() {
     }))
   );
 
-  // Fetch top volatile tokens from DB
+  // Fetch top volatile tokens from DB, fallback to client-side
   interface DbVolatileToken { feed_id: string; ticker: string; pair: string; price: number; volatility: number }
   const [topVolatile, setTopVolatile] = useState<DbVolatileToken[]>([]);
+  const [showAllTokens, setShowAllTokens] = useState(false);
+  const [allVolatile, setAllVolatile] = useState<DbVolatileToken[]>([]);
+  
   useEffect(() => {
-    supabase.from('volatile_tokens').select('*').order('volatility', { ascending: false }).limit(8)
-      .then(({ data }) => { if (data) setTopVolatile(data as unknown as DbVolatileToken[]); });
+    // Try DB first
+    (supabase as any).from('volatile_tokens').select('*').order('volatility', { ascending: false }).limit(50)
+      .then(({ data, error }: { data: any[] | null; error: any }) => {
+        if (data && data.length > 0) {
+          setAllVolatile(data);
+          setTopVolatile(data.slice(0, 8));
+          console.log(`Loaded ${data.length} volatile tokens from DB`);
+        } else {
+          // Fallback: use client-side computation
+          console.log('DB empty, using client-side volatility', error);
+          getTopVolatileTokens().then(tokens => {
+            const mapped = tokens.slice(0, 50).map(t => ({
+              feed_id: t.feed.id,
+              ticker: t.feed.ticker,
+              pair: t.feed.pair,
+              price: t.price,
+              volatility: t.volatility,
+            }));
+            setAllVolatile(mapped);
+            setTopVolatile(mapped.slice(0, 8));
+          });
+        }
+      });
   }, []);
 
   // Restore session
