@@ -190,7 +190,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
     ctx.fillRect(pad.left + chartW + 2, slY - 7, priceAxisW - 4, 14);
     ctx.fillStyle = '#F5F5FF';
     ctx.font = 'bold 8px monospace';
-    ctx.fillText('SL ' + slPrice.toFixed(1), pad.left + chartW + 4, slY);
+    ctx.fillText('SL ' + formatPriceShort(slPrice), pad.left + chartW + 4, slY);
 
     if (candles.length > 0) {
       const lastClose = candles[candles.length - 1].close;
