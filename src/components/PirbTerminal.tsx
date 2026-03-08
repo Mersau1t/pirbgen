@@ -17,6 +17,7 @@ interface DegenPosition {
   id: number;
   asset: string;
   ticker: string;
+  feedId: string;
   direction: TradeDirection;
   leverage: number;
   stopLoss: number;
