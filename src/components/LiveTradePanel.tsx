@@ -181,7 +181,8 @@ function LiveTradePanel({ position, entryPrice, initialCandles, onResult, onExit
           <div className="flex items-center gap-6">
             <div className="text-center">
               <p className="text-[8px] text-muted-foreground/60 uppercase">Current</p>
-              <p className={`font-mono text-xl sm:text-2xl font-bold ${pnl >= 0 ? 'text-neon-green text-glow-green' : 'text-neon-red text-glow-red'}`}>
+              <p className="font-mono text-xl sm:text-2xl font-bold transition-colors duration-500 ease-in-out"
+                 style={{ color: pnl >= 0 ? '#07e46e' : '#ef4444', textShadow: pnl >= 0 ? '0 0 12px #07e46e88' : '0 0 12px #ef444488' }}>
                 {fmtPrice(currentPrice)}
               </p>
             </div>
