@@ -297,7 +297,7 @@ export default function PirbTerminal() {
             {walletAddress && profile ? (
               <button
                 onClick={() => { playCoinSound(); navigate('/profile'); }}
-                className="arcade-btn arcade-btn-cyan text-[8px] sm:text-[10px] py-2 px-3 flex items-center gap-2"
+                className="arcade-btn arcade-btn-primary text-[8px] sm:text-[10px] py-2 px-3 flex items-center gap-2"
               >
                 <span>{getAvatarEmoji(profile.avatar)}</span>
                 <span>{profile.display_name}</span>
@@ -356,7 +356,7 @@ export default function PirbTerminal() {
                   🏆 LEADERBOARD
                 </Link>
                 {walletAddress && (
-                  <Link to="/profile" onClick={() => playCoinSound()} className="arcade-btn arcade-btn-cyan w-full text-[10px] py-3 text-center block">
+                  <Link to="/profile" onClick={() => playCoinSound()} className="arcade-btn arcade-btn-primary w-full text-[10px] py-3 text-center block">
                     👤 PROFILE
                   </Link>
                 )}
@@ -520,7 +520,7 @@ export default function PirbTerminal() {
                     </div>
                     <button
                       onClick={() => { playCoinSound(); exitEarly(); }}
-                      className="arcade-btn arcade-btn-secondary w-full text-[10px] py-3"
+                      className="arcade-btn arcade-btn-secondary w-full text-[10px] py-3" style={{ borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(var(--neon-orange) / 0.1)', boxShadow: 'var(--glow-orange)' }}
                     >
                       ⚡ CLOSE POSITION
                     </button>
@@ -563,7 +563,7 @@ export default function PirbTerminal() {
                     </button>
                     <button
                       onClick={() => { playCoinSound(); resetTerminal(); }}
-                      className="arcade-btn arcade-btn-cyan flex-1 text-[10px] py-3"
+                      className="arcade-btn flex-1 text-[10px] py-3" style={{ borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(var(--neon-orange) / 0.1)', boxShadow: 'var(--glow-orange)' }}
                     >
                       🏠 HOME
                     </button>
