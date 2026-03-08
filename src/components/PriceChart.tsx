@@ -1,4 +1,5 @@
-import { useRef, useEffect, useState, useMemo } from 'react';
+import { useRef, useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import mascotSrc from '@/assets/pirb-mascot.png';
 
 export interface Candle {
