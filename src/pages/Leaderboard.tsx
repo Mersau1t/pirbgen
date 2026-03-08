@@ -74,8 +74,8 @@ export default function Leaderboard() {
   };
 
   return (
-    <div className="min-h-screen bg-background grid-bg scanlines crt-vignette relative overflow-hidden animate-flicker">
-      <header className="relative z-10 border-b-2 border-neon-green/40 bg-background/90">
+    <div className="h-screen bg-background grid-bg scanlines crt-vignette relative overflow-hidden animate-flicker flex flex-col">
+      <header className="relative z-10 border-b-2 border-neon-green/40 bg-background/90 shrink-0">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
             <span className="text-2xl">🕹️</span>
@@ -87,13 +87,13 @@ export default function Leaderboard() {
         </div>
       </header>
 
-      <main className="relative z-10 max-w-4xl mx-auto px-4 py-8">
+      <main className="relative z-10 max-w-4xl mx-auto px-4 py-4 flex-1 flex flex-col min-h-0 w-full">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="space-y-6"
+          className="flex flex-col flex-1 min-h-0 gap-3"
         >
-          <div className="text-center space-y-3">
+          <div className="text-center space-y-1 shrink-0">
             <h1 className="font-display text-2xl sm:text-3xl tracking-wider text-neon-amber text-glow-amber">
               🏆 HIGH SCORES
             </h1>
@@ -102,9 +102,9 @@ export default function Leaderboard() {
             </p>
           </div>
 
-          <div className="pixel-border-amber overflow-hidden bg-background/90">
+          <div className="pixel-border-amber flex flex-col flex-1 min-h-0 bg-background/90">
             {/* Table header */}
-            <div className="grid grid-cols-[40px_1fr_70px_60px_70px_100px_80px] sm:grid-cols-[50px_1fr_80px_70px_80px_120px_90px] gap-1 px-4 py-3 bg-neon-green/5 border-b-2 border-neon-green/20 text-[8px] font-display tracking-wider text-neon-green/60 uppercase">
+            <div className="grid grid-cols-[40px_1fr_70px_60px_70px_100px_80px] sm:grid-cols-[50px_1fr_80px_70px_80px_120px_90px] gap-1 px-4 py-2 bg-neon-green/5 border-b-2 border-neon-green/20 text-[8px] font-display tracking-wider text-neon-green/60 uppercase shrink-0">
               <span>#</span>
               <span>Player</span>
               <span>Ticker</span>
@@ -140,14 +140,14 @@ export default function Leaderboard() {
                 </Link>
               </div>
             ) : (
-              <div className="divide-y divide-border/10">
+              <div className="divide-y divide-border/10 overflow-y-auto flex-1 min-h-0">
                 {entries.map((entry, i) => (
                   <motion.div
                     key={entry.id}
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.03 }}
-                    className={`grid grid-cols-[40px_1fr_70px_60px_70px_100px_80px] sm:grid-cols-[50px_1fr_80px_70px_80px_120px_90px] gap-1 px-4 py-3 items-center hover:bg-muted/20 transition-colors ${
+                    className={`grid grid-cols-[40px_1fr_70px_60px_70px_100px_80px] sm:grid-cols-[50px_1fr_80px_70px_80px_120px_90px] gap-1 px-4 py-2.5 items-center hover:bg-muted/20 transition-colors ${
                       i < 3 ? 'bg-neon-green/[0.02]' : ''
                     }`}
                   >
@@ -176,12 +176,6 @@ export default function Leaderboard() {
                 ))}
               </div>
             )}
-          </div>
-
-          <div className="text-center pt-4">
-            <Link to="/" className="arcade-btn arcade-btn-primary text-[10px] py-3 px-8 inline-block">
-              🎲 BACK TO TERMINAL
-            </Link>
           </div>
         </motion.div>
       </main>
