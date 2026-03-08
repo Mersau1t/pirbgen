@@ -163,7 +163,7 @@ function LiveTradePanel({ position, entryPrice, initialCandles, onResult, onExit
             <div className="text-center">
               <p className="text-[8px] text-muted-foreground/60 uppercase">Current</p>
               <p className={`font-mono text-xl sm:text-2xl font-bold ${pnl >= 0 ? 'text-neon-green text-glow-green' : 'text-neon-red text-glow-red'}`}>
-                ${currentPrice.toFixed(2)}
+                {fmtPrice(currentPrice)}
               </p>
             </div>
             <div className="text-center">
