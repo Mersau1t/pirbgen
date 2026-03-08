@@ -97,7 +97,7 @@ export default function PirbTerminal() {
     }
   }, [activePos, entryPrice, status]);
 
-  // Price simulation
+  // Price simulation — tick every 500ms, candle every 5 ticks (2.5s per candle → ~4 candles in 10s)
   useEffect(() => {
     if (status !== 'PLAYING' || !activePos) return;
     const interval = setInterval(() => {
@@ -105,7 +105,23 @@ export default function PirbTerminal() {
         if (!prev) return 100;
         const volatility = prev * (0.002 + (activePos.leverage / 5000));
         const newPrice = prev + (Math.random() - 0.5) * volatility;
-        setPriceHistory(h => [...h.slice(-(9)), newPrice]);
+
+        // Accumulate ticks for current candle
+        candleRef.current.ticks.push(newPrice);
+
+        // Every 3 ticks, form a candle
+        if (candleRef.current.ticks.length >= 3) {
+          const ticks = candleRef.current.ticks;
+          const candle: Candle = {
+            open: ticks[0],
+            high: Math.max(...ticks),
+            low: Math.min(...ticks),
+            close: ticks[ticks.length - 1],
+          };
+          setCandles(c => [...c.slice(-9), candle]);
+          candleRef.current.ticks = [];
+        }
+
         return newPrice;
       });
       setElapsedTime(t => t + 1);
