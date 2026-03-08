@@ -118,6 +118,39 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
     ctx.fillStyle = 'rgba(10, 6, 20, 0.6)';
     ctx.fillRect(pad.left, pad.top, chartW, chartH);
 
+    // --- TP/SL GRADIENT ZONES ---
+    const tpYZone = toY(tpPrice);
+    const slYZone = toY(slPrice);
+    const entryYZone = toY(entryPrice);
+
+    // Green zone: from TP line fading toward entry
+    const greenGrad = ctx.createLinearGradient(0, Math.min(tpYZone, entryYZone), 0, Math.max(tpYZone, entryYZone));
+    if (direction === 'LONG') {
+      greenGrad.addColorStop(0, 'rgba(7, 228, 110, 0.18)');
+      greenGrad.addColorStop(1, 'rgba(7, 228, 110, 0.0)');
+    } else {
+      greenGrad.addColorStop(0, 'rgba(7, 228, 110, 0.0)');
+      greenGrad.addColorStop(1, 'rgba(7, 228, 110, 0.18)');
+    }
+    ctx.fillStyle = greenGrad;
+    const greenTop = Math.min(tpYZone, entryYZone);
+    const greenBot = Math.max(tpYZone, entryYZone);
+    ctx.fillRect(pad.left, greenTop, chartW, greenBot - greenTop);
+
+    // Red zone: from SL line fading toward entry
+    const redGrad = ctx.createLinearGradient(0, Math.min(slYZone, entryYZone), 0, Math.max(slYZone, entryYZone));
+    if (direction === 'LONG') {
+      redGrad.addColorStop(0, 'rgba(239, 68, 68, 0.0)');
+      redGrad.addColorStop(1, 'rgba(239, 68, 68, 0.18)');
+    } else {
+      redGrad.addColorStop(0, 'rgba(239, 68, 68, 0.18)');
+      redGrad.addColorStop(1, 'rgba(239, 68, 68, 0.0)');
+    }
+    ctx.fillStyle = redGrad;
+    const redTop = Math.min(slYZone, entryYZone);
+    const redBot = Math.max(slYZone, entryYZone);
+    ctx.fillRect(pad.left, redTop, chartW, redBot - redTop);
+
     const entryY = toY(entryPrice);
     const winAbove = direction === 'LONG';
 
