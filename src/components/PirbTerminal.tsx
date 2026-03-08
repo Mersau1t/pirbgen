@@ -100,6 +100,15 @@ export default function PirbTerminal() {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [candles, setCandles] = useState<Candle[]>([]);
   const candleRef = useRef<{ ticks: number[]; }>({ ticks: [] });
+  const [particles] = useState(() =>
+    Array.from({ length: 25 }, () => ({
+      left: Math.random() * 100,
+      delay: Math.random() * 15,
+      duration: 10 + Math.random() * 15,
+      size: 12 + Math.random() * 14,
+      opacity: 0.4 + Math.random() * 0.4,
+    }))
+  );
 
   // Restore session
   useEffect(() => {
