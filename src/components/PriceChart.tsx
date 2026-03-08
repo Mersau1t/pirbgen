@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 
 interface PriceChartProps {
   priceHistory: number[];
@@ -10,24 +10,35 @@ const MAX_POINTS = 10;
 
 export default function PriceChart({ priceHistory, entryPrice, positive }: PriceChartProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState({ w: 0, h: 0 });
+
+  // Track container size
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const obs = new ResizeObserver(entries => {
+      const { width, height } = entries[0].contentRect;
+      setSize({ w: width, h: height });
+    });
+    obs.observe(container);
+    return () => obs.disconnect();
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || priceHistory.length < 2) return;
+    if (!canvas || priceHistory.length < 2 || size.w === 0) return;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
     const dpr = window.devicePixelRatio || 1;
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
+    canvas.width = size.w * dpr;
+    canvas.height = size.h * dpr;
     ctx.scale(dpr, dpr);
 
-    const w = rect.width;
-    const h = rect.height;
-
-    // Use last MAX_POINTS entries
+    const w = size.w;
+    const h = size.h;
     const data = priceHistory.slice(-MAX_POINTS);
 
     const min = Math.min(...data, entryPrice) * 0.9995;
@@ -37,10 +48,9 @@ export default function PriceChart({ priceHistory, entryPrice, positive }: Price
     const toX = (i: number) => (i / (MAX_POINTS - 1)) * w;
     const toY = (v: number) => h - ((v - min) / range) * h;
 
-    // Clear
     ctx.clearRect(0, 0, w, h);
 
-    // Grid lines
+    // Grid
     ctx.strokeStyle = 'rgba(255,255,255,0.04)';
     ctx.lineWidth = 1;
     for (let i = 0; i < 5; i++) {
@@ -51,7 +61,7 @@ export default function PriceChart({ priceHistory, entryPrice, positive }: Price
       ctx.stroke();
     }
 
-    // Entry price line
+    // Entry price dashed line
     const entryY = toY(entryPrice);
     ctx.strokeStyle = 'rgba(245,245,255,0.2)';
     ctx.setLineDash([4, 4]);
@@ -62,13 +72,13 @@ export default function PriceChart({ priceHistory, entryPrice, positive }: Price
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Price line gradient fill
     const lineColor = positive ? '#07e46e' : '#ef4444';
+
+    // Gradient fill
     const gradient = ctx.createLinearGradient(0, 0, 0, h);
     gradient.addColorStop(0, positive ? 'rgba(7,228,110,0.15)' : 'rgba(239,68,68,0.15)');
     gradient.addColorStop(1, 'rgba(0,0,0,0)');
 
-    // Fill area
     ctx.beginPath();
     data.forEach((price, i) => {
       const x = toX(i);
@@ -82,7 +92,7 @@ export default function PriceChart({ priceHistory, entryPrice, positive }: Price
     ctx.fillStyle = gradient;
     ctx.fill();
 
-    // Price line
+    // Line
     ctx.beginPath();
     data.forEach((price, i) => {
       const x = toX(i);
@@ -97,7 +107,7 @@ export default function PriceChart({ priceHistory, entryPrice, positive }: Price
     ctx.stroke();
     ctx.shadowBlur = 0;
 
-    // Current price dot
+    // Dot
     const lastX = toX(data.length - 1);
     const lastY = toY(data[data.length - 1]);
     ctx.beginPath();
@@ -107,10 +117,10 @@ export default function PriceChart({ priceHistory, entryPrice, positive }: Price
     ctx.shadowBlur = 12;
     ctx.fill();
     ctx.shadowBlur = 0;
-  }, [priceHistory, entryPrice, positive]);
+  }, [priceHistory, entryPrice, positive, size]);
 
   return (
-    <div className="w-full h-32 sm:h-40 relative">
+    <div ref={containerRef} className="w-full h-32 sm:h-40 relative">
       <canvas
         ref={canvasRef}
         className="w-full h-full"
