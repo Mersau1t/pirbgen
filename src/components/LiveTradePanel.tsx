@@ -77,9 +77,15 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
     };
 
     const cleanup = streamPythPriceById(position.feedId, (price) => {
+      // Set entry price from the very first live tick
+      if (!entrySetRef.current) {
+        entrySetRef.current = true;
+        setEntryPrice(price);
+        setCurrentPrice(price);
+        return; // skip this tick for candle data
+      }
       candleRef.current.ticks.push(price);
       pendingPrice = price;
-      // Schedule a single state update per animation frame to avoid flicker
       if (!rafId) {
         rafId = requestAnimationFrame(flushPrice);
       }
