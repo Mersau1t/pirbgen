@@ -481,7 +481,7 @@ export default function PirbTerminal() {
               </div>
 
               {/* Price Feed */}
-              <div className="glass-panel rounded-sm p-6 space-y-4">
+              <div className="glass-panel rounded-sm p-4 space-y-3 flex-1 min-h-0 flex flex-col">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-neon-purple animate-pulse-neon" />
