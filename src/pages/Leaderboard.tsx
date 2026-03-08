@@ -177,7 +177,12 @@ export default function Leaderboard() {
               </div>
             )}
           </div>
-        </motion.div>
+
+          <div className="shrink-0 text-center py-2">
+            <Link to="/" className="arcade-btn arcade-btn-primary text-[10px] py-2.5 px-8 inline-block">
+              🎲 BACK TO TERMINAL
+            </Link>
+          </div>
       </main>
     </div>
   );
