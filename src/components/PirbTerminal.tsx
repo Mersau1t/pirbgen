@@ -118,8 +118,9 @@ export default function PirbTerminal() {
             time: 0, // will be set below
           };
           setCandles(c => {
-            candle.time = (c.length + 1) * 2; // 2s per candle
-            return [...c.slice(-19), candle];
+            const liveCount = c.filter(x => x.time >= 0).length;
+            candle.time = (liveCount + 1) * 2;
+            return [...c.slice(-27), candle];
           });
           candleRef.current.ticks = [];
         }
