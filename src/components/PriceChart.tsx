@@ -22,19 +22,23 @@ const MAX_POINTS = 28;
 
 function formatPrice(p: number): string {
   const abs = Math.abs(p);
-  if (abs >= 1000) return '$' + p.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  if (abs >= 1) return '$' + p.toFixed(2);
-  if (abs >= 0.01) return '$' + p.toFixed(4);
-  if (abs >= 0.0001) return '$' + p.toFixed(6);
-  return '$' + p.toPrecision(4);
+  if (abs >= 10000) return '$' + p.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (abs >= 1000) return '$' + p.toFixed(3);
+  if (abs >= 100) return '$' + p.toFixed(4);
+  if (abs >= 1) return '$' + p.toFixed(5);
+  if (abs >= 0.01) return '$' + p.toFixed(7);
+  if (abs >= 0.0001) return '$' + p.toFixed(9);
+  return '$' + p.toPrecision(6);
 }
 
 function formatPriceShort(p: number): string {
   const abs = Math.abs(p);
-  if (abs >= 1000) return p.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-  if (abs >= 1) return p.toFixed(2);
-  if (abs >= 0.01) return p.toFixed(4);
-  return p.toPrecision(3);
+  if (abs >= 10000) return p.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (abs >= 1000) return p.toFixed(3);
+  if (abs >= 100) return p.toFixed(4);
+  if (abs >= 1) return p.toFixed(5);
+  if (abs >= 0.01) return p.toFixed(7);
+  return p.toPrecision(5);
 }
 
 export default function PriceChart({ candles, entryPrice, positive, direction, stopLoss, takeProfit, leverage }: PriceChartProps) {

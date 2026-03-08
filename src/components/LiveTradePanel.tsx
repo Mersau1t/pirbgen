@@ -40,11 +40,13 @@ const formatTime = (s: number) => `${Math.floor(s / 60).toString().padStart(2, '
 /** Smart price formatting */
 function fmtPrice(p: number): string {
   const abs = Math.abs(p);
-  if (abs >= 1000) return '$' + p.toFixed(1);
-  if (abs >= 1) return '$' + p.toFixed(2);
-  if (abs >= 0.01) return '$' + p.toFixed(4);
-  if (abs >= 0.0001) return '$' + p.toFixed(6);
-  return '$' + p.toPrecision(4);
+  if (abs >= 10000) return '$' + p.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (abs >= 1000) return '$' + p.toFixed(3);
+  if (abs >= 100) return '$' + p.toFixed(4);
+  if (abs >= 1) return '$' + p.toFixed(5);
+  if (abs >= 0.01) return '$' + p.toFixed(7);
+  if (abs >= 0.0001) return '$' + p.toFixed(9);
+  return '$' + p.toPrecision(6);
 }
 
 function LiveTradePanel({ position, entryPrice, initialCandles, onResult, onExitEarly, playerName, walletAddress }: LiveTradePanelProps) {
