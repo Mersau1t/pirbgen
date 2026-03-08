@@ -6,6 +6,7 @@ import pirbMascot from '@/assets/pirb-mascot.png';
 import { playGenerateClick, playWinSound, playRektSound, playCoinSound, startBgMusic, stopBgMusic, isBgMusicPlaying } from '@/lib/sounds';
 import PriceChart, { type Candle } from '@/components/PriceChart';
 import PixelConfetti from '@/components/PixelConfetti';
+import { fetchPythPrice, streamPythPrice, PRICE_FEED_IDS } from '@/lib/pyth';
 import { useWallet, shortenAddress } from '@/contexts/WalletContext';
 import { getAvatarEmoji } from '@/pages/Profile';
 
@@ -46,13 +47,13 @@ const RARITY_STYLES: Record<string, { border: string; text: string; bg: string; 
 };
 
 const TickerMarquee = () => {
-  const tickers = ['BTC $67,432 ▲2.3%', 'ETH $3,521 ▼0.8%', 'SOL $178 ▲5.1%', 'DOGE $0.18 ▲12.4%', 'PEPE $0.00001 ▲42.0%', 'AVAX $38 ▼1.2%'];
+  const tickers = ['PYTH LIVE FEEDS 🔴', 'BTC/USD', 'ETH/USD', 'SOL/USD', 'DOGE/USD', 'PEPE/USD', 'AVAX/USD', 'POWERED BY PYTH NETWORK ⚡'];
   const doubled = [...tickers, ...tickers];
   return (
     <div className="overflow-hidden border-b-2 border-neon-purple/30 bg-background/80 py-1.5">
       <div className="animate-marquee flex whitespace-nowrap gap-10 text-[10px] font-display">
         {doubled.map((t, i) => (
-          <span key={i} className={t.includes('▲') ? 'text-neon-green text-glow-green' : 'text-neon-red text-glow-red'}>
+          <span key={i} className={t.includes('PYTH') ? 'text-neon-purple text-glow-purple' : 'text-neon-green text-glow-green'}>
             {t}
           </span>
         ))}
@@ -123,39 +124,42 @@ export default function PirbTerminal() {
     }
   }, [activePos, entryPrice, status]);
 
-  // Price simulation — tick every 1s, candle every 2 ticks
+  // Real-time Pyth price streaming
   useEffect(() => {
     if (status !== 'PLAYING' || !activePos) return;
-    const interval = setInterval(() => {
-      setCurrentPrice(prev => {
-        if (!prev) return 100;
-        const volatility = prev * (0.002 + (activePos.leverage / 5000));
-        const newPrice = prev + (Math.random() - 0.5) * volatility;
 
-        candleRef.current.ticks.push(newPrice);
+    const cleanup = streamPythPrice(activePos.ticker, (newPrice) => {
+      setCurrentPrice(newPrice);
 
-        if (candleRef.current.ticks.length >= 2) {
-          const ticks = candleRef.current.ticks;
-          const candle: Candle = {
-            open: ticks[0],
-            high: Math.max(...ticks),
-            low: Math.min(...ticks),
-            close: ticks[ticks.length - 1],
-            time: 0, // will be set below
-          };
-          setCandles(c => {
-            const liveCount = c.filter(x => x.time >= 0).length;
-            candle.time = (liveCount + 1) * 2;
-            return [...c.slice(-27), candle];
-          });
-          candleRef.current.ticks = [];
-        }
+      candleRef.current.ticks.push(newPrice);
 
-        return newPrice;
-      });
+      if (candleRef.current.ticks.length >= 2) {
+        const ticks = candleRef.current.ticks;
+        const candle: Candle = {
+          open: ticks[0],
+          high: Math.max(...ticks),
+          low: Math.min(...ticks),
+          close: ticks[ticks.length - 1],
+          time: 0,
+        };
+        setCandles(c => {
+          const liveCount = c.filter(x => x.time >= 0).length;
+          candle.time = (liveCount + 1) * 2;
+          return [...c.slice(-27), candle];
+        });
+        candleRef.current.ticks = [];
+      }
+    });
+
+    // Elapsed time counter
+    const timer = setInterval(() => {
       setElapsedTime(t => t + 1);
     }, 1000);
-    return () => clearInterval(interval);
+
+    return () => {
+      cleanup();
+      clearInterval(timer);
+    };
   }, [status, activePos]);
 
   // PnL calculation
@@ -193,49 +197,50 @@ export default function PirbTerminal() {
     }
   }, [currentPrice, entryPrice, activePos, status]);
 
-  const generatePosition = useCallback(() => {
+  const generatePosition = useCallback(async () => {
     playGenerateClick();
     setStatus('GENERATING');
     setElapsedTime(0);
-    setTimeout(() => {
-      const pos = POSITIONS[Math.floor(Math.random() * POSITIONS.length)];
-      const price = Math.random() * 1000 + 100;
 
-      // Generate pre-history candles leading up to entry price
-      const historyCandles: Candle[] = [];
-      const histCount = 8;
-      // Work backwards from entry price
-      let histPrice = price;
-      const rawCandles: { open: number; high: number; low: number; close: number }[] = [];
-      for (let i = 0; i < histCount; i++) {
-        const vol = histPrice * 0.004;
-        const close = histPrice;
-        const ticks = [close];
-        for (let t = 0; t < 4; t++) {
-          histPrice += (Math.random() - 0.5) * vol;
-          ticks.push(histPrice);
-        }
-        const open = histPrice;
-        rawCandles.unshift({
-          open,
-          high: Math.max(...ticks),
-          low: Math.min(...ticks),
-          close,
-        });
+    const pos = POSITIONS[Math.floor(Math.random() * POSITIONS.length)];
+
+    // Fetch real price from Pyth
+    const realPrice = await fetchPythPrice(pos.ticker);
+    const price = realPrice ?? (Math.random() * 1000 + 100); // fallback if Pyth fails
+
+    // Generate pre-history candles around real entry price
+    const historyCandles: Candle[] = [];
+    const histCount = 8;
+    let histPrice = price;
+    const rawCandles: { open: number; high: number; low: number; close: number }[] = [];
+    for (let i = 0; i < histCount; i++) {
+      const vol = histPrice * 0.004;
+      const close = histPrice;
+      const ticks = [close];
+      for (let t = 0; t < 4; t++) {
+        histPrice += (Math.random() - 0.5) * vol;
+        ticks.push(histPrice);
       }
-      rawCandles.forEach((c, i) => {
-        historyCandles.push({ ...c, time: -(histCount - i) * 2 });
+      const open = histPrice;
+      rawCandles.unshift({
+        open,
+        high: Math.max(...ticks),
+        low: Math.min(...ticks),
+        close,
       });
+    }
+    rawCandles.forEach((c, i) => {
+      historyCandles.push({ ...c, time: -(histCount - i) * 2 });
+    });
 
-      setActivePos(pos);
-      setEntryPrice(price);
-      setCurrentPrice(price);
-      setPnl(0);
-      setPnlPercent(0);
-      setCandles(historyCandles);
-      candleRef.current = { ticks: [] };
-      setStatus('PLAYING');
-    }, 2000);
+    setActivePos(pos);
+    setEntryPrice(price);
+    setCurrentPrice(price);
+    setPnl(0);
+    setPnlPercent(0);
+    setCandles(historyCandles);
+    candleRef.current = { ticks: [] };
+    setStatus('PLAYING');
   }, []);
 
   const exitEarly = useCallback(() => {
