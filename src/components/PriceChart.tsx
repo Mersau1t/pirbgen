@@ -68,7 +68,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
 
     const w = size.w;
     const h = size.h;
-    const priceAxisW = 58;
+    const priceAxisW = 78;
     const timeAxisH = 20;
     const pad = { top: 12, bottom: timeAxisH + 4, left: 6, right: priceAxisW + 4 };
     const chartW = w - pad.left - pad.right;
