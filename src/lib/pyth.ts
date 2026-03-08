@@ -279,7 +279,7 @@ export async function fetchHistoricalCandles(
   const startTs = now - totalSpan;
 
   try {
-    const promises: Promise<{ idx: number; price: number | null }>[] = [];
+    const promises: Promise<{ idx: number; price: number | null; confidence: number }>[] = [];
 
     for (let i = 0; i < count; i++) {
       const ts = startTs + i * intervalSec;
@@ -288,13 +288,17 @@ export async function fetchHistoricalCandles(
       promises.push(
         fetch(url)
           .then(async (res) => {
-            if (!res.ok) return { idx: i, price: null };
+            if (!res.ok) return { idx: i, price: null, confidence: 0 };
             const data = await res.json();
             const parsed = data.parsed?.[0]?.price;
-            if (!parsed) return { idx: i, price: null };
-            return { idx: i, price: parsePythPrice(parsed) };
+            if (!parsed) return { idx: i, price: null, confidence: 0 };
+            return {
+              idx: i,
+              price: parsePythPrice(parsed),
+              confidence: Number(parsed.conf) * Math.pow(10, parsed.expo),
+            };
           })
-          .catch(() => ({ idx: i, price: null }))
+          .catch(() => ({ idx: i, price: null, confidence: 0 }))
       );
     }
 
