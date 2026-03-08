@@ -57,7 +57,7 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
   const [candles, setCandles] = useState<Candle[]>(initialCandles);
   const [result, setResult] = useState<'WIN' | 'REKT' | null>(null);
   const [showResultAnim, setShowResultAnim] = useState(false);
-  const candleRef = useRef<{ ticks: number[] }>({ ticks: [] });
+  const candleRef = useRef<{ ticks: PythPriceTick[] }>({ ticks: [] });
   const resultFiredRef = useRef(false);
   const entrySetRef = useRef(false);
 
