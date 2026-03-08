@@ -48,7 +48,7 @@ const TickerMarquee = () => {
   const tickers = ['BTC $67,432 ▲2.3%', 'ETH $3,521 ▼0.8%', 'SOL $178 ▲5.1%', 'DOGE $0.18 ▲12.4%', 'PEPE $0.00001 ▲42.0%', 'AVAX $38 ▼1.2%'];
   const doubled = [...tickers, ...tickers];
   return (
-    <div className="overflow-hidden border-b-2 border-neon-green/30 bg-background/80 py-1.5">
+    <div className="overflow-hidden border-b-2 border-neon-purple/30 bg-background/80 py-1.5">
       <div className="animate-marquee flex whitespace-nowrap gap-10 text-[10px] font-display">
         {doubled.map((t, i) => (
           <span key={i} className={t.includes('▲') ? 'text-neon-green text-glow-green' : 'text-neon-red text-glow-red'}>
@@ -262,7 +262,7 @@ export default function PirbTerminal() {
           const left = Math.random() * 100;
           const delay = Math.random() * 12;
           const duration = 8 + Math.random() * 12;
-          const colors = ['hsl(var(--neon-green))', 'hsl(var(--neon-cyan))', 'hsl(var(--neon-magenta))', 'hsl(var(--neon-amber))'];
+          const colors = ['hsl(var(--neon-purple))', 'hsl(var(--neon-orange))', 'hsl(var(--neon-cyan))', 'hsl(var(--neon-purple))'];
           const color = colors[i % colors.length];
           const opacity = 0.3 + Math.random() * 0.5;
           return (
@@ -285,15 +285,15 @@ export default function PirbTerminal() {
         })}
       </div>
       {/* Top bar */}
-      <header className="relative z-10 border-b-2 border-neon-green/40 bg-background/90">
+      <header className="relative z-10 border-b-2 border-neon-purple/40 bg-background/90">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
             <span className="text-2xl">🕹️</span>
-            <span className="font-display text-[10px] sm:text-xs tracking-[0.3em] text-neon-green text-glow-green">PIRBGEN</span>
+            <span className="font-display text-[10px] sm:text-xs tracking-[0.3em] text-neon-purple text-glow-purple">PIRBGEN</span>
           </div>
           <div className="flex items-center gap-3">
             <div className="hidden sm:flex items-center gap-2 text-[10px] font-display text-neon-cyan">
-              <span className="w-2 h-2 bg-neon-green animate-blink" />
+              <span className="w-2 h-2 bg-neon-purple animate-blink" />
               <span>BASE</span>
             </div>
             {walletAddress && profile ? (
@@ -333,16 +333,16 @@ export default function PirbTerminal() {
               <motion.img
                 src={pirbMascot}
                 alt="Pirb the pigeon"
-                className="w-36 h-36 sm:w-44 sm:h-44 object-contain drop-shadow-[0_0_40px_hsl(120,100%,50%,0.4)]"
+                className="w-36 h-36 sm:w-44 sm:h-44 object-contain drop-shadow-[0_0_40px_hsl(265,66%,55%,0.4)]"
                 animate={{ y: [0, -10, 0] }}
                 transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
               />
 
               <div className="text-center space-y-4">
-                <h1 className="font-display text-3xl sm:text-5xl tracking-wider text-neon-green text-glow-green">
+                <h1 className="font-display text-3xl sm:text-5xl tracking-wider text-neon-purple text-glow-purple">
                   <GlitchText>PIRBGEN</GlitchText>
                 </h1>
-                <p className="font-display text-[8px] sm:text-[10px] text-neon-amber text-glow-amber tracking-[0.2em]">
+                <p className="font-display text-[8px] sm:text-[10px] text-neon-orange text-glow-orange tracking-[0.2em]">
                   INSERT COIN TO PLAY
                 </p>
               </div>
@@ -354,7 +354,7 @@ export default function PirbTerminal() {
                 >
                   🎲 GENERATE
                 </button>
-                <Link to="/leaderboard" className="arcade-btn arcade-btn-amber w-full text-[10px] py-3 text-center block">
+                <Link to="/leaderboard" className="arcade-btn arcade-btn-secondary w-full text-[10px] py-3 text-center block" style={{ borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(25 95% 53% / 0.1)' }}>
                   🏆 LEADERBOARD
                 </Link>
                 {walletAddress && (
@@ -365,9 +365,9 @@ export default function PirbTerminal() {
               </div>
 
               <div className="flex items-center gap-2 text-[8px] font-display text-muted-foreground/40">
-                <span className="text-neon-green/40">●</span>
+                <span className="text-neon-purple/40">●</span>
                 <span>PYTH ENTROPY</span>
-                <span className="text-neon-magenta/40">●</span>
+                <span className="text-neon-orange/40">●</span>
                 <span>PYTH NETWORK</span>
                 <span className="text-neon-cyan/40">●</span>
                 <span>BASE L2</span>
@@ -386,19 +386,19 @@ export default function PirbTerminal() {
               <motion.img
                 src={pirbMascot}
                 alt="Pirb pecking"
-                className="w-32 h-32 object-contain drop-shadow-[0_0_30px_hsl(120,100%,50%,0.4)]"
+                className="w-32 h-32 object-contain drop-shadow-[0_0_30px_hsl(265,66%,55%,0.4)]"
                 animate={{ rotate: [-5, 5, -10, 8, -5], y: [0, 3, 0, 2, 0] }}
                 transition={{ duration: 0.6, repeat: Infinity }}
               />
               <div className="text-center space-y-3">
-                <p className="font-display text-sm sm:text-lg text-neon-green text-glow-green tracking-wider">PIRB IS PECKING...</p>
-                <p className="font-display text-[8px] text-neon-amber animate-blink tracking-widest">REQUESTING ENTROPY</p>
+                <p className="font-display text-sm sm:text-lg text-neon-purple text-glow-purple tracking-wider">PIRB IS PECKING...</p>
+                <p className="font-display text-[8px] text-neon-orange animate-blink tracking-widest">REQUESTING ENTROPY</p>
               </div>
               <div className="flex gap-1.5">
                 {[0, 1, 2, 3, 4].map(i => (
                   <motion.div
                     key={i}
-                    className="w-3 h-8 bg-neon-green"
+                    className="w-3 h-8 bg-neon-purple"
                     animate={{ scaleY: [0.3, 1, 0.3] }}
                     transition={{ duration: 0.5, repeat: Infinity, delay: i * 0.1 }}
                   />
@@ -428,7 +428,7 @@ export default function PirbTerminal() {
                 <div className="p-6 space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h2 className="font-display text-3xl text-foreground text-glow-green">{activePos.ticker}</h2>
+                      <h2 className="font-display text-3xl text-foreground text-glow-purple">{activePos.ticker}</h2>
                       <p className="text-xs text-muted-foreground">{activePos.asset}</p>
                     </div>
                     <div className="text-right space-y-1">
@@ -459,7 +459,7 @@ export default function PirbTerminal() {
               <div className="glass-panel rounded-sm p-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-neon-green animate-pulse-neon" />
+                    <span className="w-2 h-2 rounded-full bg-neon-purple animate-pulse-neon" />
                     <span className="text-[10px] font-display tracking-[0.2em] text-muted-foreground">PYTH PRICE FEED</span>
                   </div>
                   <span className="text-xs text-muted-foreground font-mono">{formatTime(elapsedTime)}</span>
@@ -517,8 +517,8 @@ export default function PirbTerminal() {
                 {status === 'PLAYING' && (
                   <div className="flex flex-col items-center gap-3 py-2">
                     <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 bg-neon-amber animate-blink" />
-                      <span className="font-display text-[10px] text-neon-amber text-glow-amber tracking-wider">AWAITING RESOLUTION...</span>
+                      <span className="w-2 h-2 bg-neon-orange animate-blink" />
+                      <span className="font-display text-[10px] text-neon-orange text-glow-orange tracking-wider">AWAITING RESOLUTION...</span>
                     </div>
                     <button
                       onClick={exitEarly}
@@ -578,10 +578,10 @@ export default function PirbTerminal() {
       </main>
 
       {/* Bottom info */}
-      <footer className="fixed bottom-0 inset-x-0 z-10 border-t-2 border-neon-green/20 bg-background/90 py-2 px-4">
+      <footer className="fixed bottom-0 inset-x-0 z-10 border-t-2 border-neon-purple/20 bg-background/90 py-2 px-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between text-[8px] font-display text-muted-foreground/40 tracking-wider">
           <span>PIRBGEN v0.1</span>
-          <span className="text-neon-green/30 animate-pulse-neon">● LIVE</span>
+          <span className="text-neon-purple/30 animate-pulse-neon">● LIVE</span>
           <span className="hidden sm:inline">BASE L2</span>
         </div>
       </footer>

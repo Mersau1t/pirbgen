@@ -7,49 +7,53 @@
 @layer base {
   :root {
     --background: 240 20% 3%;
-    --foreground: 60 100% 95%;
+    --foreground: 240 100% 98%;
 
     --card: 240 20% 6%;
-    --card-foreground: 60 100% 95%;
+    --card-foreground: 240 100% 98%;
 
     --popover: 240 20% 6%;
-    --popover-foreground: 60 100% 95%;
+    --popover-foreground: 240 100% 98%;
 
-    --primary: 120 100% 50%;
-    --primary-foreground: 240 20% 3%;
+    --primary: 265 66% 55%;
+    --primary-foreground: 240 100% 98%;
 
-    --secondary: 330 100% 55%;
-    --secondary-foreground: 60 100% 95%;
+    --secondary: 25 95% 53%;
+    --secondary-foreground: 240 20% 3%;
 
     --muted: 240 15% 10%;
     --muted-foreground: 240 10% 50%;
 
-    --accent: 50 100% 55%;
+    --accent: 25 95% 53%;
     --accent-foreground: 240 20% 3%;
 
     --destructive: 0 100% 50%;
-    --destructive-foreground: 60 100% 95%;
+    --destructive-foreground: 240 100% 98%;
 
-    --border: 120 100% 50%;
+    --border: 265 66% 55%;
     --input: 240 20% 12%;
-    --ring: 120 100% 50%;
+    --ring: 265 66% 55%;
 
     --radius: 0px;
 
     /* Arcade neon tokens */
-    --neon-green: 120 100% 50%;
+    --neon-green: 150 95% 46%;
+    --neon-purple: 265 66% 55%;
+    --neon-orange: 25 95% 53%;
     --neon-magenta: 330 100% 55%;
     --neon-cyan: 180 100% 55%;
     --neon-amber: 50 100% 55%;
     --neon-red: 0 100% 50%;
     --neon-blue: 220 100% 60%;
     --terminal-bg: 240 20% 4%;
-    --terminal-border: 120 100% 50%;
+    --terminal-border: 265 66% 55%;
 
     --font-display: 'Press Start 2P', cursive;
     --font-mono: 'JetBrains Mono', monospace;
 
-    --glow-green: 0 0 4px hsl(120 100% 50%), 0 0 12px hsl(120 100% 50% / 0.6), 0 0 30px hsl(120 100% 50% / 0.3);
+    --glow-purple: 0 0 4px hsl(265 66% 55%), 0 0 12px hsl(265 66% 55% / 0.6), 0 0 30px hsl(265 66% 55% / 0.3);
+    --glow-orange: 0 0 4px hsl(25 95% 53%), 0 0 12px hsl(25 95% 53% / 0.6), 0 0 30px hsl(25 95% 53% / 0.3);
+    --glow-green: 0 0 4px hsl(150 95% 46%), 0 0 12px hsl(150 95% 46% / 0.6), 0 0 30px hsl(150 95% 46% / 0.3);
     --glow-magenta: 0 0 4px hsl(330 100% 55%), 0 0 12px hsl(330 100% 55% / 0.6), 0 0 30px hsl(330 100% 55% / 0.3);
     --glow-red: 0 0 4px hsl(0 100% 50%), 0 0 12px hsl(0 100% 50% / 0.5);
     --glow-amber: 0 0 4px hsl(50 100% 55%), 0 0 12px hsl(50 100% 55% / 0.5);
@@ -75,6 +79,12 @@
   .font-mono {
     font-family: var(--font-mono);
   }
+  .text-glow-purple {
+    text-shadow: var(--glow-purple);
+  }
+  .text-glow-orange {
+    text-shadow: var(--glow-orange);
+  }
   .text-glow-green {
     text-shadow: var(--glow-green);
   }
@@ -90,6 +100,12 @@
   .text-glow-cyan {
     text-shadow: var(--glow-cyan);
   }
+  .box-glow-purple {
+    box-shadow: var(--glow-purple);
+  }
+  .box-glow-orange {
+    box-shadow: var(--glow-orange);
+  }
   .box-glow-green {
     box-shadow: var(--glow-green);
   }
@@ -104,8 +120,24 @@
   }
 }
 
-/* Pixel border utility */
+/* Pixel border utility — purple primary */
 .pixel-border {
+  border: 3px solid hsl(var(--neon-purple));
+  box-shadow:
+    inset 0 0 0 1px hsl(var(--background)),
+    0 0 0 1px hsl(var(--neon-purple)),
+    var(--glow-purple);
+}
+
+.pixel-border-orange {
+  border: 3px solid hsl(var(--neon-orange));
+  box-shadow:
+    inset 0 0 0 1px hsl(var(--background)),
+    0 0 0 1px hsl(var(--neon-orange)),
+    var(--glow-orange);
+}
+
+.pixel-border-green {
   border: 3px solid hsl(var(--neon-green));
   box-shadow:
     inset 0 0 0 1px hsl(var(--background)),
@@ -137,7 +169,7 @@
     var(--glow-amber);
 }
 
-/* Scanline overlay — stronger for arcade feel */
+/* Scanline overlay — purple tint */
 .scanlines::after {
   content: '';
   position: absolute;
@@ -146,8 +178,8 @@
     0deg,
     transparent,
     transparent 2px,
-    hsl(120 100% 50% / 0.04) 2px,
-    hsl(120 100% 50% / 0.04) 4px
+    hsl(265 66% 55% / 0.03) 2px,
+    hsl(265 66% 55% / 0.03) 4px
   );
   pointer-events: none;
   z-index: 50;
@@ -239,18 +271,18 @@
   100% { transform: translateY(105vh) translateX(30px); opacity: 0; }
 }
 
-/* Glass panel — more opaque & arcade-like */
+/* Glass panel — purple accent */
 .glass-panel {
   background: hsl(240 20% 5% / 0.95);
-  border: 2px solid hsl(120 100% 50% / 0.4);
+  border: 2px solid hsl(265 66% 55% / 0.4);
   backdrop-filter: blur(4px);
 }
 
-/* Grid background — brighter for arcade */
+/* Grid background — subtle purple */
 .grid-bg {
   background-image:
-    linear-gradient(hsl(120 100% 50% / 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, hsl(120 100% 50% / 0.06) 1px, transparent 1px);
+    linear-gradient(hsl(265 66% 55% / 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(265 66% 55% / 0.05) 1px, transparent 1px);
   background-size: 32px 32px;
 }
 
@@ -275,15 +307,15 @@
 }
 
 .arcade-btn-primary {
-  border-color: hsl(var(--neon-green));
-  color: hsl(var(--neon-green));
-  background: hsl(var(--neon-green) / 0.1);
-  box-shadow: var(--glow-green);
+  border-color: hsl(var(--neon-purple));
+  color: hsl(var(--neon-purple));
+  background: hsl(var(--neon-purple) / 0.1);
+  box-shadow: var(--glow-purple);
 }
 
 .arcade-btn-primary:hover {
-  background: hsl(var(--neon-green) / 0.2);
-  box-shadow: 0 0 8px hsl(120 100% 50%), 0 0 20px hsl(120 100% 50% / 0.6), 0 0 40px hsl(120 100% 50% / 0.3);
+  background: hsl(var(--neon-purple) / 0.2);
+  box-shadow: 0 0 8px hsl(265 66% 55%), 0 0 20px hsl(265 66% 55% / 0.6), 0 0 40px hsl(265 66% 55% / 0.3);
 }
 
 .arcade-btn-secondary {
