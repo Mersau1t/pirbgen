@@ -89,19 +89,23 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
 
     const entryY = toY(entryPrice);
     const winAbove = direction === 'LONG';
+    
+    // Find entry point on chart
+    const entryIdx = candles.findIndex(c => c.time >= 0);
+    const entryX = entryIdx >= 0 ? toX(entryIdx) - slotW / 2 : pad.left;
 
-    // Zone fills
+    // Zone fills - only from entry point onwards
     const topGrad = ctx.createLinearGradient(0, pad.top, 0, entryY);
     topGrad.addColorStop(0, winAbove ? 'rgba(7,228,110,0.06)' : 'rgba(239,68,68,0.06)');
     topGrad.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = topGrad;
-    ctx.fillRect(pad.left, pad.top, chartW, Math.max(entryY - pad.top, 0));
+    ctx.fillRect(entryX, pad.top, chartW - (entryX - pad.left), Math.max(entryY - pad.top, 0));
 
     const botGrad = ctx.createLinearGradient(0, entryY, 0, pad.top + chartH);
     botGrad.addColorStop(0, 'rgba(0,0,0,0)');
     botGrad.addColorStop(1, winAbove ? 'rgba(239,68,68,0.06)' : 'rgba(7,228,110,0.06)');
     ctx.fillStyle = botGrad;
-    ctx.fillRect(pad.left, entryY, chartW, Math.max(pad.top + chartH - entryY, 0));
+    ctx.fillRect(entryX, entryY, chartW - (entryX - pad.left), Math.max(pad.top + chartH - entryY, 0));
 
     // Horizontal grid + price labels on right
     ctx.textAlign = 'left';
