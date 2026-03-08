@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Link } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 import pirbMascot from '@/assets/pirb-mascot.png';
 import { playGenerateClick, playWinSound, playRektSound } from '@/lib/sounds';
 import PriceChart, { type Candle } from '@/components/PriceChart';
@@ -143,9 +145,26 @@ export default function PirbTerminal() {
     if (calculatedPnl <= activePos.stopLoss) {
       setStatus('REKT');
       playRektSound();
+      // Save to leaderboard
+      supabase.from('leaderboard').insert({
+        player_name: 'Anonymous',
+        ticker: activePos.ticker,
+        direction: activePos.direction,
+        leverage: activePos.leverage,
+        pnl_percent: Number(calculatedPnl.toFixed(1)),
+        rarity: activePos.rarity,
+      }).then(() => {});
     } else if (calculatedPnl >= activePos.takeProfit) {
       setStatus('WIN');
       playWinSound();
+      supabase.from('leaderboard').insert({
+        player_name: 'Anonymous',
+        ticker: activePos.ticker,
+        direction: activePos.direction,
+        leverage: activePos.leverage,
+        pnl_percent: Number(calculatedPnl.toFixed(1)),
+        rarity: activePos.rarity,
+      }).then(() => {});
     }
   }, [currentPrice, entryPrice, activePos, status]);
 
@@ -195,7 +214,16 @@ export default function PirbTerminal() {
   }, []);
 
   const exitEarly = useCallback(() => {
-    if (status !== 'PLAYING') return;
+    if (status !== 'PLAYING' || !activePos) return;
+    // Save to leaderboard
+    supabase.from('leaderboard').insert({
+      player_name: 'Anonymous',
+      ticker: activePos.ticker,
+      direction: activePos.direction,
+      leverage: activePos.leverage,
+      pnl_percent: Number(pnl.toFixed(1)),
+      rarity: activePos.rarity,
+    }).then(() => {});
     if (pnl >= 0) {
       setStatus('WIN');
       playWinSound();
@@ -203,7 +231,7 @@ export default function PirbTerminal() {
       setStatus('REKT');
       playRektSound();
     }
-  }, [status, pnl]);
+  }, [status, pnl, activePos]);
 
   const resetTerminal = () => {
     setStatus('IDLE');
@@ -277,9 +305,9 @@ export default function PirbTerminal() {
                 >
                   🎲 GENERATE
                 </button>
-                <button className="w-full py-3 bg-muted/30 border border-border/30 text-muted-foreground font-display text-xs tracking-[0.2em] hover:text-foreground hover:border-border/60 transition-all duration-300 cursor-pointer">
+                <Link to="/leaderboard" className="w-full py-3 bg-muted/30 border border-border/30 text-muted-foreground font-display text-xs tracking-[0.2em] hover:text-foreground hover:border-border/60 transition-all duration-300 cursor-pointer text-center block">
                   🏆 LEADERBOARD
-                </button>
+                </Link>
               </div>
 
               <p className="text-[10px] text-muted-foreground/50 text-center max-w-sm">
