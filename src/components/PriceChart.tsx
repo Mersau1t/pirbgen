@@ -203,35 +203,43 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       ctx.lineWidth = 1.8;
       ctx.stroke();
 
-      // Current price — mascot icon
+      // Current price — mascot icon with animations
       const lastX = toX(candles.length - 1);
       const lastY = toY(candles[candles.length - 1].close);
       const glowColor = positive ? '#07e46e' : '#ef4444';
-      const blink = Math.sin(Date.now() / 200) * 0.5 + 0.5; // 0-1 pulse
-      const mascotSize = 28;
+      const t = Date.now();
+      const mascotSize = 30;
 
-      // Glow behind mascot
+      // Animations
+      const pulse = Math.sin(t / 300) * 0.15 + 1; // scale 0.85-1.15
+      const bobY = Math.sin(t / 500) * 3; // float up/down
+      const tilt = Math.sin(t / 700) * 0.12; // slight rotation
+      const colorPulse = Math.sin(t / 200) * 0.5 + 0.5; // 0-1
+
       ctx.save();
-      ctx.shadowColor = glowColor;
-      ctx.shadowBlur = 12 + blink * 14;
-      ctx.globalAlpha = 0.6 + blink * 0.4;
 
       if (mascotImg.current) {
-        ctx.drawImage(
-          mascotImg.current,
-          lastX - mascotSize / 2,
-          lastY - mascotSize / 2,
-          mascotSize,
-          mascotSize
-        );
-        // Color tint overlay
-        ctx.globalCompositeOperation = 'source-atop';
-        ctx.fillStyle = glowColor;
-        ctx.globalAlpha = blink * 0.45;
-        ctx.fillRect(lastX - mascotSize / 2, lastY - mascotSize / 2, mascotSize, mascotSize);
-        ctx.globalCompositeOperation = 'source-over';
+        // Draw tinted mascot on offscreen canvas (tint only mascot pixels)
+        const off = document.createElement('canvas');
+        const s = Math.ceil(mascotSize * pulse * dpr);
+        off.width = s;
+        off.height = s;
+        const octx = off.getContext('2d')!;
+        octx.drawImage(mascotImg.current, 0, 0, s, s);
+        // Apply color tint only to existing pixels
+        octx.globalCompositeOperation = 'source-atop';
+        octx.fillStyle = glowColor;
+        octx.globalAlpha = 0.3 + colorPulse * 0.5;
+        octx.fillRect(0, 0, s, s);
+
+        // Draw to main canvas with transform
+        const drawSize = mascotSize * pulse;
+        const cx = lastX;
+        const cy = lastY + bobY;
+        ctx.translate(cx, cy);
+        ctx.rotate(tilt);
+        ctx.drawImage(off, -drawSize / 2, -drawSize / 2, drawSize, drawSize);
       } else {
-        // Fallback dot
         ctx.beginPath();
         ctx.arc(lastX, lastY, 5, 0, Math.PI * 2);
         ctx.fillStyle = glowColor;
