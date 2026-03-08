@@ -34,7 +34,7 @@ export async function fetchAllPythFeeds(): Promise<PythFeed[]> {
     );
 
     const allData: Array<{ id: string; attributes: { symbol: string; base: string; quote_currency: string } }> = [];
-    for (const res of [cryptoRes, equityRes, fxRes, metalRes]) {
+    for (const res of responses) {
       if (res.ok) {
         const d = await res.json();
         allData.push(...d);
