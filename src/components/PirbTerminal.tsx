@@ -352,11 +352,11 @@ export default function PirbTerminal() {
                 >
                   🎲 GENERATE
                 </button>
-                <Link to="/leaderboard" className="arcade-btn arcade-btn-secondary w-full text-[10px] py-3 text-center block" style={{ borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(25 95% 53% / 0.1)' }}>
+                <Link to="/leaderboard" onClick={() => playCoinSound()} className="arcade-btn arcade-btn-secondary w-full text-[10px] py-3 text-center block" style={{ borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(25 95% 53% / 0.1)' }}>
                   🏆 LEADERBOARD
                 </Link>
                 {walletAddress && (
-                  <Link to="/profile" className="arcade-btn arcade-btn-cyan w-full text-[10px] py-3 text-center block">
+                  <Link to="/profile" onClick={() => playCoinSound()} className="arcade-btn arcade-btn-cyan w-full text-[10px] py-3 text-center block">
                     👤 PROFILE
                   </Link>
                 )}
