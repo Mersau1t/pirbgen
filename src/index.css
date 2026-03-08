@@ -271,18 +271,18 @@
   100% { transform: translateY(105vh) translateX(30px); opacity: 0; }
 }
 
-/* Glass panel — more opaque & arcade-like */
+/* Glass panel — purple accent */
 .glass-panel {
   background: hsl(240 20% 5% / 0.95);
-  border: 2px solid hsl(120 100% 50% / 0.4);
+  border: 2px solid hsl(265 66% 55% / 0.4);
   backdrop-filter: blur(4px);
 }
 
-/* Grid background — brighter for arcade */
+/* Grid background — subtle purple */
 .grid-bg {
   background-image:
-    linear-gradient(hsl(120 100% 50% / 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, hsl(120 100% 50% / 0.06) 1px, transparent 1px);
+    linear-gradient(hsl(265 66% 55% / 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(265 66% 55% / 0.05) 1px, transparent 1px);
   background-size: 32px 32px;
 }
 
