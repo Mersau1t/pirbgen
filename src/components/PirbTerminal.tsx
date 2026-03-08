@@ -147,19 +147,33 @@ export default function PirbTerminal() {
     }
   }, [activePos, entryPrice, status]);
 
-  const generatePosition = useCallback(async () => {
+  const generatePosition = useCallback(async (specificFeed?: { id: string; ticker: string; pair: string }) => {
     playGenerateClick();
     setStatus('GENERATING');
 
-    // Pick a volatile feed from all Pyth crypto feeds
-    const picked = await pickVolatileFeed();
-    if (!picked) {
-      console.error('Could not pick a Pyth feed');
-      setStatus('IDLE');
-      return;
-    }
+    let feed: { id: string; ticker: string; pair: string };
+    let price: number;
 
-    const { feed, price } = picked;
+    if (specificFeed) {
+      // Fetch live price for the specific token
+      const livePrice = await fetchPythPriceById(specificFeed.id);
+      if (!livePrice) {
+        console.error('Could not fetch price for', specificFeed.ticker);
+        setStatus('IDLE');
+        return;
+      }
+      feed = specificFeed;
+      price = livePrice;
+    } else {
+      const picked = await pickVolatileFeed();
+      if (!picked) {
+        console.error('Could not pick a Pyth feed');
+        setStatus('IDLE');
+        return;
+      }
+      feed = picked.feed;
+      price = picked.price;
+    }
     const rarity = pickRarity();
     const direction: TradeDirection = Math.random() > 0.5 ? 'LONG' : 'SHORT';
     const leverage = randInt(rarity.leverageRange[0], rarity.leverageRange[1]);
