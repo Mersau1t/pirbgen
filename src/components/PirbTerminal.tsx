@@ -363,7 +363,7 @@ export default function PirbTerminal() {
                 {/* Price Chart */}
                 {entryPrice && (
                   <div className="border border-border/20 rounded-sm overflow-hidden bg-muted/10">
-                    <PriceChart candles={candles} entryPrice={entryPrice} positive={pnl >= 0} direction={activePos.direction} />
+                    <PriceChart candles={candles} entryPrice={entryPrice} positive={pnl >= 0} direction={activePos.direction} stopLoss={activePos.stopLoss} takeProfit={activePos.takeProfit} leverage={activePos.leverage} />
                   </div>
                 )}
 
