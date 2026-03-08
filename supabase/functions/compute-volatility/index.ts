@@ -28,7 +28,12 @@ async function fetchAllFeeds() {
   const feeds: Array<{ id: string; ticker: string; pair: string }> = [];
   const seen = new Set<string>();
 
-  for (const assetType of ['crypto', 'equity', 'fx', 'metal']) {
+  const dayOfWeek = new Date().getUTCDay(); // 0=Sun, 6=Sat
+  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+  const assetTypes = isWeekend ? ['crypto'] : ['crypto', 'equity', 'fx', 'metal'];
+  console.log(`Day: ${dayOfWeek}, weekend: ${isWeekend}, asset types: ${assetTypes.join(', ')}`);
+
+  for (const assetType of assetTypes) {
     try {
       const res = await fetch(`${HERMES_URL}/v2/price_feeds?query=usd&asset_type=${assetType}`);
       if (!res.ok) continue;

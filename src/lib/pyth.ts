@@ -22,16 +22,19 @@ export async function fetchAllPythFeeds(): Promise<PythFeed[]> {
   }
 
   try {
-    // Fetch all asset types in parallel
-    const [cryptoRes, equityRes, fxRes, metalRes] = await Promise.all([
-      fetch(`${HERMES_URL}/v2/price_feeds?query=usd&asset_type=crypto`),
-      fetch(`${HERMES_URL}/v2/price_feeds?query=usd&asset_type=equity`),
-      fetch(`${HERMES_URL}/v2/price_feeds?query=usd&asset_type=fx`),
-      fetch(`${HERMES_URL}/v2/price_feeds?query=usd&asset_type=metal`),
-    ]);
+    // Skip equity/fx/metal on weekends (they don't trade)
+    const dayOfWeek = new Date().getUTCDay();
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+    const assetTypes = isWeekend
+      ? ['crypto']
+      : ['crypto', 'equity', 'fx', 'metal'];
+
+    const responses = await Promise.all(
+      assetTypes.map(t => fetch(`${HERMES_URL}/v2/price_feeds?query=usd&asset_type=${t}`))
+    );
 
     const allData: Array<{ id: string; attributes: { symbol: string; base: string; quote_currency: string } }> = [];
-    for (const res of [cryptoRes, equityRes, fxRes, metalRes]) {
+    for (const res of responses) {
       if (res.ok) {
         const d = await res.json();
         allData.push(...d);
