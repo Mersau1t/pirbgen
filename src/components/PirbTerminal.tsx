@@ -412,7 +412,7 @@ export default function PirbTerminal() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0 }}
-              className={`space-y-6 ${status === 'REKT' ? 'animate-rekt-shake' : ''}`}
+              className="space-y-6"
             >
               {/* Position Card */}
               <div className={`glass-panel rounded-sm border ${rarityStyle.border} overflow-hidden`}>
