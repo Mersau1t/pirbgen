@@ -353,7 +353,7 @@ export default function PirbTerminal() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="flex flex-col items-center gap-8 pt-8"
+              className="flex flex-col items-center justify-center gap-4 flex-1"
             >
               <motion.img
                 src={pirbMascot}
