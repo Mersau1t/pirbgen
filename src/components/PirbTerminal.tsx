@@ -400,14 +400,24 @@ export default function PirbTerminal() {
                 )}
 
                 {(status === 'WIN' || status === 'REKT') && (
-                  <motion.button
+                  <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    onClick={resetTerminal}
-                    className="w-full py-3 mt-2 bg-primary/10 border border-primary/40 text-foreground font-display text-sm tracking-[0.2em] hover:bg-primary/20 hover:box-glow-green transition-all duration-300 cursor-pointer active:scale-95"
+                    className="flex gap-3 mt-2"
                   >
-                    🎲 NEXT POSITION
-                  </motion.button>
+                    <button
+                      onClick={generatePosition}
+                      className="flex-1 py-3 bg-primary/10 border border-primary/40 text-foreground font-display text-sm tracking-[0.2em] hover:bg-primary/20 hover:box-glow-green transition-all duration-300 cursor-pointer active:scale-95"
+                    >
+                      🎲 ROLL AGAIN
+                    </button>
+                    <button
+                      onClick={resetTerminal}
+                      className="flex-1 py-3 bg-muted/30 border border-border/30 text-muted-foreground font-display text-sm tracking-[0.2em] hover:text-foreground hover:border-border/60 transition-all duration-300 cursor-pointer active:scale-95"
+                    >
+                      🏠 HOME
+                    </button>
+                  </motion.div>
                 )}
               </div>
             </motion.div>
