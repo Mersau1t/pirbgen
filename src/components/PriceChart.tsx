@@ -173,7 +173,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
     ctx.font = 'bold 8px monospace';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText('TP ' + tpPrice.toFixed(1), pad.left + chartW + 4, tpY);
+    ctx.fillText('TP ' + formatPriceShort(tpPrice), pad.left + chartW + 4, tpY);
     // TP zone fill
     const tpZoneTop = direction === 'LONG' ? Math.min(tpY, entryY) : Math.min(entryY, tpY);
     const tpZoneBot = direction === 'LONG' ? entryY : tpY;
