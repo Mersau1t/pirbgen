@@ -403,23 +403,26 @@ export default function PirbTerminal() {
                       {pnl >= 0 ? '+' : ''}{pnl.toFixed(2)}%
                     </span>
                   </div>
-                  <div className="h-2 bg-muted/30 rounded-full overflow-hidden relative">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-px h-full bg-muted-foreground/30" />
-                    </div>
-                    <motion.div
-                      className={`h-full ${pnl >= 0 ? 'bg-neon-green' : 'bg-neon-red'} rounded-full`}
-                      style={{
-                        width: `${Math.min(Math.abs(pnl / (pnl >= 0 ? activePos.takeProfit : Math.abs(activePos.stopLoss))) * 50 + 50, 100)}%`,
-                        marginLeft: pnl < 0 ? 'auto' : undefined,
-                      }}
-                      animate={{ opacity: [0.7, 1, 0.7] }}
-                      transition={{ duration: 1, repeat: Infinity }}
-                    />
+                  <div className="h-3 bg-muted/20 rounded-full overflow-hidden relative border border-border/20">
+                    {/* Center line */}
+                    <div className="absolute left-1/2 top-0 w-0.5 h-full bg-muted-foreground/40 z-10 -translate-x-1/2" />
+                    {/* PnL fill from center */}
+                    {pnl !== 0 && (
+                      <motion.div
+                        className={`absolute top-0 h-full ${pnl >= 0 ? 'bg-neon-green' : 'bg-neon-red'} rounded-full`}
+                        style={{
+                          width: `${Math.min(Math.abs(pnl) / (pnl >= 0 ? activePos.takeProfit : Math.abs(activePos.stopLoss)) * 50, 50)}%`,
+                          left: pnl >= 0 ? '50%' : undefined,
+                          right: pnl < 0 ? '50%' : undefined,
+                        }}
+                        animate={{ opacity: [0.6, 1, 0.6] }}
+                        transition={{ duration: 1, repeat: Infinity }}
+                      />
+                    )}
                   </div>
                   <div className="flex justify-between text-[10px] text-muted-foreground">
-                    <span>{activePos.stopLoss}%</span>
-                    <span>+{activePos.takeProfit}%</span>
+                    <span className="text-neon-red">{activePos.stopLoss}%</span>
+                    <span className="text-neon-green">+{activePos.takeProfit}%</span>
                   </div>
                 </div>
 
