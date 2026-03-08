@@ -157,25 +157,31 @@ export default function PirbTerminal() {
       const pos = POSITIONS[Math.floor(Math.random() * POSITIONS.length)];
       const price = Math.random() * 1000 + 100;
 
-      // Generate pre-history candles leading up to entry
+      // Generate pre-history candles leading up to entry price
       const historyCandles: Candle[] = [];
-      let histPrice = price * (0.97 + Math.random() * 0.06); // start nearby
-      for (let i = 0; i < 8; i++) {
+      const histCount = 8;
+      // Work backwards from entry price
+      let histPrice = price;
+      const rawCandles: { open: number; high: number; low: number; close: number }[] = [];
+      for (let i = 0; i < histCount; i++) {
         const vol = histPrice * 0.004;
-        const open = histPrice;
-        const ticks = [open];
+        const close = histPrice;
+        const ticks = [close];
         for (let t = 0; t < 4; t++) {
           histPrice += (Math.random() - 0.5) * vol;
           ticks.push(histPrice);
         }
-        historyCandles.push({
+        const open = histPrice;
+        rawCandles.unshift({
           open,
           high: Math.max(...ticks),
           low: Math.min(...ticks),
-          close: ticks[ticks.length - 1],
-          time: -(8 - i) * 2, // negative = before entry
+          close,
         });
       }
+      rawCandles.forEach((c, i) => {
+        historyCandles.push({ ...c, time: -(histCount - i) * 2 });
+      });
 
       setActivePos(pos);
       setEntryPrice(price);
