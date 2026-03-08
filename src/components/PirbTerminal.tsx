@@ -308,6 +308,13 @@ export default function PirbTerminal() {
           <div className="flex items-center gap-3">
             <span className="text-2xl">🕹️</span>
             <span className="font-display text-[10px] sm:text-xs tracking-[0.3em] text-neon-purple text-glow-purple">PIRBGEN</span>
+            <button
+              onClick={toggleMusic}
+              className="text-lg opacity-70 hover:opacity-100 transition-opacity"
+              title={musicOn ? 'Mute music' : 'Play music'}
+            >
+              {musicOn ? '🔊' : '🔇'}
+            </button>
           </div>
           <div className="flex items-center gap-3">
             <div className="hidden sm:flex items-center gap-2 text-[10px] font-display text-neon-cyan">
