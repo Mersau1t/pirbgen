@@ -207,7 +207,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       ctx.fillRect(pad.left + chartW + 2, curY - 7, priceAxisW - 4, 14);
       ctx.fillStyle = '#0a0a0a';
       ctx.font = 'bold 9px monospace';
-      ctx.fillText('$' + lastClose.toFixed(2), pad.left + chartW + 5, curY);
+      ctx.fillText(formatPrice(lastClose), pad.left + chartW + 5, curY);
     }
 
     // Time axis
