@@ -520,7 +520,7 @@ export default function PirbTerminal() {
                     </div>
                     <button
                       onClick={() => { playCoinSound(); exitEarly(); }}
-                      className="arcade-btn arcade-btn-secondary w-full text-[10px] py-3"
+                      className="arcade-btn arcade-btn-amber w-full text-[10px] py-3"
                     >
                       ⚡ CLOSE POSITION
                     </button>
