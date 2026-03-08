@@ -169,7 +169,7 @@
     var(--glow-amber);
 }
 
-/* Scanline overlay — stronger for arcade feel */
+/* Scanline overlay — purple tint */
 .scanlines::after {
   content: '';
   position: absolute;
@@ -178,8 +178,8 @@
     0deg,
     transparent,
     transparent 2px,
-    hsl(120 100% 50% / 0.04) 2px,
-    hsl(120 100% 50% / 0.04) 4px
+    hsl(265 66% 55% / 0.03) 2px,
+    hsl(265 66% 55% / 0.03) 4px
   );
   pointer-events: none;
   z-index: 50;
