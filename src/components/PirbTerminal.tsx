@@ -441,64 +441,45 @@ export default function PirbTerminal() {
               exit={{ opacity: 0 }}
               className="flex flex-col flex-1 min-h-0 gap-3"
             >
-              {/* Position Card */}
-              <div className={`glass-panel rounded-sm border ${rarityStyle.border} overflow-hidden`}>
-                <div className={`px-4 py-2 ${rarityStyle.bg} flex items-center justify-between`}>
-                  <span className={`text-[10px] font-display tracking-[0.3em] ${rarityStyle.text}`}>
-                    {rarityStyle.label}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground font-mono">
-                    #{activePos.id.toString().padStart(3, '0')}
-                  </span>
-                </div>
-                <div className="p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="font-display text-3xl text-foreground text-glow-purple">{activePos.ticker}</h2>
-                      <p className="text-xs text-muted-foreground">{activePos.asset}</p>
-                    </div>
-                    <div className="text-right space-y-1">
-                      <span className={`inline-block px-3 py-1 text-xs font-display tracking-wider ${
-                        activePos.direction === 'LONG'
-                          ? 'bg-neon-green/10 text-neon-green border border-neon-green/30'
-                          : 'bg-neon-red/10 text-neon-red border border-neon-red/30'
-                      }`}>
-                        {activePos.direction}
-                      </span>
-                      <p className={`text-2xl font-display ${rarityStyle.text}`}>{activePos.leverage}x</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="bg-neon-red/5 border border-neon-red/20 p-2 rounded-sm">
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Stop Loss</p>
-                      <p className="text-base font-mono text-neon-red">{activePos.stopLoss}%</p>
-                    </div>
-                    <div className="bg-neon-green/5 border border-neon-green/20 p-2 rounded-sm">
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Take Profit</p>
-                      <p className="text-base font-mono text-neon-green">+{activePos.takeProfit}%</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Price Feed */}
-              <div className="glass-panel rounded-sm p-4 space-y-3 flex-1 min-h-0 flex flex-col">
+              {/* Compact position header + Price Feed — single panel */}
+              <div className="glass-panel rounded-sm p-3 flex-1 min-h-0 flex flex-col gap-2">
+                {/* Top row: ticker, direction, leverage, rarity */}
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-neon-purple animate-pulse-neon" />
-                    <span className="text-[10px] font-display tracking-[0.2em] text-muted-foreground">PYTH PRICE FEED</span>
+                  <div className="flex items-center gap-3">
+                    <h2 className="font-display text-2xl text-foreground text-glow-purple">{activePos.ticker}</h2>
+                    <span className={`px-2 py-0.5 text-[10px] font-display tracking-wider ${
+                      activePos.direction === 'LONG'
+                        ? 'bg-neon-green/10 text-neon-green border border-neon-green/30'
+                        : 'bg-neon-red/10 text-neon-red border border-neon-red/30'
+                    }`}>
+                      {activePos.direction}
+                    </span>
+                    <span className={`text-lg font-display ${rarityStyle.text}`}>{activePos.leverage}x</span>
                   </div>
-                  <span className="text-xs text-muted-foreground font-mono">{formatTime(elapsedTime)}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground font-mono">{formatTime(elapsedTime)}</span>
+                    <span className={`text-[10px] font-display tracking-[0.2em] ${rarityStyle.text}`}>{rarityStyle.label}</span>
+                  </div>
                 </div>
 
-                <div className="text-center py-2">
-                  <p className="text-[10px] text-muted-foreground uppercase mb-1">Current Price</p>
-                  <p className={`font-mono text-3xl sm:text-4xl ${pnl >= 0 ? 'text-neon-green text-glow-green' : 'text-neon-red text-glow-red'}`}>
-                    ${currentPrice?.toFixed(2)}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Entry: ${entryPrice?.toFixed(2)}
-                  </p>
+                {/* Price row with SL/TP on sides */}
+                <div className="flex items-center justify-between">
+                  <div className="text-center">
+                    <p className="text-[8px] text-muted-foreground uppercase tracking-wider">Stop Loss</p>
+                    <p className="text-sm font-mono text-neon-red font-bold">{activePos.stopLoss}%</p>
+                  </div>
+                  <div className="text-center">
+                    <p className={`font-mono text-3xl sm:text-4xl ${pnl >= 0 ? 'text-neon-green text-glow-green' : 'text-neon-red text-glow-red'}`}>
+                      ${currentPrice?.toFixed(2)}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">
+                      Entry: ${entryPrice?.toFixed(2)} · PnL: <span className={`font-bold ${pnl >= 0 ? 'text-neon-green' : 'text-neon-red'}`}>{pnl >= 0 ? '+' : ''}{pnl.toFixed(2)}%</span>
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-[8px] text-muted-foreground uppercase tracking-wider">Take Profit</p>
+                    <p className="text-sm font-mono text-neon-green font-bold">+{activePos.takeProfit}%</p>
+                  </div>
                 </div>
 
                 {/* Price Chart */}
@@ -509,17 +490,9 @@ export default function PirbTerminal() {
                 )}
 
                 {/* PnL Bar */}
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">PnL</span>
-                    <span className={`font-mono font-bold ${pnl >= 0 ? 'text-neon-green' : 'text-neon-red'}`}>
-                      {pnl >= 0 ? '+' : ''}{pnl.toFixed(2)}%
-                    </span>
-                  </div>
-                  <div className="h-3 bg-muted/20 rounded-full overflow-hidden relative border border-border/20">
-                    {/* Center line */}
+                <div className="space-y-1">
+                  <div className="h-2.5 bg-muted/20 rounded-full overflow-hidden relative border border-border/20">
                     <div className="absolute left-1/2 top-0 w-0.5 h-full bg-muted-foreground/40 z-10 -translate-x-1/2" />
-                    {/* PnL fill from center */}
                     {pnl !== 0 && (
                       <motion.div
                         className={`absolute top-0 h-full ${pnl >= 0 ? 'bg-neon-green' : 'bg-neon-red'} rounded-full`}
@@ -533,7 +506,7 @@ export default function PirbTerminal() {
                       />
                     )}
                   </div>
-                  <div className="flex justify-between text-[10px] text-muted-foreground">
+                  <div className="flex justify-between text-[9px] text-muted-foreground">
                     <span className="text-neon-red">{activePos.stopLoss}%</span>
                     <span className="text-neon-green">+{activePos.takeProfit}%</span>
                   </div>
