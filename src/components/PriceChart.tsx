@@ -46,6 +46,27 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
+  const mascotImg = useRef<HTMLImageElement | null>(null);
+  const animFrame = useRef(0);
+
+  // Load mascot image once
+  useEffect(() => {
+    const img = new Image();
+    img.src = mascotSrc;
+    img.onload = () => { mascotImg.current = img; };
+  }, []);
+
+  // Blink animation loop
+  useEffect(() => {
+    let running = true;
+    const tick = () => {
+      if (!running) return;
+      animFrame.current = (animFrame.current + 1) % 60;
+      requestAnimationFrame(tick);
+    };
+    tick();
+    return () => { running = false; };
+  }, []);
 
   useEffect(() => {
     const container = containerRef.current;
