@@ -278,7 +278,20 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
           </div>
         )}
 
-        {result === 'WIN' && (
+        {result && !showResultAnim && (
+          <div className="text-center py-1">
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0.4, 1, 0.4] }}
+              transition={{ duration: 0.8, repeat: Infinity }}
+              className={`font-display text-sm tracking-wider ${result === 'WIN' ? 'text-neon-green' : 'text-neon-red'}`}
+            >
+              CLOSING...
+            </motion.p>
+          </div>
+        )}
+
+        {showResultAnim && result === 'WIN' && (
           <>
             <PixelConfetti active={true} />
             <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center py-1">
@@ -287,7 +300,7 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
           </>
         )}
 
-        {result === 'REKT' && (
+        {showResultAnim && result === 'REKT' && (
           <>
             <PixelConfetti active={true} variant="rekt" />
             <motion.div
