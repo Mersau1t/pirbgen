@@ -26,13 +26,12 @@ interface DegenPosition {
 }
 
 // --- RARITY CONFIG (determines leverage/risk) ---
-// SL/TP are PnL% (leverage * price_change%). With realistic crypto moves (~0.01-0.05%/sec),
-// these values ensure games resolve in ~30-120 seconds
+// Risk:Reward ratio from 1:2 to 1:20 (SL always smaller than TP)
 const RARITY_CONFIG = [
-  { rarity: 'common' as const, weight: 40, leverageRange: [20, 50], slRange: [-8, -15], tpRange: [8, 15] },
-  { rarity: 'rare' as const, weight: 30, leverageRange: [50, 100], slRange: [-10, -20], tpRange: [10, 25] },
-  { rarity: 'legendary' as const, weight: 20, leverageRange: [100, 150], slRange: [-15, -30], tpRange: [15, 35] },
-  { rarity: 'degen' as const, weight: 10, leverageRange: [150, 200], slRange: [-20, -50], tpRange: [20, 50] },
+  { rarity: 'common' as const, weight: 40, leverageRange: [20, 50], slRange: [5, 10], rrRange: [2, 4] },
+  { rarity: 'rare' as const, weight: 30, leverageRange: [50, 100], slRange: [5, 8], rrRange: [3, 8] },
+  { rarity: 'legendary' as const, weight: 20, leverageRange: [100, 150], slRange: [4, 7], rrRange: [5, 12] },
+  { rarity: 'degen' as const, weight: 10, leverageRange: [150, 200], slRange: [3, 6], rrRange: [8, 20] },
 ];
 
 function pickRarity() {
@@ -155,8 +154,10 @@ export default function PirbTerminal() {
     const rarity = pickRarity();
     const direction: TradeDirection = Math.random() > 0.5 ? 'LONG' : 'SHORT';
     const leverage = randInt(rarity.leverageRange[0], rarity.leverageRange[1]);
-    const stopLoss = randInt(rarity.slRange[0], rarity.slRange[1]);
-    const takeProfit = randInt(rarity.tpRange[0], rarity.tpRange[1]);
+    const sl = randInt(rarity.slRange[0], rarity.slRange[1]);
+    const rr = randInt(rarity.rrRange[0], rarity.rrRange[1]);
+    const stopLoss = -sl;
+    const takeProfit = sl * rr;
 
     const pos: DegenPosition = {
       id: Date.now(),
