@@ -562,7 +562,7 @@ export default function PirbTerminal() {
                       🎲 ROLL AGAIN
                     </button>
                     <button
-                      onClick={resetTerminal}
+                      onClick={() => { playCoinSound(); resetTerminal(); }}
                       className="arcade-btn arcade-btn-cyan flex-1 text-[10px] py-3"
                     >
                       🏠 HOME
