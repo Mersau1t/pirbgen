@@ -1,14 +1,13 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import pirbMascot from '@/assets/pirb-mascot.png';
-import { playGenerateClick, playWinSound, playRektSound, playCoinSound, startBgMusic, stopBgMusic, isBgMusicPlaying } from '@/lib/sounds';
-import PriceChart, { type Candle } from '@/components/PriceChart';
-import PixelConfetti from '@/components/PixelConfetti';
-import { fetchPythPrice, streamPythPrice, PRICE_FEED_IDS } from '@/lib/pyth';
-import { useWallet, shortenAddress } from '@/contexts/WalletContext';
+import { playGenerateClick, playCoinSound, startBgMusic, stopBgMusic, isBgMusicPlaying } from '@/lib/sounds';
+import { type Candle } from '@/components/PriceChart';
+import { fetchPythPrice } from '@/lib/pyth';
+import { useWallet } from '@/contexts/WalletContext';
 import { getAvatarEmoji } from '@/pages/Profile';
+import LiveTradePanel from '@/components/LiveTradePanel';
 
 // --- TYPES ---
 type TradeDirection = 'LONG' | 'SHORT';
