@@ -37,6 +37,16 @@ interface LiveTradePanelProps {
 
 const formatTime = (s: number) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
 
+/** Smart price formatting */
+function fmtPrice(p: number): string {
+  const abs = Math.abs(p);
+  if (abs >= 1000) return '$' + p.toFixed(1);
+  if (abs >= 1) return '$' + p.toFixed(2);
+  if (abs >= 0.01) return '$' + p.toFixed(4);
+  if (abs >= 0.0001) return '$' + p.toFixed(6);
+  return '$' + p.toPrecision(4);
+}
+
 function LiveTradePanel({ position, entryPrice, initialCandles, onResult, onExitEarly, playerName, walletAddress }: LiveTradePanelProps) {
   const [currentPrice, setCurrentPrice] = useState(entryPrice);
   const [pnl, setPnl] = useState(0);
