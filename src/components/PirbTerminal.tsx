@@ -468,9 +468,9 @@ export default function PirbTerminal() {
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <div className="bg-neon-red/5 border border-neon-red/20 p-3 rounded-sm">
+                    <div className="bg-neon-red/5 border border-neon-red/20 p-2 rounded-sm">
                       <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Stop Loss</p>
-                      <p className="text-lg font-mono text-neon-red">{activePos.stopLoss}%</p>
+                      <p className="text-base font-mono text-neon-red">{activePos.stopLoss}%</p>
                     </div>
                     <div className="bg-neon-green/5 border border-neon-green/20 p-3 rounded-sm">
                       <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Take Profit</p>
