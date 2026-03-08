@@ -543,14 +543,25 @@ export default function PirbTerminal() {
                 )}
 
                 {status === 'REKT' && (
-                  <motion.div
-                    initial={{ scale: 0.5, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    className="text-center py-4 space-y-2"
-                  >
-                    <p className="font-display text-xl sm:text-2xl text-neon-red text-glow-red">💀 LIQUIDATED</p>
-                    <p className="font-display text-[10px] text-neon-red">{pnl.toFixed(2)}% — REKT</p>
-                  </motion.div>
+                  <>
+                    <PixelConfetti active={true} variant="rekt" />
+                    <motion.div
+                      initial={{ scale: 0.5, opacity: 0, x: 0 }}
+                      animate={{
+                        scale: 1,
+                        opacity: 1,
+                        x: [0, -8, 8, -6, 6, -3, 3, 0],
+                      }}
+                      transition={{
+                        x: { duration: 0.5, ease: 'easeOut' },
+                        scale: { duration: 0.3 },
+                      }}
+                      className="text-center py-4 space-y-2"
+                    >
+                      <p className="font-display text-xl sm:text-2xl text-neon-red text-glow-red">💀 LIQUIDATED</p>
+                      <p className="font-display text-[10px] text-neon-red">{pnl.toFixed(2)}% — REKT</p>
+                    </motion.div>
+                  </>
                 )}
 
                 {(status === 'WIN' || status === 'REKT') && (

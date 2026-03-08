@@ -20,7 +20,32 @@ const COLORS = [
   'hsl(var(--neon-amber))',
 ];
 
-export default function PixelConfetti({ active }: { active: boolean }) {
+const REKT_COLORS = [
+  'hsl(var(--neon-red))',
+  'hsl(0 80% 40%)',
+  'hsl(var(--neon-orange))',
+  'hsl(0 100% 30%)',
+];
+
+function createParticles(colors: string[], count: number, spread: number, yBase: number): Particle[] {
+  const ps: Particle[] = [];
+  for (let i = 0; i < count; i++) {
+    ps.push({
+      id: i,
+      x: 50 + (Math.random() - 0.5) * spread,
+      y: yBase,
+      size: 4 + Math.random() * 8,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      rotation: Math.random() * 360,
+      velocityX: (Math.random() - 0.5) * 80,
+      velocityY: -(20 + Math.random() * 60),
+      delay: Math.random() * 0.4,
+    });
+  }
+  return ps;
+}
+
+export default function PixelConfetti({ active, variant = 'win' }: { active: boolean; variant?: 'win' | 'rekt' }) {
   const [particles, setParticles] = useState<Particle[]>([]);
 
   useEffect(() => {
@@ -28,27 +53,23 @@ export default function PixelConfetti({ active }: { active: boolean }) {
       setParticles([]);
       return;
     }
-    const ps: Particle[] = [];
-    for (let i = 0; i < 60; i++) {
-      ps.push({
-        id: i,
-        x: 50 + (Math.random() - 0.5) * 20,
-        y: 30,
-        size: 4 + Math.random() * 8,
-        color: COLORS[Math.floor(Math.random() * COLORS.length)],
-        rotation: Math.random() * 360,
-        velocityX: (Math.random() - 0.5) * 80,
-        velocityY: -(20 + Math.random() * 60),
-        delay: Math.random() * 0.4,
-      });
-    }
-    setParticles(ps);
-  }, [active]);
+    const colors = variant === 'rekt' ? REKT_COLORS : COLORS;
+    setParticles(createParticles(colors, 60, 20, 30));
+  }, [active, variant]);
 
   return (
     <AnimatePresence>
       {active && (
         <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+          {/* Red flash overlay for REKT */}
+          {variant === 'rekt' && (
+            <motion.div
+              initial={{ opacity: 0.6 }}
+              animate={{ opacity: 0 }}
+              transition={{ duration: 0.6 }}
+              className="absolute inset-0 bg-neon-red/20"
+            />
+          )}
           {particles.map((p) => (
             <motion.div
               key={p.id}
