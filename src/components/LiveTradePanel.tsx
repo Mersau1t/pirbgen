@@ -60,19 +60,31 @@ function LiveTradePanel({ position, entryPrice, initialCandles, onResult, onExit
 
   const rarityStyle = RARITY_STYLES[position.rarity];
 
-  // Pyth streaming — buffer in ref, flush 1x/sec
+  // Pyth streaming — update price on every tick, candles 1x/sec
   useEffect(() => {
     if (result) return;
-    let latestPrice: number | null = null;
+    let rafId = 0;
+    let pendingPrice: number | null = null;
+
+    const flushPrice = () => {
+      if (pendingPrice !== null) {
+        setCurrentPrice(pendingPrice);
+        pendingPrice = null;
+      }
+      rafId = 0;
+    };
 
     const cleanup = streamPythPriceById(position.feedId, (price) => {
-      latestPrice = price;
       candleRef.current.ticks.push(price);
+      pendingPrice = price;
+      // Schedule a single state update per animation frame to avoid flicker
+      if (!rafId) {
+        rafId = requestAnimationFrame(flushPrice);
+      }
     });
 
-    const tick = setInterval(() => {
-      if (latestPrice !== null) setCurrentPrice(latestPrice);
-
+    // Candle formation every 1s
+    const candleTick = setInterval(() => {
       if (candleRef.current.ticks.length >= 2) {
         const ticks = candleRef.current.ticks;
         const candle: Candle = {
@@ -93,7 +105,12 @@ function LiveTradePanel({ position, entryPrice, initialCandles, onResult, onExit
 
     const elapsedTimer = setInterval(() => setElapsedTime(t => t + 1), 1000);
 
-    return () => { cleanup(); clearInterval(tick); clearInterval(elapsedTimer); };
+    return () => {
+      cleanup();
+      if (rafId) cancelAnimationFrame(rafId);
+      clearInterval(candleTick);
+      clearInterval(elapsedTimer);
+    };
   }, [position.ticker, result]);
 
   // PnL calculation
