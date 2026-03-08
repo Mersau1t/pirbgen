@@ -448,14 +448,14 @@ export default function PirbTerminal() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0 }}
-              className="flex flex-col flex-1 min-h-0 gap-3"
+              className="flex flex-col flex-1 min-h-0 gap-2"
             >
-              {/* Compact position header + Price Feed — single panel */}
-              <div className="glass-panel rounded-sm p-3 flex-1 min-h-0 flex flex-col gap-2">
-                {/* Top row: ticker, direction, leverage, rarity */}
-                <div className="flex items-center justify-between">
+              {/* Wide position info table */}
+              <div className="glass-panel rounded-sm px-4 py-2 shrink-0">
+                <div className="flex items-center justify-between gap-4">
+                  {/* Left: Ticker + Direction + Leverage */}
                   <div className="flex items-center gap-3">
-                    <h2 className="font-display text-2xl text-foreground text-glow-purple">{activePos.ticker}</h2>
+                    <h2 className="font-display text-xl sm:text-2xl text-foreground text-glow-purple">{activePos.ticker}/USD</h2>
                     <span className={`px-2 py-0.5 text-[10px] font-display tracking-wider ${
                       activePos.direction === 'LONG'
                         ? 'bg-neon-green/10 text-neon-green border border-neon-green/30'
@@ -463,44 +463,50 @@ export default function PirbTerminal() {
                     }`}>
                       {activePos.direction}
                     </span>
-                    <span className={`text-lg font-display ${rarityStyle.text}`}>{activePos.leverage}x</span>
+                    <span className={`text-sm font-display ${rarityStyle.text}`}>{activePos.leverage}x</span>
+                    <span className={`text-[9px] font-display tracking-[0.15em] px-2 py-0.5 border ${rarityStyle.border} ${rarityStyle.text} ${rarityStyle.bg}`}>{rarityStyle.label}</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground font-mono">{formatTime(elapsedTime)}</span>
-                    <span className={`text-[10px] font-display tracking-[0.2em] ${rarityStyle.text}`}>{rarityStyle.label}</span>
+
+                  {/* Center: Price + PnL */}
+                  <div className="flex items-center gap-6">
+                    <div className="text-center">
+                      <p className="text-[8px] text-muted-foreground/60 uppercase">Current</p>
+                      <p className={`font-mono text-xl sm:text-2xl font-bold ${pnl >= 0 ? 'text-neon-green text-glow-green' : 'text-neon-red text-glow-red'}`}>
+                        ${currentPrice?.toFixed(2)}
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[8px] text-muted-foreground/60 uppercase">Entry</p>
+                      <p className="font-mono text-sm text-neon-purple">${entryPrice?.toFixed(2)}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[8px] text-muted-foreground/60 uppercase">PnL</p>
+                      <p className={`font-mono text-lg font-bold ${pnl >= 0 ? 'text-neon-green' : 'text-neon-red'}`}>
+                        {pnl >= 0 ? '+' : ''}{pnl.toFixed(2)}%
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Right: SL / TP / Timer */}
+                  <div className="flex items-center gap-4">
+                    <div className="text-center">
+                      <p className="text-[8px] text-muted-foreground/60 uppercase">SL</p>
+                      <p className="text-xs font-mono text-neon-red font-bold">{activePos.stopLoss}%</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[8px] text-muted-foreground/60 uppercase">TP</p>
+                      <p className="text-xs font-mono text-neon-green font-bold">+{activePos.takeProfit}%</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[8px] text-muted-foreground/60 uppercase">Time</p>
+                      <p className="text-xs font-mono text-muted-foreground">{formatTime(elapsedTime)}</p>
+                    </div>
                   </div>
                 </div>
-
-                {/* Price row with SL/TP on sides */}
-                <div className="flex items-center justify-between">
-                  <div className="text-center">
-                    <p className="text-[8px] text-muted-foreground uppercase tracking-wider">Stop Loss</p>
-                    <p className="text-sm font-mono text-neon-red font-bold">{activePos.stopLoss}%</p>
-                  </div>
-                  <div className="text-center">
-                    <p className={`font-mono text-3xl sm:text-4xl ${pnl >= 0 ? 'text-neon-green text-glow-green' : 'text-neon-red text-glow-red'}`}>
-                      ${currentPrice?.toFixed(2)}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground">
-                      Entry: ${entryPrice?.toFixed(2)} · PnL: <span className={`font-bold ${pnl >= 0 ? 'text-neon-green' : 'text-neon-red'}`}>{pnl >= 0 ? '+' : ''}{pnl.toFixed(2)}%</span>
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-[8px] text-muted-foreground uppercase tracking-wider">Take Profit</p>
-                    <p className="text-sm font-mono text-neon-green font-bold">+{activePos.takeProfit}%</p>
-                  </div>
-                </div>
-
-                {/* Price Chart */}
-                {entryPrice && (
-                  <div className="border border-border/20 rounded-sm overflow-hidden bg-muted/10 flex-1 min-h-0">
-                    <PriceChart candles={candles} entryPrice={entryPrice} positive={pnl >= 0} direction={activePos.direction} stopLoss={activePos.stopLoss} takeProfit={activePos.takeProfit} leverage={activePos.leverage} />
-                  </div>
-                )}
 
                 {/* PnL Bar */}
-                <div className="space-y-1">
-                  <div className="h-2.5 bg-muted/20 rounded-full overflow-hidden relative border border-border/20">
+                <div className="mt-2">
+                  <div className="h-2 bg-muted/20 rounded-full overflow-hidden relative border border-border/20">
                     <div className="absolute left-1/2 top-0 w-0.5 h-full bg-muted-foreground/40 z-10 -translate-x-1/2" />
                     {pnl !== 0 && (
                       <motion.div
@@ -515,22 +521,31 @@ export default function PirbTerminal() {
                       />
                     )}
                   </div>
-                  <div className="flex justify-between text-[9px] text-muted-foreground">
+                  <div className="flex justify-between text-[8px] text-muted-foreground mt-0.5">
                     <span className="text-neon-red">{activePos.stopLoss}%</span>
                     <span className="text-neon-green">+{activePos.takeProfit}%</span>
                   </div>
                 </div>
+              </div>
 
-                {/* Status */}
+              {/* Full-width Chart */}
+              {entryPrice && (
+                <div className="glass-panel rounded-sm overflow-hidden flex-1 min-h-0 border border-border/20">
+                  <PriceChart candles={candles} entryPrice={entryPrice} positive={pnl >= 0} direction={activePos.direction} stopLoss={activePos.stopLoss} takeProfit={activePos.takeProfit} leverage={activePos.leverage} />
+                </div>
+              )}
+
+              {/* Bottom actions */}
+              <div className="shrink-0">
                 {status === 'PLAYING' && (
-                  <div className="flex flex-col items-center gap-3 py-2">
-                    <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 flex-1">
                       <span className="w-2 h-2 bg-neon-orange animate-blink" />
                       <span className="font-display text-[10px] text-neon-orange text-glow-orange tracking-wider">AWAITING RESOLUTION...</span>
                     </div>
                     <button
                       onClick={() => { playCoinSound(); exitEarly(); }}
-                      className="arcade-btn arcade-btn-primary w-full text-[10px] py-3"
+                      className="arcade-btn arcade-btn-primary text-[10px] py-2 px-6"
                     >
                       ⚡ CLOSE POSITION
                     </button>
@@ -543,10 +558,9 @@ export default function PirbTerminal() {
                     <motion.div
                       initial={{ scale: 0.5, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
-                      className="text-center py-2 space-y-1"
+                      className="text-center py-1"
                     >
-                      <p className="font-display text-xl sm:text-2xl text-neon-green text-glow-green animate-rainbow">🎯 TARGET HIT!</p>
-                      <p className="font-display text-[10px] text-neon-green">+{pnl.toFixed(2)}% PROFIT</p>
+                      <p className="font-display text-lg text-neon-green text-glow-green animate-rainbow inline-block">🎯 TARGET HIT! +{pnl.toFixed(2)}%</p>
                     </motion.div>
                   </>
                 )}
@@ -556,19 +570,11 @@ export default function PirbTerminal() {
                     <PixelConfetti active={true} variant="rekt" />
                     <motion.div
                       initial={{ scale: 0.5, opacity: 0, x: 0 }}
-                      animate={{
-                        scale: 1,
-                        opacity: 1,
-                        x: [0, -8, 8, -6, 6, -3, 3, 0],
-                      }}
-                      transition={{
-                        x: { duration: 0.5, ease: 'easeOut' },
-                        scale: { duration: 0.3 },
-                      }}
-                      className="text-center py-2 space-y-1"
+                      animate={{ scale: 1, opacity: 1, x: [0, -8, 8, -6, 6, -3, 3, 0] }}
+                      transition={{ x: { duration: 0.5, ease: 'easeOut' }, scale: { duration: 0.3 } }}
+                      className="text-center py-1"
                     >
-                      <p className="font-display text-xl sm:text-2xl text-neon-red text-glow-red">💀 LIQUIDATED</p>
-                      <p className="font-display text-[10px] text-neon-red">{pnl.toFixed(2)}% — REKT</p>
+                      <p className="font-display text-lg text-neon-red text-glow-red inline-block">💀 LIQUIDATED {pnl.toFixed(2)}%</p>
                     </motion.div>
                   </>
                 )}
@@ -579,15 +585,12 @@ export default function PirbTerminal() {
                     animate={{ opacity: 1, y: 0 }}
                     className="flex gap-3 mt-2"
                   >
-                    <button
-                      onClick={generatePosition}
-                      className="arcade-btn arcade-btn-primary flex-1 text-[10px] py-3"
-                    >
+                    <button onClick={generatePosition} className="arcade-btn arcade-btn-primary flex-1 text-[10px] py-2.5">
                       🎲 ROLL AGAIN
                     </button>
                     <button
                       onClick={() => { playCoinSound(); resetTerminal(); }}
-                      className="arcade-btn flex-1 text-[10px] py-3" style={{ borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(var(--neon-orange) / 0.1)', boxShadow: 'var(--glow-orange)' }}
+                      className="arcade-btn flex-1 text-[10px] py-2.5" style={{ borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(var(--neon-orange) / 0.1)', boxShadow: 'var(--glow-orange)' }}
                     >
                       🏠 HOME
                     </button>
