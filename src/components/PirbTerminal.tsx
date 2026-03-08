@@ -386,19 +386,19 @@ export default function PirbTerminal() {
               <motion.img
                 src={pirbMascot}
                 alt="Pirb pecking"
-                className="w-32 h-32 object-contain drop-shadow-[0_0_30px_hsl(120,100%,50%,0.4)]"
+                className="w-32 h-32 object-contain drop-shadow-[0_0_30px_hsl(265,66%,55%,0.4)]"
                 animate={{ rotate: [-5, 5, -10, 8, -5], y: [0, 3, 0, 2, 0] }}
                 transition={{ duration: 0.6, repeat: Infinity }}
               />
               <div className="text-center space-y-3">
-                <p className="font-display text-sm sm:text-lg text-neon-green text-glow-green tracking-wider">PIRB IS PECKING...</p>
-                <p className="font-display text-[8px] text-neon-amber animate-blink tracking-widest">REQUESTING ENTROPY</p>
+                <p className="font-display text-sm sm:text-lg text-neon-purple text-glow-purple tracking-wider">PIRB IS PECKING...</p>
+                <p className="font-display text-[8px] text-neon-orange animate-blink tracking-widest">REQUESTING ENTROPY</p>
               </div>
               <div className="flex gap-1.5">
                 {[0, 1, 2, 3, 4].map(i => (
                   <motion.div
                     key={i}
-                    className="w-3 h-8 bg-neon-green"
+                    className="w-3 h-8 bg-neon-purple"
                     animate={{ scaleY: [0.3, 1, 0.3] }}
                     transition={{ duration: 0.5, repeat: Infinity, delay: i * 0.1 }}
                   />
