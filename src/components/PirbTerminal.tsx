@@ -613,7 +613,7 @@ export default function PirbTerminal() {
               </div>
             </motion.div>
           )}
-        </AnimatePresence>
+        </div></AnimatePresence>
       </main>
 
       {/* Bottom info */}
