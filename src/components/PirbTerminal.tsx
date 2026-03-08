@@ -141,6 +141,17 @@ export default function PirbTerminal() {
     }, 2000);
   }, []);
 
+  const exitEarly = useCallback(() => {
+    if (status !== 'PLAYING') return;
+    if (pnl >= 0) {
+      setStatus('WIN');
+      playWinSound();
+    } else {
+      setStatus('REKT');
+      playRektSound();
+    }
+  }, [status, pnl]);
+
   const resetTerminal = () => {
     setStatus('IDLE');
     setActivePos(null);
