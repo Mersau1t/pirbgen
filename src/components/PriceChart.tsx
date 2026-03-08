@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 
 export interface Candle {
   open: number;
@@ -45,6 +45,9 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
+  
+  // Smoothed price range to prevent jittery rescaling
+  const smoothedRangeRef = useRef<{ min: number; max: number } | null>(null);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -56,6 +59,11 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
     obs.observe(container);
     return () => obs.disconnect();
   }, []);
+
+  // Reset smoothed range when entry price changes (new trade)
+  useEffect(() => {
+    smoothedRangeRef.current = null;
+  }, [entryPrice]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -87,13 +95,27 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       ? entryPrice * (1 + tpPriceChange)
       : entryPrice * (1 - tpPriceChange);
 
-    // Price range
+    // Price range with smoothing
     const allPrices = candles.flatMap(c => [c.high, c.low]).concat([entryPrice, slPrice, tpPrice]);
     const dataMin = Math.min(...allPrices);
     const dataMax = Math.max(...allPrices);
     const pricePad = (dataMax - dataMin) * 0.12 || entryPrice * 0.003;
-    const min = dataMin - pricePad;
-    const max = dataMax + pricePad;
+    const targetMin = dataMin - pricePad;
+    const targetMax = dataMax + pricePad;
+
+    // Smooth the range: only expand instantly, contract slowly
+    const SMOOTH = 0.08; // how fast it contracts (0=never, 1=instant)
+    const prev = smoothedRangeRef.current;
+    let min: number, max: number;
+    if (!prev) {
+      min = targetMin;
+      max = targetMax;
+    } else {
+      // Expand instantly to show new data, contract slowly to avoid jumps
+      min = targetMin < prev.min ? targetMin : prev.min + (targetMin - prev.min) * SMOOTH;
+      max = targetMax > prev.max ? targetMax : prev.max + (targetMax - prev.max) * SMOOTH;
+    }
+    smoothedRangeRef.current = { min, max };
     const range = max - min || 1;
 
     // Current candle always at center; older candles scroll left
