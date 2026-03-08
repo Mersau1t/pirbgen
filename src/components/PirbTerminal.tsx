@@ -279,9 +279,9 @@ export default function PirbTerminal() {
                 >
                   🎲 GENERATE
                 </button>
-                <button className="w-full py-3 bg-muted/30 border border-border/30 text-muted-foreground font-display text-xs tracking-[0.2em] hover:text-foreground hover:border-border/60 transition-all duration-300 cursor-pointer">
+                <Link to="/leaderboard" className="w-full py-3 bg-muted/30 border border-border/30 text-muted-foreground font-display text-xs tracking-[0.2em] hover:text-foreground hover:border-border/60 transition-all duration-300 cursor-pointer text-center block">
                   🏆 LEADERBOARD
-                </button>
+                </Link>
               </div>
 
               <p className="text-[10px] text-muted-foreground/50 text-center max-w-sm">
