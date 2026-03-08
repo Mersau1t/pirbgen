@@ -95,27 +95,13 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       ? entryPrice * (1 + tpPriceChange)
       : entryPrice * (1 - tpPriceChange);
 
-    // Price range with smoothing
-    const allPrices = candles.flatMap(c => [c.high, c.low]).concat([entryPrice, slPrice, tpPrice]);
-    const dataMin = Math.min(...allPrices);
-    const dataMax = Math.max(...allPrices);
-    const pricePad = (dataMax - dataMin) * 0.12 || entryPrice * 0.003;
-    const targetMin = dataMin - pricePad;
-    const targetMax = dataMax + pricePad;
-
-    // Smooth the range: only expand instantly, contract slowly
-    const SMOOTH = 0.08; // how fast it contracts (0=never, 1=instant)
-    const prev = smoothedRangeRef.current;
-    let min: number, max: number;
-    if (!prev) {
-      min = targetMin;
-      max = targetMax;
-    } else {
-      // Expand instantly to show new data, contract slowly to avoid jumps
-      min = targetMin < prev.min ? targetMin : prev.min + (targetMin - prev.min) * SMOOTH;
-      max = targetMax > prev.max ? targetMax : prev.max + (targetMax - prev.max) * SMOOTH;
-    }
-    smoothedRangeRef.current = { min, max };
+    // Fixed price range: SL and TP are the boundaries
+    const lowerPrice = Math.min(slPrice, tpPrice);
+    const upperPrice = Math.max(slPrice, tpPrice);
+    const boundaryRange = upperPrice - lowerPrice;
+    const pricePad = boundaryRange * 0.08; // small padding beyond SL/TP
+    const min = lowerPrice - pricePad;
+    const max = upperPrice + pricePad;
     const range = max - min || 1;
 
     // Current candle always at center; older candles scroll left
