@@ -490,7 +490,7 @@ export default function PirbTerminal() {
                   <span className="text-xs text-muted-foreground font-mono">{formatTime(elapsedTime)}</span>
                 </div>
 
-                <div className="text-center py-4">
+                <div className="text-center py-2">
                   <p className="text-[10px] text-muted-foreground uppercase mb-1">Current Price</p>
                   <p className={`font-mono text-4xl sm:text-5xl ${pnl >= 0 ? 'text-neon-green text-glow-green' : 'text-neon-red text-glow-red'}`}>
                     ${currentPrice?.toFixed(2)}
