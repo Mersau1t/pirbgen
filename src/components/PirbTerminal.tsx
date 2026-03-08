@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import pirbMascot from '@/assets/pirb-mascot.png';
 import { playGenerateClick, playCoinSound, startBgMusic, stopBgMusic, isBgMusicPlaying } from '@/lib/sounds';
 import { type Candle } from '@/components/PriceChart';
-import { pickVolatileFeed, fetchHistoricalCandles, fetchPythPriceById } from '@/lib/pyth';
+import { pickVolatileFeed, fetchHistoricalCandles, fetchPythPriceById, getTopVolatileTokens } from '@/lib/pyth';
 import { supabase } from '@/integrations/supabase/client';
 import { useWallet } from '@/contexts/WalletContext';
 import { getAvatarEmoji } from '@/pages/Profile';
@@ -117,12 +117,36 @@ export default function PirbTerminal() {
     }))
   );
 
-  // Fetch top volatile tokens from DB
+  // Fetch top volatile tokens from DB, fallback to client-side
   interface DbVolatileToken { feed_id: string; ticker: string; pair: string; price: number; volatility: number }
   const [topVolatile, setTopVolatile] = useState<DbVolatileToken[]>([]);
+  const [showAllTokens, setShowAllTokens] = useState(false);
+  const [allVolatile, setAllVolatile] = useState<DbVolatileToken[]>([]);
+  
   useEffect(() => {
-    supabase.from('volatile_tokens').select('*').order('volatility', { ascending: false }).limit(8)
-      .then(({ data }) => { if (data) setTopVolatile(data as unknown as DbVolatileToken[]); });
+    // Try DB first
+    (supabase as any).from('volatile_tokens').select('*').order('volatility', { ascending: false }).limit(50)
+      .then(({ data, error }: { data: any[] | null; error: any }) => {
+        if (data && data.length > 0) {
+          setAllVolatile(data);
+          setTopVolatile(data.slice(0, 8));
+          console.log(`Loaded ${data.length} volatile tokens from DB`);
+        } else {
+          // Fallback: use client-side computation
+          console.log('DB empty, using client-side volatility', error);
+          getTopVolatileTokens().then(tokens => {
+            const mapped = tokens.slice(0, 50).map(t => ({
+              feed_id: t.feed.id,
+              ticker: t.feed.ticker,
+              pair: t.feed.pair,
+              price: t.price,
+              volatility: t.volatility,
+            }));
+            setAllVolatile(mapped);
+            setTopVolatile(mapped.slice(0, 8));
+          });
+        }
+      });
   }, []);
 
   // Restore session
@@ -368,15 +392,15 @@ export default function PirbTerminal() {
                   transition={{ delay: 0.3 }}
                   className="w-full max-w-md"
                 >
-                  <div className="pixel-border bg-background/80 p-3">
+                  <div className="pixel-border bg-background/80 p-3 max-h-[280px] overflow-y-auto">
                     <p className="font-display text-[9px] text-neon-orange tracking-wider mb-2 text-center">🔥 MOST VOLATILE · TAP TO TRADE</p>
                     <div className="grid grid-cols-2 gap-1.5">
-                      {topVolatile.map((t, i) => (
+                      {(showAllTokens ? allVolatile : topVolatile).map((t, i) => (
                         <motion.button
                           key={t.feed_id}
                           initial={{ opacity: 0, x: -10 }}
                           animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.4 + i * 0.08 }}
+                          transition={{ delay: Math.min(0.4 + i * 0.04, 1) }}
                           onClick={() => generatePosition({ id: t.feed_id, ticker: t.ticker, pair: t.pair })}
                           className="flex items-center justify-between px-2 py-1.5 rounded bg-neon-purple/5 border border-neon-purple/10 hover:bg-neon-purple/15 hover:border-neon-purple/30 transition-colors cursor-pointer text-left"
                         >
@@ -389,7 +413,15 @@ export default function PirbTerminal() {
                         </motion.button>
                       ))}
                     </div>
-                    <p className="font-display text-[7px] text-muted-foreground/30 text-center mt-1.5 tracking-wider">ANNUALIZED VOLATILITY (24H STDDEV)</p>
+                    {allVolatile.length > 8 && (
+                      <button
+                        onClick={() => setShowAllTokens(!showAllTokens)}
+                        className="w-full mt-2 font-display text-[8px] text-neon-cyan/60 hover:text-neon-cyan tracking-wider transition-colors"
+                      >
+                        {showAllTokens ? '▲ SHOW LESS' : `▼ SHOW ALL ${allVolatile.length} TOKENS`}
+                      </button>
+                    )}
+                    <p className="font-display text-[7px] text-muted-foreground/30 text-center mt-1.5 tracking-wider">ANNUALIZED VOLATILITY · TAP ANY TOKEN</p>
                   </div>
                 </motion.div>
               )}
