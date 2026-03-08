@@ -57,12 +57,23 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
   const [pnl, setPnl] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [timeLeft, setTimeLeft] = useState(timerSeconds ?? 0);
-  const [candles, setCandles] = useState<Candle[]>(initialCandles);
+  const [candles, setCandles] = useState<Candle[]>(() => {
+    const history = initialCandles.filter(c => c.time < 0).slice(-27);
+    return [
+      ...history,
+      {
+        open: initialEntryPrice,
+        high: initialEntryPrice,
+        low: initialEntryPrice,
+        close: initialEntryPrice,
+        time: 0,
+      },
+    ];
+  });
   const [result, setResult] = useState<'WIN' | 'REKT' | null>(null);
   const [showResultAnim, setShowResultAnim] = useState(false);
   const candleRef = useRef<{ ticks: PythPriceTick[] }>({ ticks: [] });
   const resultFiredRef = useRef(false);
-  const entrySetRef = useRef(false);
 
   const hasTimer = !!timerSeconds && timerSeconds > 0;
   const rarityStyle = RARITY_STYLES[position.rarity];
