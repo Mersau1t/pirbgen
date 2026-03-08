@@ -163,6 +163,7 @@ export default function PirbTerminal() {
     setEntryPrice(null);
     setCurrentPrice(null);
     setPnl(0);
+    setPriceHistory([]);
     setElapsedTime(0);
   };
 
