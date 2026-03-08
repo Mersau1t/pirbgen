@@ -4,7 +4,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import pirbMascot from '@/assets/pirb-mascot.png';
 import { playGenerateClick, playCoinSound, startBgMusic, stopBgMusic, isBgMusicPlaying } from '@/lib/sounds';
 import { type Candle } from '@/components/PriceChart';
-import { pickVolatileFeed, fetchHistoricalCandles, getTopVolatileTokens, type VolatileToken } from '@/lib/pyth';
+import { pickVolatileFeed, fetchHistoricalCandles, fetchPythPriceById } from '@/lib/pyth';
+import { supabase } from '@/integrations/supabase/client';
 import { useWallet } from '@/contexts/WalletContext';
 import { getAvatarEmoji } from '@/pages/Profile';
 import LiveTradePanel from '@/components/LiveTradePanel';
@@ -116,10 +117,12 @@ export default function PirbTerminal() {
     }))
   );
 
-  // Fetch top volatile tokens for display
-  const [topVolatile, setTopVolatile] = useState<VolatileToken[]>([]);
+  // Fetch top volatile tokens from DB
+  interface DbVolatileToken { feed_id: string; ticker: string; pair: string; price: number; volatility: number }
+  const [topVolatile, setTopVolatile] = useState<DbVolatileToken[]>([]);
   useEffect(() => {
-    getTopVolatileTokens().then(tokens => setTopVolatile(tokens.slice(0, 6)));
+    supabase.from('volatile_tokens').select('*').order('volatility', { ascending: false }).limit(8)
+      .then(({ data }) => { if (data) setTopVolatile(data as unknown as DbVolatileToken[]); });
   }, []);
 
   // Restore session
@@ -144,19 +147,33 @@ export default function PirbTerminal() {
     }
   }, [activePos, entryPrice, status]);
 
-  const generatePosition = useCallback(async () => {
+  const generatePosition = useCallback(async (specificFeed?: { id: string; ticker: string; pair: string }) => {
     playGenerateClick();
     setStatus('GENERATING');
 
-    // Pick a volatile feed from all Pyth crypto feeds
-    const picked = await pickVolatileFeed();
-    if (!picked) {
-      console.error('Could not pick a Pyth feed');
-      setStatus('IDLE');
-      return;
-    }
+    let feed: { id: string; ticker: string; pair: string };
+    let price: number;
 
-    const { feed, price } = picked;
+    if (specificFeed) {
+      // Fetch live price for the specific token
+      const livePrice = await fetchPythPriceById(specificFeed.id);
+      if (!livePrice) {
+        console.error('Could not fetch price for', specificFeed.ticker);
+        setStatus('IDLE');
+        return;
+      }
+      feed = specificFeed;
+      price = livePrice;
+    } else {
+      const picked = await pickVolatileFeed();
+      if (!picked) {
+        console.error('Could not pick a Pyth feed');
+        setStatus('IDLE');
+        return;
+      }
+      feed = picked.feed;
+      price = picked.price;
+    }
     const rarity = pickRarity();
     const direction: TradeDirection = Math.random() > 0.5 ? 'LONG' : 'SHORT';
     const leverage = randInt(rarity.leverageRange[0], rarity.leverageRange[1]);
@@ -180,7 +197,7 @@ export default function PirbTerminal() {
     // Fetch real historical candles from Pyth Benchmarks
     let historyCandles: Candle[] = [];
     try {
-      historyCandles = await fetchHistoricalCandles(picked.feed.id, 10, 5);
+      historyCandles = await fetchHistoricalCandles(feed.id, 10, 5);
     } catch (err) {
       console.error('Failed to load history, using fallback:', err);
     }
@@ -328,7 +345,7 @@ export default function PirbTerminal() {
 
               <div className="pixel-border p-4 sm:p-6 w-full max-w-md space-y-3 bg-background/90">
                 <button
-                  onClick={generatePosition}
+                  onClick={() => generatePosition()}
                   className="arcade-btn arcade-btn-primary w-full text-sm sm:text-base py-3"
                 >
                   🎲 GENERATE
@@ -352,23 +369,24 @@ export default function PirbTerminal() {
                   className="w-full max-w-md"
                 >
                   <div className="pixel-border bg-background/80 p-3">
-                    <p className="font-display text-[9px] text-neon-orange tracking-wider mb-2 text-center">🔥 MOST VOLATILE RIGHT NOW</p>
+                    <p className="font-display text-[9px] text-neon-orange tracking-wider mb-2 text-center">🔥 MOST VOLATILE · TAP TO TRADE</p>
                     <div className="grid grid-cols-2 gap-1.5">
                       {topVolatile.map((t, i) => (
-                        <motion.div
-                          key={t.feed.id}
+                        <motion.button
+                          key={t.feed_id}
                           initial={{ opacity: 0, x: -10 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: 0.4 + i * 0.08 }}
-                          className="flex items-center justify-between px-2 py-1.5 rounded bg-neon-purple/5 border border-neon-purple/10"
+                          onClick={() => generatePosition({ id: t.feed_id, ticker: t.ticker, pair: t.pair })}
+                          className="flex items-center justify-between px-2 py-1.5 rounded bg-neon-purple/5 border border-neon-purple/10 hover:bg-neon-purple/15 hover:border-neon-purple/30 transition-colors cursor-pointer text-left"
                         >
-                          <span className="font-display text-[10px] text-foreground/80 tracking-wider">{t.feed.ticker}</span>
+                          <span className="font-display text-[10px] text-foreground/80 tracking-wider">{t.ticker}</span>
                           <span className={`font-display text-[9px] tracking-wider ${
                             t.volatility > 2 ? 'text-neon-red' : t.volatility > 0.8 ? 'text-neon-orange' : 'text-neon-green'
                           }`}>
                             {(t.volatility * 100).toFixed(0)}%
                           </span>
-                        </motion.div>
+                        </motion.button>
                       ))}
                     </div>
                     <p className="font-display text-[7px] text-muted-foreground/30 text-center mt-1.5 tracking-wider">ANNUALIZED VOLATILITY (24H STDDEV)</p>
@@ -489,7 +507,7 @@ export default function PirbTerminal() {
                     transition={{ delay: 0.5 }}
                     className="flex gap-3"
                   >
-                    <button onClick={generatePosition} className="arcade-btn arcade-btn-primary text-[10px] py-2.5 px-6">
+                    <button onClick={() => generatePosition()} className="arcade-btn arcade-btn-primary text-[10px] py-2.5 px-6">
                       🎲 ROLL AGAIN
                     </button>
                     <button
