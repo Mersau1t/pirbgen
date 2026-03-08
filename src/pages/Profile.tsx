@@ -51,7 +51,6 @@ export default function Profile() {
   const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const pickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!walletAddress) {
