@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import pirbMascot from '@/assets/pirb-mascot.png';
-import { playGenerateClick, playWinSound, playRektSound } from '@/lib/sounds';
+import { playGenerateClick, playWinSound, playRektSound, playCoinSound } from '@/lib/sounds';
 import PriceChart, { type Candle } from '@/components/PriceChart';
 import { useWallet, shortenAddress } from '@/contexts/WalletContext';
 import { getAvatarEmoji } from '@/pages/Profile';
