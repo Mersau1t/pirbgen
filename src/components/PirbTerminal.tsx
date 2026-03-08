@@ -197,7 +197,7 @@ export default function PirbTerminal() {
     // Fetch real historical candles from Pyth Benchmarks
     let historyCandles: Candle[] = [];
     try {
-      historyCandles = await fetchHistoricalCandles(picked.feed.id, 10, 5);
+      historyCandles = await fetchHistoricalCandles(feed.id, 10, 5);
     } catch (err) {
       console.error('Failed to load history, using fallback:', err);
     }
