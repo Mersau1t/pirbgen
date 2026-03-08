@@ -1,0 +1,123 @@
+// Tension audio system — rising intensity as PnL approaches SL or TP
+// Uses Web Audio API: a low drone + heartbeat pulse that speed up near thresholds
+
+let audioCtx: AudioContext | null = null;
+function getCtx(): AudioContext {
+  if (!audioCtx) audioCtx = new AudioContext();
+  return audioCtx;
+}
+
+let activeNodes: {
+  drone: OscillatorNode;
+  droneGain: GainNode;
+  heartbeat: OscillatorNode;
+  hbGain: GainNode;
+  lfo: OscillatorNode;
+  master: GainNode;
+} | null = null;
+
+let intensityInterval: ReturnType<typeof setInterval> | null = null;
+
+/**
+ * Start the tension audio layer. Call once when trade opens.
+ */
+export function startTensionAudio() {
+  if (activeNodes) return;
+  const ctx = getCtx();
+  const t = ctx.currentTime;
+
+  const master = ctx.createGain();
+  master.gain.setValueAtTime(0, t);
+  master.connect(ctx.destination);
+
+  // Low drone — sawtooth filtered to sound ominous
+  const drone = ctx.createOscillator();
+  const droneGain = ctx.createGain();
+  const droneFilter = ctx.createBiquadFilter();
+  drone.type = 'sawtooth';
+  drone.frequency.setValueAtTime(55, t); // A1
+  droneFilter.type = 'lowpass';
+  droneFilter.frequency.setValueAtTime(200, t);
+  droneFilter.Q.setValueAtTime(5, t);
+  droneGain.gain.setValueAtTime(0.06, t);
+  drone.connect(droneFilter).connect(droneGain).connect(master);
+  drone.start(t);
+
+  // Heartbeat pulse — sine with LFO amplitude modulation
+  const heartbeat = ctx.createOscillator();
+  const hbGain = ctx.createGain();
+  heartbeat.type = 'sine';
+  heartbeat.frequency.setValueAtTime(65, t); // low thump
+  hbGain.gain.setValueAtTime(0, t);
+  heartbeat.connect(hbGain).connect(master);
+  heartbeat.start(t);
+
+  // LFO to modulate heartbeat gain (creates pulsing)
+  const lfo = ctx.createOscillator();
+  const lfoGain = ctx.createGain();
+  lfo.type = 'sine';
+  lfo.frequency.setValueAtTime(0.8, t); // ~48 BPM heartbeat
+  lfoGain.gain.setValueAtTime(0.08, t);
+  lfo.connect(lfoGain).connect(hbGain.gain);
+  lfo.start(t);
+
+  activeNodes = { drone, droneGain, heartbeat, hbGain, lfo, master };
+}
+
+/**
+ * Update tension intensity based on how close PnL is to SL or TP.
+ * @param intensity 0 (calm) to 1 (about to hit SL/TP)
+ */
+export function setTensionIntensity(intensity: number) {
+  if (!activeNodes) return;
+  const ctx = getCtx();
+  const t = ctx.currentTime;
+  const clamped = Math.max(0, Math.min(1, intensity));
+
+  // Master volume: 0 when calm, up to 0.15 at max tension
+  activeNodes.master.gain.cancelScheduledValues(t);
+  activeNodes.master.gain.setTargetAtTime(clamped * 0.15, t, 0.15);
+
+  // Drone pitch rises with tension (55 → 110 Hz)
+  activeNodes.drone.frequency.setTargetAtTime(55 + clamped * 55, t, 0.2);
+
+  // Heartbeat LFO speed: 0.8 Hz (calm) → 3.5 Hz (panic)
+  activeNodes.lfo.frequency.setTargetAtTime(0.8 + clamped * 2.7, t, 0.2);
+
+  // Heartbeat volume increases
+  activeNodes.hbGain.gain.cancelScheduledValues(t);
+  activeNodes.hbGain.gain.setTargetAtTime(clamped * 0.12, t, 0.15);
+}
+
+/**
+ * Stop and clean up tension audio.
+ */
+export function stopTensionAudio() {
+  if (!activeNodes) return;
+  const ctx = getCtx();
+  const t = ctx.currentTime;
+
+  activeNodes.master.gain.setTargetAtTime(0, t, 0.1);
+
+  const nodes = activeNodes;
+  activeNodes = null;
+
+  setTimeout(() => {
+    try {
+      nodes.drone.stop();
+      nodes.heartbeat.stop();
+      nodes.lfo.stop();
+      nodes.drone.disconnect();
+      nodes.heartbeat.disconnect();
+      nodes.lfo.disconnect();
+      nodes.droneGain.disconnect();
+      nodes.hbGain.disconnect();
+      nodes.master.disconnect();
+    } catch {}
+  }, 300);
+
+  if (intensityInterval) {
+    clearInterval(intensityInterval);
+    intensityInterval = null;
+  }
+}

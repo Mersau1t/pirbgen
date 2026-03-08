@@ -6,6 +6,7 @@ import PixelConfetti from '@/components/PixelConfetti';
 import { streamPythPriceById, type PythPriceTick } from '@/lib/pyth';
 import { playWinSound, playRektSound, playCoinSound } from '@/lib/sounds';
 import { playTimerTick, playTimerUrgent } from '@/lib/timerSounds';
+import { startTensionAudio, setTensionIntensity, stopTensionAudio } from '@/lib/tensionSounds';
 
 interface DegenPosition {
   id: number;
@@ -156,12 +157,27 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
     }
   }, [timeLeft, hasTimer, result, pnl]);
 
-  // PnL calculation
+  // Start tension audio on trade open, stop on result
   useEffect(() => {
-    if (result) return;
+    startTensionAudio();
+    return () => stopTensionAudio();
+  }, []);
+
+  // PnL calculation + tension intensity
+  useEffect(() => {
+    if (result) {
+      stopTensionAudio();
+      return;
+    }
     const diff = ((currentPrice - entryPrice) / entryPrice) * 100;
     const calculatedPnl = position.direction === 'LONG' ? diff * position.leverage : -diff * position.leverage;
     setPnl(calculatedPnl);
+
+    // Tension intensity: how close are we to SL or TP (0..1)
+    const slProximity = Math.abs(calculatedPnl / position.stopLoss);   // 0→1 as we approach SL
+    const tpProximity = Math.abs(calculatedPnl / position.takeProfit); // 0→1 as we approach TP
+    const intensity = Math.max(slProximity, tpProximity);
+    setTensionIntensity(intensity);
 
     if (!resultFiredRef.current) {
       if (calculatedPnl <= position.stopLoss) {
