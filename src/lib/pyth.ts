@@ -43,7 +43,7 @@ export async function fetchAllPythFeeds(): Promise<PythFeed[]> {
       feeds.push({
         id: '0x' + feed.id,
         ticker: base,
-        pair: `${base}/USD`,
+        pair: `${base}/USDT`,
       });
     }
 
