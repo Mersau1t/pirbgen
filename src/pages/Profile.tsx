@@ -311,7 +311,7 @@ export default function Profile() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[200] flex items-center justify-center bg-background/80 backdrop-blur-md p-4"
+              className="fixed inset-0 z-[200] flex items-center justify-center bg-background/85 backdrop-blur-sm p-4"
               onClick={() => setAvatarPickerOpen(false)}
             >
               <motion.div
@@ -319,11 +319,11 @@ export default function Profile() {
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.92, opacity: 0 }}
                 onClick={e => e.stopPropagation()}
-                className="glass-panel border border-border/40 rounded-sm p-8 w-full max-w-2xl space-y-6"
+                className="pixel-border-magenta p-8 w-full max-w-2xl space-y-6 bg-background/95"
               >
                 <div className="flex items-center justify-between">
-                  <p className="font-display text-base tracking-[0.2em] text-foreground text-glow-green uppercase">Choose Avatar</p>
-                  <button onClick={() => setAvatarPickerOpen(false)} className="text-muted-foreground hover:text-foreground text-xl">✕</button>
+                  <p className="font-display text-[10px] sm:text-xs tracking-[0.2em] text-neon-magenta text-glow-magenta uppercase">SELECT AVATAR</p>
+                  <button onClick={() => setAvatarPickerOpen(false)} className="text-neon-red hover:text-glow-red text-xl font-display">✕</button>
                 </div>
 
                 <div className="grid grid-cols-4 sm:grid-cols-6 gap-3">
@@ -333,14 +333,14 @@ export default function Profile() {
                       whileHover={{ scale: 1.08 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={() => handleSelectAvatar(av.id)}
-                      className={`flex flex-col items-center gap-2 p-4 rounded-sm border transition-all cursor-pointer ${
+                      className={`flex flex-col items-center gap-2 p-4 border-2 transition-all cursor-pointer ${
                         profile.avatar === av.id && !profile.avatar_url
-                          ? 'border-primary/60 bg-primary/10 box-glow-green'
-                          : 'border-border/20 bg-muted/10 hover:border-border/40'
+                          ? 'border-neon-green bg-neon-green/10 box-glow-green'
+                          : 'border-muted-foreground/20 bg-muted/10 hover:border-neon-magenta/40'
                       }`}
                     >
                       <span className="text-3xl">{av.emoji}</span>
-                      <span className="text-[10px] text-muted-foreground font-display tracking-wider">{av.label}</span>
+                      <span className="text-[8px] text-muted-foreground font-display tracking-wider">{av.label}</span>
                     </motion.button>
                   ))}
                 </div>
@@ -348,7 +348,7 @@ export default function Profile() {
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
-                  className="w-full py-3 bg-primary/10 border border-primary/40 text-foreground font-display text-sm tracking-[0.2em] hover:bg-primary/20 hover:box-glow-green transition-all cursor-pointer disabled:opacity-50"
+                  className="arcade-btn arcade-btn-cyan w-full text-[10px] py-3 disabled:opacity-50"
                 >
                   {uploading ? '⏳ UPLOADING...' : '📷 UPLOAD PHOTO'}
                 </button>
@@ -362,7 +362,7 @@ export default function Profile() {
 
                 <button
                   onClick={() => setAvatarPickerOpen(false)}
-                  className="w-full py-2.5 bg-muted/30 border border-border/30 text-muted-foreground font-display text-xs tracking-[0.2em] hover:text-foreground hover:border-border/60 transition-all cursor-pointer"
+                  className="arcade-btn arcade-btn-secondary w-full text-[10px] py-2.5"
                 >
                   ← BACK
                 </button>
