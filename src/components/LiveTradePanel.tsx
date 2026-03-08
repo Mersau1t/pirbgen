@@ -98,28 +98,24 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
       if (!rafId) {
         rafId = requestAnimationFrame(flushPrice);
       }
-      candleRef.current.ticks.push(tick);
-      pendingPrice = tick.price;
-      if (!rafId) {
-        rafId = requestAnimationFrame(flushPrice);
-      }
     });
 
     const candleTick = setInterval(() => {
       if (candleRef.current.ticks.length >= 2) {
         const ticks = candleRef.current.ticks;
-        const candle: Candle = {
+        const nextCandle: Candle = {
           open: ticks[0].price,
           high: Math.max(...ticks.map(t => t.price + t.confidence)),
           low: Math.min(...ticks.map(t => t.price - t.confidence)),
           close: ticks[ticks.length - 1].price,
           time: 0,
         };
-        setCandles(c => {
-          const liveCount = c.filter(x => x.time >= 0).length;
-          candle.time = (liveCount + 1) * 2;
-          return [...c.slice(-27), candle];
+
+        setCandles(prev => {
+          const lastLiveTime = [...prev].reverse().find(c => c.time >= 0)?.time ?? 0;
+          return [...prev.slice(-27), { ...nextCandle, time: lastLiveTime + 2 }];
         });
+
         candleRef.current.ticks = [];
       }
     }, 1000);
