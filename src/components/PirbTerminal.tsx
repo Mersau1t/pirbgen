@@ -467,7 +467,7 @@ export default function PirbTerminal() {
                       <p className={`text-2xl font-display ${rarityStyle.text}`}>{activePos.leverage}x</p>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-2">
                     <div className="bg-neon-red/5 border border-neon-red/20 p-3 rounded-sm">
                       <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Stop Loss</p>
                       <p className="text-lg font-mono text-neon-red">{activePos.stopLoss}%</p>
