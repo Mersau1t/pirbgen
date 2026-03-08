@@ -18,7 +18,7 @@ interface PriceChartProps {
   leverage: number;
 }
 
-const MAX_CANDLES = 20;
+const MAX_CANDLES = 28;
 
 export default function PriceChart({ candles, entryPrice, positive, direction, stopLoss, takeProfit, leverage }: PriceChartProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
