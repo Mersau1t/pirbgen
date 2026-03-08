@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import pirbMascot from '@/assets/pirb-mascot.png';
 import { playGenerateClick, playWinSound, playRektSound, playCoinSound } from '@/lib/sounds';
 import PriceChart, { type Candle } from '@/components/PriceChart';
+import PixelConfetti from '@/components/PixelConfetti';
 import { useWallet, shortenAddress } from '@/contexts/WalletContext';
 import { getAvatarEmoji } from '@/pages/Profile';
 
@@ -528,14 +529,17 @@ export default function PirbTerminal() {
                 )}
 
                 {status === 'WIN' && (
-                  <motion.div
-                    initial={{ scale: 0.5, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    className="text-center py-4 space-y-2"
-                  >
-                    <p className="font-display text-xl sm:text-2xl text-neon-green text-glow-green animate-rainbow">🎯 TARGET HIT!</p>
-                    <p className="font-display text-[10px] text-neon-green">+{pnl.toFixed(2)}% PROFIT</p>
-                  </motion.div>
+                  <>
+                    <PixelConfetti active={true} />
+                    <motion.div
+                      initial={{ scale: 0.5, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      className="text-center py-4 space-y-2"
+                    >
+                      <p className="font-display text-xl sm:text-2xl text-neon-green text-glow-green animate-rainbow">🎯 TARGET HIT!</p>
+                      <p className="font-display text-[10px] text-neon-green">+{pnl.toFixed(2)}% PROFIT</p>
+                    </motion.div>
+                  </>
                 )}
 
                 {status === 'REKT' && (
