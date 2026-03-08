@@ -1,4 +1,5 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useMemo } from 'react';
+import mascotSrc from '@/assets/pirb-mascot.png';
 
 export interface Candle {
   open: number;
@@ -45,6 +46,27 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
+  const mascotImg = useRef<HTMLImageElement | null>(null);
+  const animFrame = useRef(0);
+
+  // Load mascot image once
+  useEffect(() => {
+    const img = new Image();
+    img.src = mascotSrc;
+    img.onload = () => { mascotImg.current = img; };
+  }, []);
+
+  // Blink animation loop
+  useEffect(() => {
+    let running = true;
+    const tick = () => {
+      if (!running) return;
+      animFrame.current = (animFrame.current + 1) % 60;
+      requestAnimationFrame(tick);
+    };
+    tick();
+    return () => { running = false; };
+  }, []);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -181,16 +203,41 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       ctx.lineWidth = 1.8;
       ctx.stroke();
 
-      // Current price dot
+      // Current price — mascot icon
       const lastX = toX(candles.length - 1);
       const lastY = toY(candles[candles.length - 1].close);
-      ctx.beginPath();
-      ctx.arc(lastX, lastY, 4, 0, Math.PI * 2);
-      ctx.fillStyle = positive ? '#07e46e' : '#ef4444';
-      ctx.shadowColor = positive ? '#07e46e' : '#ef4444';
-      ctx.shadowBlur = 10;
-      ctx.fill();
-      ctx.shadowBlur = 0;
+      const glowColor = positive ? '#07e46e' : '#ef4444';
+      const blink = Math.sin(Date.now() / 200) * 0.5 + 0.5; // 0-1 pulse
+      const mascotSize = 28;
+
+      // Glow behind mascot
+      ctx.save();
+      ctx.shadowColor = glowColor;
+      ctx.shadowBlur = 12 + blink * 14;
+      ctx.globalAlpha = 0.6 + blink * 0.4;
+
+      if (mascotImg.current) {
+        ctx.drawImage(
+          mascotImg.current,
+          lastX - mascotSize / 2,
+          lastY - mascotSize / 2,
+          mascotSize,
+          mascotSize
+        );
+        // Color tint overlay
+        ctx.globalCompositeOperation = 'source-atop';
+        ctx.fillStyle = glowColor;
+        ctx.globalAlpha = blink * 0.45;
+        ctx.fillRect(lastX - mascotSize / 2, lastY - mascotSize / 2, mascotSize, mascotSize);
+        ctx.globalCompositeOperation = 'source-over';
+      } else {
+        // Fallback dot
+        ctx.beginPath();
+        ctx.arc(lastX, lastY, 5, 0, Math.PI * 2);
+        ctx.fillStyle = glowColor;
+        ctx.fill();
+      }
+      ctx.restore();
     }
 
     // --- GRID LINES + PRICE LABELS ---
