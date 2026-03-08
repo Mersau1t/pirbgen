@@ -143,6 +143,7 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
         playWinSound();
         onResult('WIN', calculatedPnl);
         saveToLeaderboard(calculatedPnl);
+        setTimeout(() => setShowResultAnim(true), 1500);
       }
     }
   }, [currentPrice, entryPrice, position, result]);
