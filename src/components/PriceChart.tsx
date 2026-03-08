@@ -41,24 +41,12 @@ function formatPriceShort(p: number): string {
   return p.toPrecision(5);
 }
 
-/** Catmull-Rom spline through points for smooth curves */
-function catmullRomPath(ctx: CanvasRenderingContext2D, pts: { x: number; y: number }[], tension = 0.3) {
+/** Sharp line through points */
+function sharpLinePath(ctx: CanvasRenderingContext2D, pts: { x: number; y: number }[]) {
   if (pts.length < 2) return;
   ctx.moveTo(pts[0].x, pts[0].y);
-  if (pts.length === 2) {
-    ctx.lineTo(pts[1].x, pts[1].y);
-    return;
-  }
-  for (let i = 0; i < pts.length - 1; i++) {
-    const p0 = pts[Math.max(i - 1, 0)];
-    const p1 = pts[i];
-    const p2 = pts[i + 1];
-    const p3 = pts[Math.min(i + 2, pts.length - 1)];
-    const cp1x = p1.x + (p2.x - p0.x) * tension;
-    const cp1y = p1.y + (p2.y - p0.y) * tension;
-    const cp2x = p2.x - (p3.x - p1.x) * tension;
-    const cp2y = p2.y - (p3.y - p1.y) * tension;
-    ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
+  for (let i = 1; i < pts.length; i++) {
+    ctx.lineTo(pts[i].x, pts[i].y);
   }
 }
 
@@ -208,7 +196,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
         // Outer glow (intensifies near TP/SL)
         ctx.save();
         ctx.beginPath();
-        catmullRomPath(ctx, pts);
+        sharpLinePath(ctx, pts);
         ctx.strokeStyle = proximity > 0.6
           ? (positive ? `rgba(7, 228, 110, ${0.15 + pulse * 0.15})` : `rgba(239, 68, 68, ${0.15 + pulse * 0.15})`)
           : 'rgba(200, 180, 255, 0.2)';
@@ -221,7 +209,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
         // Middle glow
         ctx.save();
         ctx.beginPath();
-        catmullRomPath(ctx, pts);
+        sharpLinePath(ctx, pts);
         ctx.strokeStyle = proximity > 0.6
           ? (positive ? 'rgba(7, 228, 110, 0.35)' : 'rgba(239, 68, 68, 0.35)')
           : 'rgba(200, 180, 255, 0.3)';
@@ -233,7 +221,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
 
         // Main crisp line
         ctx.beginPath();
-        catmullRomPath(ctx, pts);
+        sharpLinePath(ctx, pts);
         ctx.strokeStyle = '#e0d4ff';
         ctx.lineWidth = 1.8;
         ctx.stroke();
