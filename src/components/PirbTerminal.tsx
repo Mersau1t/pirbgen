@@ -58,9 +58,16 @@ const RARITY_STYLES: Record<string, { border: string; text: string; bg: string; 
   legendary: { border: 'border-neon-amber/50', text: 'text-neon-amber', bg: 'bg-neon-amber/10', label: 'LEGENDARY' },
   degen: { border: 'border-neon-magenta/50', text: 'text-neon-magenta', bg: 'bg-neon-magenta/10', label: '☠ DEGEN ☠' },
 };
+function formatVolume(v: number): string {
+  if (v >= 1e9) return '$' + (v / 1e9).toFixed(1) + 'B';
+  if (v >= 1e6) return '$' + (v / 1e6).toFixed(1) + 'M';
+  if (v >= 1e3) return '$' + (v / 1e3).toFixed(0) + 'K';
+  return '$' + v.toFixed(0);
+}
+
 
 const TickerMarquee = () => {
-  const tickers = ['PYTH LIVE FEEDS 🔴', '500+ CRYPTO PAIRS', 'VOLATILITY WEIGHTED 📊', 'ANY TOKEN ANY TIME', 'POWERED BY PYTH NETWORK ⚡'];
+  const tickers = ['PYTH LIVE FEEDS 🔴', '500+ CRYPTO PAIRS', 'VOLUME RANKED 📊', 'ANY TOKEN ANY TIME', 'POWERED BY PYTH NETWORK ⚡'];
   const doubled = [...tickers, ...tickers];
   return (
     <div className="overflow-hidden border-b-2 border-neon-purple/30 bg-background/80 py-1.5">
@@ -123,31 +130,71 @@ export default function PirbTerminal() {
     }))
   );
 
-  interface DbVolatileToken { feed_id: string; ticker: string; pair: string; price: number; volatility: number }
-  const [topVolatile, setTopVolatile] = useState<DbVolatileToken[]>([]);
+  interface DisplayToken { feed_id: string; ticker: string; pair: string; price: number; volume_24h: number }
+  const [topVolatile, setTopVolatile] = useState<DisplayToken[]>([]);
   const [showAllTokens, setShowAllTokens] = useState(false);
-  const [allVolatile, setAllVolatile] = useState<DbVolatileToken[]>([]);
+  const [allVolatile, setAllVolatile] = useState<DisplayToken[]>([]);
   
   useEffect(() => {
-    (supabase as any).from('volatile_tokens').select('*').order('volatility', { ascending: false }).limit(50)
-      .then(({ data, error }: { data: any[] | null; error: any }) => {
-        if (data && data.length > 0) {
-          setAllVolatile(data);
-          setTopVolatile(data.slice(0, 8));
-        } else {
-          getTopVolatileTokens().then(tokens => {
-            const mapped = tokens.slice(0, 50).map(t => ({
-              feed_id: t.feed.id,
-              ticker: t.feed.ticker,
-              pair: t.feed.pair,
-              price: t.price,
-              volatility: t.volatility,
-            }));
-            setAllVolatile(mapped);
-            setTopVolatile(mapped.slice(0, 8));
-          });
+    // Fetch top coins by volume from CoinGecko, then match to Pyth feeds
+    const loadByVolume = async () => {
+      try {
+        // 1. Get Pyth feeds from DB
+        const { data: dbTokens } = await (supabase as any).from('volatile_tokens').select('*').limit(200);
+        const pythMap = new Map<string, { feed_id: string; ticker: string; pair: string; price: number }>();
+        if (dbTokens) {
+          for (const t of dbTokens) {
+            pythMap.set(t.ticker.toUpperCase(), { feed_id: t.feed_id, ticker: t.ticker, pair: t.pair, price: t.price });
+          }
         }
-      });
+
+        // 2. Fetch top coins by volume from CoinGecko (free, no key needed)
+        const cgRes = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=volume_desc&per_page=100&page=1&sparkline=false');
+        if (!cgRes.ok) throw new Error('CoinGecko fetch failed');
+        const cgData: Array<{ symbol: string; current_price: number; total_volume: number }> = await cgRes.json();
+
+        // 3. Match CoinGecko symbols to Pyth feeds
+        const matched: DisplayToken[] = [];
+        for (const coin of cgData) {
+          const sym = coin.symbol.toUpperCase();
+          const pyth = pythMap.get(sym);
+          if (pyth) {
+            matched.push({
+              feed_id: pyth.feed_id,
+              ticker: pyth.ticker,
+              pair: pyth.pair,
+              price: pyth.price,
+              volume_24h: coin.total_volume,
+            });
+          }
+        }
+
+        if (matched.length > 0) {
+          setAllVolatile(matched);
+          setTopVolatile(matched.slice(0, 8));
+          return;
+        }
+      } catch (e) {
+        console.warn('CoinGecko volume fetch failed, falling back to volatility:', e);
+      }
+
+      // Fallback: use volatile_tokens sorted by volatility
+      const { data } = await (supabase as any).from('volatile_tokens').select('*').order('volatility', { ascending: false }).limit(50);
+      if (data && data.length > 0) {
+        const mapped = data.map((t: any) => ({ feed_id: t.feed_id, ticker: t.ticker, pair: t.pair, price: t.price, volume_24h: 0 }));
+        setAllVolatile(mapped);
+        setTopVolatile(mapped.slice(0, 8));
+      } else {
+        getTopVolatileTokens().then(tokens => {
+          const mapped = tokens.slice(0, 50).map(t => ({
+            feed_id: t.feed.id, ticker: t.feed.ticker, pair: t.feed.pair, price: t.price, volume_24h: 0,
+          }));
+          setAllVolatile(mapped);
+          setTopVolatile(mapped.slice(0, 8));
+        });
+      }
+    };
+    loadByVolume();
   }, []);
 
   // Restore session
@@ -418,11 +465,11 @@ export default function PirbTerminal() {
                 )}
               </div>
 
-              {/* Volatile tokens */}
+              {/* Top Volume tokens */}
               {topVolatile.length > 0 && (
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="w-full max-w-md">
                   <div className="pixel-border bg-background/80 p-3 max-h-[280px] overflow-y-auto">
-                    <p className="font-display text-[9px] text-neon-orange tracking-wider mb-2 text-center">🔥 MOST VOLATILE · TAP TO TRADE</p>
+                    <p className="font-display text-[9px] text-neon-cyan tracking-wider mb-2 text-center">📊 TOP VOLUME · TAP TO TRADE</p>
                     <div className="grid grid-cols-2 gap-1.5">
                       {(showAllTokens ? allVolatile : topVolatile).map((t, i) => (
                         <motion.button
@@ -434,10 +481,8 @@ export default function PirbTerminal() {
                           className="flex items-center justify-between px-2 py-1.5 rounded bg-neon-purple/5 border border-neon-purple/10 hover:bg-neon-purple/15 hover:border-neon-purple/30 transition-colors cursor-pointer text-left"
                         >
                           <span className="font-display text-[10px] text-foreground/80 tracking-wider">{t.ticker}</span>
-                          <span className={`font-display text-[9px] tracking-wider ${
-                            t.volatility > 2 ? 'text-neon-red' : t.volatility > 0.8 ? 'text-neon-orange' : 'text-neon-green'
-                          }`}>
-                            {(t.volatility * 100).toFixed(0)}%
+                          <span className="font-display text-[9px] tracking-wider text-neon-cyan/70">
+                            {t.volume_24h > 0 ? formatVolume(t.volume_24h) : '—'}
                           </span>
                         </motion.button>
                       ))}
@@ -447,7 +492,7 @@ export default function PirbTerminal() {
                         {showAllTokens ? '▲ SHOW LESS' : `▼ SHOW ALL ${allVolatile.length} TOKENS`}
                       </button>
                     )}
-                    <p className="font-display text-[7px] text-muted-foreground/30 text-center mt-1.5 tracking-wider">ANNUALIZED VOLATILITY · TAP ANY TOKEN</p>
+                    <p className="font-display text-[7px] text-muted-foreground/30 text-center mt-1.5 tracking-wider">24H VOLUME · TAP ANY TOKEN</p>
                   </div>
                 </motion.div>
               )}
