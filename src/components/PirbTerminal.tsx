@@ -280,33 +280,28 @@ export default function PirbTerminal() {
 
   return (
     <div className="h-screen bg-background grid-bg scanlines crt-vignette relative overflow-hidden animate-flicker flex flex-col">
-      {/* Pigeon poop particles */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
-        {Array.from({ length: 25 }).map((_, i) => {
-          const left = Math.random() * 100;
-          const delay = Math.random() * 15;
-          const duration = 10 + Math.random() * 15;
-          const size = 12 + Math.random() * 14;
-          const opacity = 0.4 + Math.random() * 0.4;
-          return (
+      {/* Pigeon poop particles — only on IDLE */}
+      {status === 'IDLE' && (
+        <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
+          {particles.map((p, i) => (
             <div
               key={i}
               className="absolute animate-star-fall"
               style={{
-                left: `${left}%`,
+                left: `${p.left}%`,
                 top: '-20px',
-                fontSize: `${size}px`,
-                opacity,
-                animationDuration: `${duration}s`,
-                animationDelay: `${delay}s`,
+                fontSize: `${p.size}px`,
+                opacity: p.opacity,
+                animationDuration: `${p.duration}s`,
+                animationDelay: `${p.delay}s`,
                 filter: `drop-shadow(0 0 4px hsl(var(--neon-purple) / 0.5))`,
               }}
             >
               💩
             </div>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      )}
       {/* Top bar */}
       <header className="relative z-10 border-b-2 border-neon-purple/40 bg-background/90">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-4 py-3">
