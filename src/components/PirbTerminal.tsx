@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import pirbMascot from '@/assets/pirb-mascot.png';
+import { playGenerateClick, playWinSound, playRektSound } from '@/lib/sounds';
 
 // --- TYPES ---
 type TradeDirection = 'LONG' | 'SHORT';
