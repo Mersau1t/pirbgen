@@ -6,6 +6,7 @@ interface Profile {
   wallet_address: string;
   display_name: string;
   avatar: string;
+  avatar_url: string | null;
   created_at: string;
 }
 
