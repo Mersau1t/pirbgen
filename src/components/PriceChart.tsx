@@ -273,6 +273,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
         ctx.fillRect(x - bodyW / 2, bodyTop, bodyW, bodyH);
       }
       ctx.shadowBlur = 0;
+      ctx.globalAlpha = 1;
     });
 
     // Last candle purple highlight
