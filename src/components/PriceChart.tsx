@@ -215,16 +215,22 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
     // Entry vertical marker — using entryIdx already calculated
     if (entryIdx > 0) {
       const ex = entryX;
-      ctx.strokeStyle = 'rgba(128,70,220,0.3)';
-      ctx.setLineDash([3, 3]);
-      ctx.lineWidth = 1;
+      ctx.strokeStyle = '#8046dc80';
+      ctx.setLineDash([4, 3]);
+      ctx.lineWidth = 1.5;
+      ctx.shadowColor = '#8046dc';
+      ctx.shadowBlur = 4;
       ctx.beginPath(); ctx.moveTo(ex, pad.top); ctx.lineTo(ex, pad.top + chartH); ctx.stroke();
+      ctx.shadowBlur = 0;
       ctx.setLineDash([]);
-      ctx.fillStyle = 'rgba(128,70,220,0.4)';
-      ctx.font = 'bold 8px monospace';
+      ctx.fillStyle = '#8046dc';
+      ctx.font = 'bold 9px monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'bottom';
+      ctx.shadowColor = '#8046dc';
+      ctx.shadowBlur = 6;
       ctx.fillText('▼ ENTRY', ex, pad.top - 1);
+      ctx.shadowBlur = 0;
     }
 
     // Axis borders
