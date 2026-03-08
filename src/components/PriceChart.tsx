@@ -20,6 +20,24 @@ interface PriceChartProps {
 
 const MAX_CANDLES = 28;
 
+/** Smart price formatting — adapts decimal places to price magnitude */
+function formatPrice(p: number): string {
+  const abs = Math.abs(p);
+  if (abs >= 1000) return '$' + p.toFixed(1);
+  if (abs >= 1) return '$' + p.toFixed(2);
+  if (abs >= 0.01) return '$' + p.toFixed(4);
+  if (abs >= 0.0001) return '$' + p.toFixed(6);
+  return '$' + p.toPrecision(4);
+}
+
+function formatPriceShort(p: number): string {
+  const abs = Math.abs(p);
+  if (abs >= 1000) return p.toFixed(0);
+  if (abs >= 1) return p.toFixed(2);
+  if (abs >= 0.01) return p.toFixed(4);
+  return p.toPrecision(3);
+}
+
 export default function PriceChart({ candles, entryPrice, positive, direction, stopLoss, takeProfit, leverage }: PriceChartProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
