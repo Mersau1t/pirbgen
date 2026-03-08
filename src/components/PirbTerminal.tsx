@@ -141,9 +141,32 @@ export default function PirbTerminal() {
     playGenerateClick();
     setStatus('GENERATING');
 
-    const pos = POSITIONS[Math.floor(Math.random() * POSITIONS.length)];
-    const realPrice = await fetchPythPrice(pos.ticker);
-    const price = realPrice ?? (Math.random() * 1000 + 100);
+    // Pick a volatile feed from all Pyth crypto feeds
+    const picked = await pickVolatileFeed();
+    if (!picked) {
+      console.error('Could not pick a Pyth feed');
+      setStatus('IDLE');
+      return;
+    }
+
+    const { feed, price } = picked;
+    const rarity = pickRarity();
+    const direction: TradeDirection = Math.random() > 0.5 ? 'LONG' : 'SHORT';
+    const leverage = randInt(rarity.leverageRange[0], rarity.leverageRange[1]);
+    const stopLoss = randInt(rarity.slRange[0], rarity.slRange[1]);
+    const takeProfit = randInt(rarity.tpRange[0], rarity.tpRange[1]);
+
+    const pos: DegenPosition = {
+      id: Date.now(),
+      asset: feed.ticker,
+      ticker: feed.ticker,
+      feedId: feed.id,
+      direction,
+      leverage,
+      stopLoss,
+      takeProfit,
+      rarity: rarity.rarity,
+    };
 
     // Generate pre-history candles
     const historyCandles: Candle[] = [];
