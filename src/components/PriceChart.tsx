@@ -235,8 +235,11 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
 
     candles.forEach((candle, i) => {
       const x = toX(i);
+      const isHistory = candle.time < 0;
       const isBull = candle.close >= candle.open;
       const color = isBull ? bullColor : bearColor;
+      const alpha = isHistory ? 0.45 : 1;
+      ctx.globalAlpha = alpha;
 
       const highY = toY(candle.high);
       const lowY = toY(candle.low);
