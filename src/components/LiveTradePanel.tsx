@@ -136,6 +136,7 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
         playRektSound();
         onResult('REKT', calculatedPnl);
         saveToLeaderboard(calculatedPnl);
+        setTimeout(() => setShowResultAnim(true), 1500);
       } else if (calculatedPnl >= position.takeProfit) {
         resultFiredRef.current = true;
         setResult('WIN');
