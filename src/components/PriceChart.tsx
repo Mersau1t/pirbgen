@@ -209,10 +209,9 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       ctx.beginPath(); ctx.moveTo(x, pad.top + chartH); ctx.lineTo(x, pad.top + chartH + 3); ctx.stroke();
     });
 
-    // Entry vertical marker — find the first candle with time >= 0
-    const entryIdx = candles.findIndex(c => c.time >= 0);
+    // Entry vertical marker — using entryIdx already calculated
     if (entryIdx > 0) {
-      const ex = toX(entryIdx) - slotW / 2;
+      const ex = entryX;
       ctx.strokeStyle = 'rgba(128,70,220,0.3)';
       ctx.setLineDash([3, 3]);
       ctx.lineWidth = 1;
