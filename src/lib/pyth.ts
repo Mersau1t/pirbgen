@@ -152,67 +152,112 @@ async function fetchPricesAtTime(feedIds: string[], timestamp: number): Promise<
 }
 
 // Volatility cache — refreshed every 10 min
-let volatilityCache: Array<{ feed: PythFeed; price: number; volatility: number }> = [];
+export interface VolatileToken { feed: PythFeed; price: number; volatility: number }
+let volatilityCache: VolatileToken[] = [];
 let volatilityCacheTime = 0;
 const VOLATILITY_CACHE_TTL = 10 * 60 * 1000;
 
 /**
- * Pick a feed weighted toward 24h most volatile.
- * Compares current price vs 24h ago price to compute real volatility.
+ * Compute true volatility: standard deviation of log-returns
+ * sampled at 8 points over the last 24h.
  */
-export async function pickVolatileFeed(): Promise<{ feed: PythFeed; price: number } | null> {
-  const feeds = await fetchAllPythFeeds();
-  if (feeds.length === 0) return null;
+async function computeVolatility(feedIds: string[]): Promise<Map<string, number>> {
+  const now = Math.floor(Date.now() / 1000);
+  const intervals = 8;
+  const step = Math.floor(86400 / intervals); // ~3h apart
 
-  // Use cache if fresh
-  if (volatilityCache.length > 0 && Date.now() - volatilityCacheTime < VOLATILITY_CACHE_TTL) {
-    const top = volatilityCache.slice(0, Math.max(Math.ceil(volatilityCache.length / 3), 5));
-    const pick = top[Math.floor(Math.random() * top.length)];
-    return { feed: pick.feed, price: pick.price };
+  // Fetch prices at 8 time points + current (in parallel)
+  const timestamps = Array.from({ length: intervals }, (_, i) => now - (intervals - i) * step);
+  
+  const [currentPrices, ...historicalPrices] = await Promise.all([
+    fetchMultiplePrices(feedIds),
+    ...timestamps.map(ts => fetchPricesAtTime(feedIds, ts)),
+  ]);
+
+  const result = new Map<string, number>();
+
+  for (const id of feedIds) {
+    // Collect all price points for this feed
+    const prices: number[] = [];
+    for (const snapshot of historicalPrices) {
+      const p = snapshot.get(id);
+      if (p && p > 0) prices.push(p);
+    }
+    const cur = currentPrices.get(id);
+    if (cur && cur.price > 0) prices.push(cur.price);
+
+    if (prices.length < 3) {
+      // Fallback to confidence ratio
+      if (cur) result.set(id, cur.confidence / cur.price);
+      continue;
+    }
+
+    // Compute log-returns
+    const returns: number[] = [];
+    for (let i = 1; i < prices.length; i++) {
+      returns.push(Math.log(prices[i] / prices[i - 1]));
+    }
+
+    // Standard deviation of returns
+    const mean = returns.reduce((a, b) => a + b, 0) / returns.length;
+    const variance = returns.reduce((a, r) => a + (r - mean) ** 2, 0) / returns.length;
+    const stddev = Math.sqrt(variance);
+
+    // Annualize (roughly): stddev * sqrt(365 * 24 / 3) ≈ * 53
+    result.set(id, stddev * 53);
   }
 
-  // Sample a larger batch (~60) to find volatile ones
-  const batchSize = Math.min(60, feeds.length);
+  return result;
+}
+
+/**
+ * Get top volatile tokens (cached). Used for display + feed picking.
+ */
+export async function getTopVolatileTokens(): Promise<VolatileToken[]> {
+  if (volatilityCache.length > 0 && Date.now() - volatilityCacheTime < VOLATILITY_CACHE_TTL) {
+    return volatilityCache;
+  }
+
+  const feeds = await fetchAllPythFeeds();
+  if (feeds.length === 0) return [];
+
+  // Sample a batch of ~50
+  const batchSize = Math.min(50, feeds.length);
   const shuffled = [...feeds].sort(() => Math.random() - 0.5);
   const batch = shuffled.slice(0, batchSize);
   const ids = batch.map(f => f.id);
 
-  // Fetch current prices + prices from 24h ago in parallel
-  const now = Math.floor(Date.now() / 1000);
-  const dayAgo = now - 86400;
-
-  const [currentPrices, pastPrices] = await Promise.all([
+  const [currentPrices, volScores] = await Promise.all([
     fetchMultiplePrices(ids),
-    fetchPricesAtTime(ids, dayAgo),
+    computeVolatility(ids),
   ]);
 
-  // Score by absolute 24h % change
-  const scored: Array<{ feed: PythFeed; price: number; volatility: number }> = [];
+  const scored: VolatileToken[] = [];
   for (const feed of batch) {
     const cur = currentPrices.get(feed.id);
-    const past = pastPrices.get(feed.id);
     if (!cur || cur.price <= 0) continue;
-
-    let vol = cur.confidence / cur.price; // fallback: confidence ratio
-    if (past && past > 0) {
-      vol = Math.abs(cur.price - past) / past; // real 24h % change
-    }
-
+    const vol = volScores.get(feed.id) || 0;
     scored.push({ feed, price: cur.price, volatility: vol });
   }
 
-  if (scored.length === 0) return null;
-
-  // Sort by volatility descending, cache results
   scored.sort((a, b) => b.volatility - a.volatility);
   volatilityCache = scored;
   volatilityCacheTime = Date.now();
 
-  console.log(`Top volatile: ${scored.slice(0, 5).map(s => `${s.feed.ticker} (${(s.volatility * 100).toFixed(1)}%)`).join(', ')}`);
+  console.log(`Top volatile (annualized): ${scored.slice(0, 5).map(s => `${s.feed.ticker} ${(s.volatility * 100).toFixed(0)}%`).join(', ')}`);
+
+  return scored;
+}
+
+/**
+ * Pick a feed weighted toward most volatile (stddev of 24h returns).
+ */
+export async function pickVolatileFeed(): Promise<{ feed: PythFeed; price: number } | null> {
+  const scored = await getTopVolatileTokens();
+  if (scored.length === 0) return null;
 
   const top = scored.slice(0, Math.max(Math.ceil(scored.length / 3), 5));
   const pick = top[Math.floor(Math.random() * top.length)];
-
   return { feed: pick.feed, price: pick.price };
 }
 
