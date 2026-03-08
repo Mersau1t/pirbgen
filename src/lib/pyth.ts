@@ -327,9 +327,14 @@ export async function fetchHistoricalCandles(
 /**
  * Create a streaming connection to Pyth Hermes SSE by feed ID
  */
+export interface PythPriceTick {
+  price: number;
+  confidence: number;
+}
+
 export function streamPythPriceById(
   feedId: string,
-  onPrice: (price: number) => void
+  onPrice: (tick: PythPriceTick) => void
 ): () => void {
   const url = `${HERMES_URL}/v2/updates/price/stream?ids[]=${feedId}&parsed=true`;
   const eventSource = new EventSource(url);
@@ -339,7 +344,9 @@ export function streamPythPriceById(
       const data = JSON.parse(event.data);
       const parsed = data.parsed?.[0]?.price;
       if (parsed) {
-        onPrice(parsePythPrice(parsed));
+        const price = parsePythPrice(parsed);
+        const confidence = Number(parsed.conf) * Math.pow(10, parsed.expo);
+        onPrice({ price, confidence });
       }
     } catch (err) {
       console.error('Error parsing Pyth stream data:', err);
