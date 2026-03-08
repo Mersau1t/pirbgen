@@ -230,6 +230,14 @@
 .animate-rekt-shake { animation: rekt-shake 0.4s ease-in-out; }
 .animate-blink { animation: blink 1s step-end infinite; }
 .animate-rainbow { animation: rainbow 3s linear infinite; }
+.animate-star-fall { animation: star-fall linear infinite; }
+
+@keyframes star-fall {
+  0% { transform: translateY(-10px) translateX(0); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateY(105vh) translateX(30px); opacity: 0; }
+}
 
 /* Glass panel — more opaque & arcade-like */
 .glass-panel {
