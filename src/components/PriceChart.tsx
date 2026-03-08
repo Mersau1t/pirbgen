@@ -134,7 +134,39 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
     ctx.fillStyle = '#F5F5FF';
     ctx.fillText('$' + entryPrice.toFixed(2), pad.left + chartW + 5, entryLabelY);
 
-    // Current price highlight
+    // Take Profit line
+    const tpY = toY(tpPrice);
+    ctx.strokeStyle = '#07e46e80';
+    ctx.setLineDash([6, 3]);
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(pad.left, tpY); ctx.lineTo(pad.left + chartW, tpY); ctx.stroke();
+    ctx.setLineDash([]);
+    // TP label
+    ctx.fillStyle = '#07e46e';
+    ctx.fillRect(pad.left + chartW + 2, tpY - 7, priceAxisW - 4, 14);
+    ctx.fillStyle = '#0a0a0a';
+    ctx.font = 'bold 8px monospace';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('TP ' + tpPrice.toFixed(1), pad.left + chartW + 4, tpY);
+    // TP zone fill
+    const tpZoneTop = direction === 'LONG' ? Math.min(tpY, entryY) : Math.min(entryY, tpY);
+    const tpZoneBot = direction === 'LONG' ? entryY : tpY;
+
+    // Stop Loss line
+    const slY = toY(slPrice);
+    ctx.strokeStyle = '#ef444480';
+    ctx.setLineDash([6, 3]);
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(pad.left, slY); ctx.lineTo(pad.left + chartW, slY); ctx.stroke();
+    ctx.setLineDash([]);
+    // SL label
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(pad.left + chartW + 2, slY - 7, priceAxisW - 4, 14);
+    ctx.fillStyle = '#F5F5FF';
+    ctx.font = 'bold 8px monospace';
+    ctx.fillText('SL ' + slPrice.toFixed(1), pad.left + chartW + 4, slY);
+
     if (candles.length > 0) {
       const lastClose = candles[candles.length - 1].close;
       const curY = toY(lastClose);
