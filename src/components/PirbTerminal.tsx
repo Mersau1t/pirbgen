@@ -517,8 +517,8 @@ export default function PirbTerminal() {
                 {status === 'PLAYING' && (
                   <div className="flex flex-col items-center gap-3 py-2">
                     <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 bg-neon-amber animate-blink" />
-                      <span className="font-display text-[10px] text-neon-amber text-glow-amber tracking-wider">AWAITING RESOLUTION...</span>
+                      <span className="w-2 h-2 bg-neon-orange animate-blink" />
+                      <span className="font-display text-[10px] text-neon-orange text-glow-orange tracking-wider">AWAITING RESOLUTION...</span>
                     </div>
                     <button
                       onClick={exitEarly}
