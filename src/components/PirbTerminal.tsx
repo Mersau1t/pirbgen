@@ -345,7 +345,7 @@ export default function PirbTerminal() {
       <TickerMarquee />
 
       {/* Main content */}
-      <main className="relative z-10 max-w-4xl mx-auto px-4 py-4 flex-1 min-h-0 overflow-y-auto">
+      <main className="relative z-10 max-w-4xl mx-auto px-4 py-2 flex-1 min-h-0 overflow-hidden flex flex-col">
         <AnimatePresence mode="wait">
           {status === 'IDLE' && (
             <motion.div
