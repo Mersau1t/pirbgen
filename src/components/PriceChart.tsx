@@ -309,7 +309,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
   }, [candles, entryPrice, positive, size, direction]);
 
   return (
-    <div ref={containerRef} className="w-full h-80 sm:h-[420px] relative">
+    <div ref={containerRef} className="w-full h-full relative">
       <canvas ref={canvasRef} className="w-full h-full" style={{ display: 'block' }} />
       <div className="absolute top-1 left-3 text-[9px] text-muted-foreground/50 font-mono tracking-wider">CANDLE 2s · TF 10s</div>
     </div>
