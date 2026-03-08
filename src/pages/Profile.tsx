@@ -172,7 +172,7 @@ export default function Profile() {
           <div className="glass-panel rounded-sm border border-border/30 p-6 space-y-6">
             <div className="flex items-center gap-4">
               {/* Clickable Avatar */}
-              <div className="relative" ref={pickerRef}>
+              <div className="relative">
                 <button
                   onClick={() => setAvatarPickerOpen(!avatarPickerOpen)}
                   className="relative cursor-pointer group"
