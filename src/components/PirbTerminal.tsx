@@ -343,6 +343,39 @@ export default function PirbTerminal() {
                 )}
               </div>
 
+              {/* Top Volatile Tokens */}
+              {topVolatile.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="w-full max-w-md"
+                >
+                  <div className="pixel-border bg-background/80 p-3">
+                    <p className="font-display text-[9px] text-neon-orange tracking-wider mb-2 text-center">🔥 MOST VOLATILE RIGHT NOW</p>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {topVolatile.map((t, i) => (
+                        <motion.div
+                          key={t.feed.id}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.4 + i * 0.08 }}
+                          className="flex items-center justify-between px-2 py-1.5 rounded bg-neon-purple/5 border border-neon-purple/10"
+                        >
+                          <span className="font-display text-[10px] text-foreground/80 tracking-wider">{t.feed.ticker}</span>
+                          <span className={`font-display text-[9px] tracking-wider ${
+                            t.volatility > 2 ? 'text-neon-red' : t.volatility > 0.8 ? 'text-neon-orange' : 'text-neon-green'
+                          }`}>
+                            {(t.volatility * 100).toFixed(0)}%
+                          </span>
+                        </motion.div>
+                      ))}
+                    </div>
+                    <p className="font-display text-[7px] text-muted-foreground/30 text-center mt-1.5 tracking-wider">ANNUALIZED VOLATILITY (24H STDDEV)</p>
+                  </div>
+                </motion.div>
+              )}
+
               <div className="flex items-center gap-2 text-[8px] font-display text-muted-foreground/40">
                 <span className="text-neon-purple/40">●</span>
                 <span>PYTH ENTROPY</span>
