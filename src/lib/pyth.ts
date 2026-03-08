@@ -128,38 +128,90 @@ export async function fetchMultiplePrices(feedIds: string[]): Promise<Map<string
 }
 
 /**
- * Pick a random feed, weighted toward more volatile ones.
- * Volatility proxy = confidence / price (higher = more volatile)
+ * Fetch prices at a specific timestamp for multiple feeds
+ */
+async function fetchPricesAtTime(feedIds: string[], timestamp: number): Promise<Map<string, number>> {
+  const result = new Map<string, number>();
+  if (feedIds.length === 0) return result;
+
+  // Hermes timestamp endpoint only takes one set of ids, batch them
+  try {
+    const params = feedIds.map(id => `ids[]=${id}`).join('&');
+    const res = await fetch(`${HERMES_URL}/v2/updates/price/${timestamp}?${params}&parsed=true`);
+    if (!res.ok) return result;
+
+    const data = await res.json();
+    for (const item of data.parsed || []) {
+      const price = parsePythPrice(item.price);
+      if (price > 0) result.set('0x' + item.id, price);
+    }
+  } catch {
+    // silent fail
+  }
+  return result;
+}
+
+// Volatility cache — refreshed every 10 min
+let volatilityCache: Array<{ feed: PythFeed; price: number; volatility: number }> = [];
+let volatilityCacheTime = 0;
+const VOLATILITY_CACHE_TTL = 10 * 60 * 1000;
+
+/**
+ * Pick a feed weighted toward 24h most volatile.
+ * Compares current price vs 24h ago price to compute real volatility.
  */
 export async function pickVolatileFeed(): Promise<{ feed: PythFeed; price: number } | null> {
   const feeds = await fetchAllPythFeeds();
   if (feeds.length === 0) return null;
 
-  // Sample a random batch of ~30 feeds to check volatility
-  const batchSize = Math.min(30, feeds.length);
+  // Use cache if fresh
+  if (volatilityCache.length > 0 && Date.now() - volatilityCacheTime < VOLATILITY_CACHE_TTL) {
+    const top = volatilityCache.slice(0, Math.max(Math.ceil(volatilityCache.length / 3), 5));
+    const pick = top[Math.floor(Math.random() * top.length)];
+    return { feed: pick.feed, price: pick.price };
+  }
+
+  // Sample a larger batch (~60) to find volatile ones
+  const batchSize = Math.min(60, feeds.length);
   const shuffled = [...feeds].sort(() => Math.random() - 0.5);
   const batch = shuffled.slice(0, batchSize);
+  const ids = batch.map(f => f.id);
 
-  const prices = await fetchMultiplePrices(batch.map(f => f.id));
+  // Fetch current prices + prices from 24h ago in parallel
+  const now = Math.floor(Date.now() / 1000);
+  const dayAgo = now - 86400;
 
-  // Score by relative confidence (volatility proxy)
+  const [currentPrices, pastPrices] = await Promise.all([
+    fetchMultiplePrices(ids),
+    fetchPricesAtTime(ids, dayAgo),
+  ]);
+
+  // Score by absolute 24h % change
   const scored: Array<{ feed: PythFeed; price: number; volatility: number }> = [];
   for (const feed of batch) {
-    const data = prices.get(feed.id);
-    if (!data || data.price <= 0) continue;
-    scored.push({
-      feed,
-      price: data.price,
-      volatility: data.confidence / data.price,
-    });
+    const cur = currentPrices.get(feed.id);
+    const past = pastPrices.get(feed.id);
+    if (!cur || cur.price <= 0) continue;
+
+    let vol = cur.confidence / cur.price; // fallback: confidence ratio
+    if (past && past > 0) {
+      vol = Math.abs(cur.price - past) / past; // real 24h % change
+    }
+
+    scored.push({ feed, price: cur.price, volatility: vol });
   }
 
   if (scored.length === 0) return null;
 
-  // Sort by volatility descending, pick from top half with weight
+  // Sort by volatility descending, cache results
   scored.sort((a, b) => b.volatility - a.volatility);
-  const topHalf = scored.slice(0, Math.max(Math.ceil(scored.length / 2), 3));
-  const pick = topHalf[Math.floor(Math.random() * topHalf.length)];
+  volatilityCache = scored;
+  volatilityCacheTime = Date.now();
+
+  console.log(`Top volatile: ${scored.slice(0, 5).map(s => `${s.feed.ticker} (${(s.volatility * 100).toFixed(1)}%)`).join(', ')}`);
+
+  const top = scored.slice(0, Math.max(Math.ceil(scored.length / 3), 5));
+  const pick = top[Math.floor(Math.random() * top.length)];
 
   return { feed: pick.feed, price: pick.price };
 }
