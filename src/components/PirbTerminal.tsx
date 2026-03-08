@@ -103,7 +103,9 @@ export default function PirbTerminal() {
       setCurrentPrice(prev => {
         if (!prev) return 100;
         const volatility = prev * (0.002 + (activePos.leverage / 5000));
-        return prev + (Math.random() - 0.5) * volatility;
+        const newPrice = prev + (Math.random() - 0.5) * volatility;
+        setPriceHistory(h => [...h.slice(-(9)), newPrice]);
+        return newPrice;
       });
       setElapsedTime(t => t + 1);
     }, 1000);
