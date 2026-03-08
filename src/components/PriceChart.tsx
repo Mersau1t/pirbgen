@@ -20,6 +20,24 @@ interface PriceChartProps {
 
 const MAX_CANDLES = 28;
 
+/** Smart price formatting — adapts decimal places to price magnitude */
+function formatPrice(p: number): string {
+  const abs = Math.abs(p);
+  if (abs >= 1000) return '$' + p.toFixed(1);
+  if (abs >= 1) return '$' + p.toFixed(2);
+  if (abs >= 0.01) return '$' + p.toFixed(4);
+  if (abs >= 0.0001) return '$' + p.toFixed(6);
+  return '$' + p.toPrecision(4);
+}
+
+function formatPriceShort(p: number): string {
+  const abs = Math.abs(p);
+  if (abs >= 1000) return p.toFixed(0);
+  if (abs >= 1) return p.toFixed(2);
+  if (abs >= 0.01) return p.toFixed(4);
+  return p.toPrecision(3);
+}
+
 export default function PriceChart({ candles, entryPrice, positive, direction, stopLoss, takeProfit, leverage }: PriceChartProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -50,7 +68,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
 
     const w = size.w;
     const h = size.h;
-    const priceAxisW = 58;
+    const priceAxisW = 78;
     const timeAxisH = 20;
     const pad = { top: 12, bottom: timeAxisH + 4, left: 6, right: priceAxisW + 4 };
     const chartW = w - pad.left - pad.right;
@@ -121,7 +139,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       // Price label
       ctx.fillStyle = 'rgba(245,245,255,0.3)';
       ctx.font = '9px monospace';
-      ctx.fillText('$' + price.toFixed(2), pad.left + chartW + 6, y);
+      ctx.fillText(formatPrice(price), pad.left + chartW + 6, y);
     }
 
     // Entry price line — bold & prominent
@@ -139,7 +157,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
     const entryLabelY = entryY;
     ctx.fillRect(pad.left + chartW + 2, entryLabelY - 7, priceAxisW - 4, 14);
     ctx.fillStyle = '#F5F5FF';
-    ctx.fillText('$' + entryPrice.toFixed(2), pad.left + chartW + 5, entryLabelY);
+    ctx.fillText(formatPrice(entryPrice), pad.left + chartW + 5, entryLabelY);
 
     // Take Profit line
     const tpY = toY(tpPrice);
@@ -155,7 +173,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
     ctx.font = 'bold 8px monospace';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText('TP ' + tpPrice.toFixed(1), pad.left + chartW + 4, tpY);
+    ctx.fillText('TP ' + formatPriceShort(tpPrice), pad.left + chartW + 4, tpY);
     // TP zone fill
     const tpZoneTop = direction === 'LONG' ? Math.min(tpY, entryY) : Math.min(entryY, tpY);
     const tpZoneBot = direction === 'LONG' ? entryY : tpY;
@@ -172,7 +190,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
     ctx.fillRect(pad.left + chartW + 2, slY - 7, priceAxisW - 4, 14);
     ctx.fillStyle = '#F5F5FF';
     ctx.font = 'bold 8px monospace';
-    ctx.fillText('SL ' + slPrice.toFixed(1), pad.left + chartW + 4, slY);
+    ctx.fillText('SL ' + formatPriceShort(slPrice), pad.left + chartW + 4, slY);
 
     if (candles.length > 0) {
       const lastClose = candles[candles.length - 1].close;
@@ -189,7 +207,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       ctx.fillRect(pad.left + chartW + 2, curY - 7, priceAxisW - 4, 14);
       ctx.fillStyle = '#0a0a0a';
       ctx.font = 'bold 9px monospace';
-      ctx.fillText('$' + lastClose.toFixed(2), pad.left + chartW + 5, curY);
+      ctx.fillText(formatPrice(lastClose), pad.left + chartW + 5, curY);
     }
 
     // Time axis

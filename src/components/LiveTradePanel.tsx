@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, memo } from 'react';
+import { useState, useEffect, useRef, useCallback, memo, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import PriceChart, { type Candle } from '@/components/PriceChart';
@@ -36,6 +36,16 @@ interface LiveTradePanelProps {
 }
 
 const formatTime = (s: number) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
+
+/** Smart price formatting */
+function fmtPrice(p: number): string {
+  const abs = Math.abs(p);
+  if (abs >= 1000) return '$' + p.toFixed(1);
+  if (abs >= 1) return '$' + p.toFixed(2);
+  if (abs >= 0.01) return '$' + p.toFixed(4);
+  if (abs >= 0.0001) return '$' + p.toFixed(6);
+  return '$' + p.toPrecision(4);
+}
 
 function LiveTradePanel({ position, entryPrice, initialCandles, onResult, onExitEarly, playerName, walletAddress }: LiveTradePanelProps) {
   const [currentPrice, setCurrentPrice] = useState(entryPrice);
@@ -153,12 +163,12 @@ function LiveTradePanel({ position, entryPrice, initialCandles, onResult, onExit
             <div className="text-center">
               <p className="text-[8px] text-muted-foreground/60 uppercase">Current</p>
               <p className={`font-mono text-xl sm:text-2xl font-bold ${pnl >= 0 ? 'text-neon-green text-glow-green' : 'text-neon-red text-glow-red'}`}>
-                ${currentPrice.toFixed(2)}
+                {fmtPrice(currentPrice)}
               </p>
             </div>
             <div className="text-center">
               <p className="text-[8px] text-muted-foreground/60 uppercase">Entry</p>
-              <p className="font-mono text-sm text-neon-purple">${entryPrice.toFixed(2)}</p>
+              <p className="font-mono text-sm text-neon-purple">{fmtPrice(entryPrice)}</p>
             </div>
             <div className="text-center">
               <p className="text-[8px] text-muted-foreground/60 uppercase">PnL</p>
