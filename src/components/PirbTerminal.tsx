@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import pirbMascot from '@/assets/pirb-mascot.png';
 import { playGenerateClick, playWinSound, playRektSound } from '@/lib/sounds';
+import PriceChart from '@/components/PriceChart';
 
 // --- TYPES ---
 type TradeDirection = 'LONG' | 'SHORT';
