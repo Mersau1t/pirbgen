@@ -71,7 +71,8 @@ export default function PirbTerminal() {
   const [pnl, setPnl] = useState(0);
   const [pnlPercent, setPnlPercent] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
-  const [priceHistory, setPriceHistory] = useState<number[]>([]);
+  const [candles, setCandles] = useState<Candle[]>([]);
+  const candleRef = useRef<{ ticks: number[]; }>({ ticks: [] });
 
   // Restore session
   useEffect(() => {
