@@ -6,6 +6,7 @@ import PixelConfetti from '@/components/PixelConfetti';
 import { streamPythPriceById, type PythPriceTick } from '@/lib/pyth';
 import { playWinSound, playRektSound, playCoinSound } from '@/lib/sounds';
 import { playTimerTick, playTimerUrgent } from '@/lib/timerSounds';
+import { startTensionAudio, setTensionIntensity, stopTensionAudio } from '@/lib/tensionSounds';
 
 interface DegenPosition {
   id: number;
