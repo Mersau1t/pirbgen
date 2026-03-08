@@ -254,23 +254,23 @@ export default function PirbTerminal() {
   const rarityStyle = activePos ? RARITY_STYLES[activePos.rarity] : RARITY_STYLES.common;
 
   return (
-    <div className="min-h-screen bg-background grid-bg scanlines relative overflow-hidden animate-flicker">
+    <div className="min-h-screen bg-background grid-bg scanlines crt-vignette relative overflow-hidden animate-flicker">
       {/* Top bar */}
-      <header className="relative z-10 border-b border-border/30 bg-muted/20 backdrop-blur-sm">
+      <header className="relative z-10 border-b-2 border-neon-green/40 bg-background/90">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">🐦</span>
-            <span className="font-display text-sm tracking-[0.3em] text-foreground text-glow-green">PIRBGEN</span>
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">🕹️</span>
+            <span className="font-display text-[10px] sm:text-xs tracking-[0.3em] text-neon-green text-glow-green">PIRBGEN</span>
           </div>
           <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
-              <span className="w-2 h-2 rounded-full bg-neon-green animate-pulse-neon" />
-              <span>BASE MAINNET</span>
+            <div className="hidden sm:flex items-center gap-2 text-[10px] font-display text-neon-cyan">
+              <span className="w-2 h-2 bg-neon-green animate-blink" />
+              <span>BASE</span>
             </div>
             {walletAddress && profile ? (
               <button
                 onClick={() => navigate('/profile')}
-                className="glass-panel px-4 py-1.5 text-xs font-display tracking-wider text-foreground hover:box-glow-green transition-all duration-300 cursor-pointer flex items-center gap-2"
+                className="arcade-btn arcade-btn-cyan text-[8px] sm:text-[10px] py-2 px-3 flex items-center gap-2"
               >
                 <span>{getAvatarEmoji(profile.avatar)}</span>
                 <span>{profile.display_name}</span>
@@ -279,9 +279,9 @@ export default function PirbTerminal() {
               <button
                 onClick={connectWallet}
                 disabled={isConnecting}
-                className="glass-panel px-4 py-1.5 text-xs font-display tracking-wider text-foreground hover:box-glow-green transition-all duration-300 cursor-pointer disabled:opacity-50"
+                className="arcade-btn arcade-btn-primary text-[8px] sm:text-[10px] py-2 px-3 disabled:opacity-50"
               >
-                {isConnecting ? '⏳ CONNECTING...' : '🔗 CONNECT WALLET'}
+                {isConnecting ? '⏳ CONNECTING...' : '🔗 CONNECT'}
               </button>
             )}
           </div>
@@ -299,45 +299,50 @@ export default function PirbTerminal() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="flex flex-col items-center gap-8 pt-12"
+              className="flex flex-col items-center gap-8 pt-8"
             >
               <motion.img
                 src={pirbMascot}
                 alt="Pirb the pigeon"
-                className="w-40 h-40 object-contain drop-shadow-[0_0_30px_hsl(150,100%,50%,0.3)]"
-                animate={{ y: [0, -8, 0] }}
-                transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                className="w-36 h-36 sm:w-44 sm:h-44 object-contain drop-shadow-[0_0_40px_hsl(120,100%,50%,0.4)]"
+                animate={{ y: [0, -10, 0] }}
+                transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
               />
 
-              <div className="text-center space-y-3">
-                <h1 className="font-display text-5xl sm:text-6xl tracking-wider text-foreground text-glow-green">
+              <div className="text-center space-y-4">
+                <h1 className="font-display text-3xl sm:text-5xl tracking-wider text-neon-green text-glow-green">
                   <GlitchText>PIRBGEN</GlitchText>
                 </h1>
-                <p className="text-sm text-muted-foreground tracking-widest uppercase">
-                  Stop analyzing. Start rolling. Fate is the ultimate alpha.
+                <p className="font-display text-[8px] sm:text-[10px] text-neon-amber text-glow-amber tracking-[0.2em]">
+                  INSERT COIN TO PLAY
                 </p>
               </div>
 
-              <div className="glass-panel p-8 rounded-sm w-full max-w-md space-y-4">
+              <div className="pixel-border p-6 sm:p-8 w-full max-w-md space-y-4 bg-background/90">
                 <button
                   onClick={generatePosition}
-                  className="w-full py-4 bg-primary/10 border border-primary/40 text-foreground font-display text-lg tracking-[0.2em] hover:bg-primary/20 hover:box-glow-green transition-all duration-300 cursor-pointer active:scale-95"
+                  className="arcade-btn arcade-btn-primary w-full text-sm sm:text-base py-4"
                 >
                   🎲 GENERATE
                 </button>
-                <Link to="/leaderboard" className="w-full py-3 bg-muted/30 border border-border/30 text-muted-foreground font-display text-xs tracking-[0.2em] hover:text-foreground hover:border-border/60 transition-all duration-300 cursor-pointer text-center block">
+                <Link to="/leaderboard" className="arcade-btn arcade-btn-amber w-full text-[10px] py-3 text-center block">
                   🏆 LEADERBOARD
                 </Link>
                 {walletAddress && (
-                  <Link to="/profile" className="w-full py-3 bg-muted/30 border border-border/30 text-muted-foreground font-display text-xs tracking-[0.2em] hover:text-foreground hover:border-border/60 transition-all duration-300 cursor-pointer text-center block">
+                  <Link to="/profile" className="arcade-btn arcade-btn-cyan w-full text-[10px] py-3 text-center block">
                     👤 PROFILE
                   </Link>
                 )}
               </div>
 
-              <p className="text-[10px] text-muted-foreground/50 text-center max-w-sm">
-                powered by pyth entropy · price feeds by pyth network · built on base
-              </p>
+              <div className="flex items-center gap-2 text-[8px] font-display text-muted-foreground/40">
+                <span className="text-neon-green/40">●</span>
+                <span>PYTH ENTROPY</span>
+                <span className="text-neon-magenta/40">●</span>
+                <span>PYTH NETWORK</span>
+                <span className="text-neon-cyan/40">●</span>
+                <span>BASE L2</span>
+              </div>
             </motion.div>
           )}
 
