@@ -13,6 +13,9 @@ interface PriceChartProps {
   entryPrice: number;
   positive: boolean;
   direction: 'LONG' | 'SHORT';
+  stopLoss: number;   // e.g. -100 (percent PnL)
+  takeProfit: number;  // e.g. +500 (percent PnL)
+  leverage: number;
 }
 
 const MAX_CANDLES = 20;
