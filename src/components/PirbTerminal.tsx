@@ -560,7 +560,7 @@ export default function PirbTerminal() {
                     <motion.div
                       initial={{ scale: 0.5, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
-                      className="text-center py-4 space-y-2"
+                      className="text-center py-2 space-y-1"
                     >
                       <p className="font-display text-xl sm:text-2xl text-neon-green text-glow-green animate-rainbow">🎯 TARGET HIT!</p>
                       <p className="font-display text-[10px] text-neon-green">+{pnl.toFixed(2)}% PROFIT</p>
