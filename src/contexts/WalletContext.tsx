@@ -16,7 +16,7 @@ interface WalletContextType {
   isConnecting: boolean;
   connectWallet: () => Promise<void>;
   disconnectWallet: () => void;
-  updateProfile: (updates: { display_name?: string; avatar?: string }) => Promise<void>;
+  updateProfile: (updates: { display_name?: string; avatar?: string; avatar_url?: string | null }) => Promise<void>;
 }
 
 const WalletContext = createContext<WalletContextType | null>(null);
