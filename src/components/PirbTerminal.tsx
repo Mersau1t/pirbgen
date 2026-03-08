@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import pirbMascot from '@/assets/pirb-mascot.png';
 import { playGenerateClick, playWinSound, playRektSound } from '@/lib/sounds';
-import PriceChart from '@/components/PriceChart';
+import PriceChart, { type Candle } from '@/components/PriceChart';
 
 // --- TYPES ---
 type TradeDirection = 'LONG' | 'SHORT';
@@ -71,7 +71,8 @@ export default function PirbTerminal() {
   const [pnl, setPnl] = useState(0);
   const [pnlPercent, setPnlPercent] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
-  const [priceHistory, setPriceHistory] = useState<number[]>([]);
+  const [candles, setCandles] = useState<Candle[]>([]);
+  const candleRef = useRef<{ ticks: number[]; }>({ ticks: [] });
 
   // Restore session
   useEffect(() => {
@@ -96,7 +97,7 @@ export default function PirbTerminal() {
     }
   }, [activePos, entryPrice, status]);
 
-  // Price simulation
+  // Price simulation — tick every 500ms, candle every 5 ticks (2.5s per candle → ~4 candles in 10s)
   useEffect(() => {
     if (status !== 'PLAYING' || !activePos) return;
     const interval = setInterval(() => {
@@ -104,7 +105,23 @@ export default function PirbTerminal() {
         if (!prev) return 100;
         const volatility = prev * (0.002 + (activePos.leverage / 5000));
         const newPrice = prev + (Math.random() - 0.5) * volatility;
-        setPriceHistory(h => [...h.slice(-(9)), newPrice]);
+
+        // Accumulate ticks for current candle
+        candleRef.current.ticks.push(newPrice);
+
+        // Every 3 ticks, form a candle
+        if (candleRef.current.ticks.length >= 3) {
+          const ticks = candleRef.current.ticks;
+          const candle: Candle = {
+            open: ticks[0],
+            high: Math.max(...ticks),
+            low: Math.min(...ticks),
+            close: ticks[ticks.length - 1],
+          };
+          setCandles(c => [...c.slice(-9), candle]);
+          candleRef.current.ticks = [];
+        }
+
         return newPrice;
       });
       setElapsedTime(t => t + 1);
@@ -141,7 +158,8 @@ export default function PirbTerminal() {
       setCurrentPrice(price);
       setPnl(0);
       setPnlPercent(0);
-      setPriceHistory([price]);
+      setCandles([]);
+      candleRef.current = { ticks: [] };
       setStatus('PLAYING');
     }, 2000);
   }, []);
@@ -163,7 +181,8 @@ export default function PirbTerminal() {
     setEntryPrice(null);
     setCurrentPrice(null);
     setPnl(0);
-    setPriceHistory([]);
+    setCandles([]);
+    candleRef.current = { ticks: [] };
     setElapsedTime(0);
   };
 
@@ -342,7 +361,7 @@ export default function PirbTerminal() {
                 {/* Price Chart */}
                 {entryPrice && (
                   <div className="border border-border/20 rounded-sm overflow-hidden bg-muted/10">
-                    <PriceChart priceHistory={priceHistory} entryPrice={entryPrice} positive={pnl >= 0} stopLoss={activePos.stopLoss} takeProfit={activePos.takeProfit} direction={activePos.direction} />
+                    <PriceChart candles={candles} entryPrice={entryPrice} positive={pnl >= 0} direction={activePos.direction} />
                   </div>
                 )}
 
