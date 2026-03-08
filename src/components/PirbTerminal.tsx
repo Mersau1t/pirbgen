@@ -345,7 +345,7 @@ export default function PirbTerminal() {
 
               <div className="pixel-border p-4 sm:p-6 w-full max-w-md space-y-3 bg-background/90">
                 <button
-                  onClick={generatePosition}
+                  onClick={() => generatePosition()}
                   className="arcade-btn arcade-btn-primary w-full text-sm sm:text-base py-3"
                 >
                   🎲 GENERATE
