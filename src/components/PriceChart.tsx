@@ -20,7 +20,7 @@ interface PriceChartProps {
 
 const MAX_CANDLES = 20;
 
-export default function PriceChart({ candles, entryPrice, positive, direction }: PriceChartProps) {
+export default function PriceChart({ candles, entryPrice, positive, direction, stopLoss, takeProfit, leverage }: PriceChartProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
