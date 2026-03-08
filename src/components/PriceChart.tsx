@@ -1,17 +1,22 @@
 import { useRef, useEffect, useState } from 'react';
 
+export interface Candle {
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+}
+
 interface PriceChartProps {
-  priceHistory: number[];
+  candles: Candle[];
   entryPrice: number;
   positive: boolean;
-  stopLoss: number;
-  takeProfit: number;
   direction: 'LONG' | 'SHORT';
 }
 
-const MAX_POINTS = 10;
+const MAX_CANDLES = 10;
 
-export default function PriceChart({ priceHistory, entryPrice, positive, stopLoss, takeProfit, direction }: PriceChartProps) {
+export default function PriceChart({ candles, entryPrice, positive, direction }: PriceChartProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
@@ -29,7 +34,7 @@ export default function PriceChart({ priceHistory, entryPrice, positive, stopLos
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || priceHistory.length < 1 || size.w === 0) return;
+    if (!canvas || candles.length < 1 || size.w === 0) return;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -41,186 +46,131 @@ export default function PriceChart({ priceHistory, entryPrice, positive, stopLos
 
     const w = size.w;
     const h = size.h;
-    const data = priceHistory.slice(-MAX_POINTS);
+    const pad = { top: 16, bottom: 16, left: 8, right: 8 };
+    const chartW = w - pad.left - pad.right;
+    const chartH = h - pad.top - pad.bottom;
 
-    // Calculate price range with padding
-    const allPrices = [...data, entryPrice];
+    // Price range
+    const allPrices = candles.flatMap(c => [c.high, c.low]).concat(entryPrice);
     const dataMin = Math.min(...allPrices);
     const dataMax = Math.max(...allPrices);
-    const padding = (dataMax - dataMin) * 0.3 || entryPrice * 0.005;
-    const min = dataMin - padding;
-    const max = dataMax + padding;
+    const pricePad = (dataMax - dataMin) * 0.2 || entryPrice * 0.003;
+    const min = dataMin - pricePad;
+    const max = dataMax + pricePad;
     const range = max - min || 1;
 
-    const toX = (i: number) => (i / (MAX_POINTS - 1)) * w;
-    const toY = (v: number) => h - ((v - min) / range) * h;
+    const toY = (v: number) => pad.top + chartH - ((v - min) / range) * chartH;
+    const candleWidth = chartW / MAX_CANDLES;
+    const bodyWidth = candleWidth * 0.6;
+    const toX = (i: number) => pad.left + candleWidth * i + candleWidth / 2;
 
     ctx.clearRect(0, 0, w, h);
 
     const entryY = toY(entryPrice);
-
-    // Win/loss zones based on direction
-    // LONG: above entry = win (green), below = loss (red)
-    // SHORT: above entry = loss (red), below = win (green)
     const winAbove = direction === 'LONG';
 
-    // Top zone (above entry)
-    const topGradient = ctx.createLinearGradient(0, 0, 0, entryY);
-    if (winAbove) {
-      topGradient.addColorStop(0, 'rgba(7, 228, 110, 0.12)');
-      topGradient.addColorStop(1, 'rgba(7, 228, 110, 0.02)');
-    } else {
-      topGradient.addColorStop(0, 'rgba(239, 68, 68, 0.12)');
-      topGradient.addColorStop(1, 'rgba(239, 68, 68, 0.02)');
-    }
-    ctx.fillStyle = topGradient;
-    ctx.fillRect(0, 0, w, entryY);
+    // Win/loss zone fills
+    const topGrad = ctx.createLinearGradient(0, pad.top, 0, entryY);
+    topGrad.addColorStop(0, winAbove ? 'rgba(7,228,110,0.10)' : 'rgba(239,68,68,0.10)');
+    topGrad.addColorStop(1, winAbove ? 'rgba(7,228,110,0.01)' : 'rgba(239,68,68,0.01)');
+    ctx.fillStyle = topGrad;
+    ctx.fillRect(0, pad.top, w, entryY - pad.top);
 
-    // Bottom zone (below entry)
-    const bottomGradient = ctx.createLinearGradient(0, entryY, 0, h);
-    if (winAbove) {
-      bottomGradient.addColorStop(0, 'rgba(239, 68, 68, 0.02)');
-      bottomGradient.addColorStop(1, 'rgba(239, 68, 68, 0.12)');
-    } else {
-      bottomGradient.addColorStop(0, 'rgba(7, 228, 110, 0.02)');
-      bottomGradient.addColorStop(1, 'rgba(7, 228, 110, 0.12)');
-    }
-    ctx.fillStyle = bottomGradient;
-    ctx.fillRect(0, entryY, w, h - entryY);
+    const botGrad = ctx.createLinearGradient(0, entryY, 0, h - pad.bottom);
+    botGrad.addColorStop(0, winAbove ? 'rgba(239,68,68,0.01)' : 'rgba(7,228,110,0.01)');
+    botGrad.addColorStop(1, winAbove ? 'rgba(239,68,68,0.10)' : 'rgba(7,228,110,0.10)');
+    ctx.fillStyle = botGrad;
+    ctx.fillRect(0, entryY, w, h - pad.bottom - entryY);
 
-    // Grid lines
+    // Grid
     ctx.strokeStyle = 'rgba(255,255,255,0.03)';
     ctx.lineWidth = 1;
-    for (let i = 0; i < 8; i++) {
-      const y = (h / 7) * i;
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(w, y);
-      ctx.stroke();
-    }
-    for (let i = 1; i < 10; i++) {
-      const x = (w / 10) * i;
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, h);
-      ctx.stroke();
+    for (let i = 0; i <= 6; i++) {
+      const y = pad.top + (chartH / 6) * i;
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
     }
 
-    // Entry price line
-    ctx.strokeStyle = 'rgba(245, 245, 255, 0.35)';
-    ctx.setLineDash([6, 4]);
+    // Entry line
+    ctx.strokeStyle = 'rgba(245,245,255,0.3)';
+    ctx.setLineDash([5, 3]);
     ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(0, entryY);
-    ctx.lineTo(w, entryY);
-    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, entryY); ctx.lineTo(w, entryY); ctx.stroke();
     ctx.setLineDash([]);
 
     // Entry label
-    ctx.fillStyle = 'rgba(245, 245, 255, 0.5)';
+    ctx.fillStyle = 'rgba(245,245,255,0.45)';
     ctx.font = '9px monospace';
     ctx.textAlign = 'left';
-    ctx.fillText('ENTRY $' + entryPrice.toFixed(2), 4, entryY - 4);
+    ctx.fillText('ENTRY', 4, entryY - 4);
 
     // Zone labels
-    ctx.font = 'bold 10px monospace';
-    ctx.globalAlpha = 0.15;
+    ctx.font = 'bold 9px monospace';
+    ctx.globalAlpha = 0.12;
     ctx.textAlign = 'center';
     ctx.fillStyle = winAbove ? '#07e46e' : '#ef4444';
-    ctx.fillText(winAbove ? '▲ PROFIT ZONE' : '▲ LOSS ZONE', w / 2, Math.min(entryY - 10, h * 0.15));
+    ctx.fillText(winAbove ? '▲ PROFIT' : '▲ LOSS', w / 2, pad.top + 12);
     ctx.fillStyle = winAbove ? '#ef4444' : '#07e46e';
-    ctx.fillText(winAbove ? '▼ LOSS ZONE' : '▼ PROFIT ZONE', w / 2, Math.max(entryY + 20, h * 0.85));
+    ctx.fillText(winAbove ? '▼ LOSS' : '▼ PROFIT', w / 2, h - pad.bottom - 4);
     ctx.globalAlpha = 1;
 
-    // Only draw line if we have 2+ points
-    if (data.length >= 2) {
-      const purple = '#8046dc';
+    // Draw candles
+    const purple = '#8046dc';
+    const bullish = '#07e46e';
+    const bearish = '#ef4444';
 
-      // Glow under the line
-      const fillGrad = ctx.createLinearGradient(0, 0, 0, h);
-      fillGrad.addColorStop(0, 'rgba(128, 70, 220, 0.2)');
-      fillGrad.addColorStop(0.5, 'rgba(128, 70, 220, 0.05)');
-      fillGrad.addColorStop(1, 'rgba(128, 70, 220, 0)');
+    candles.forEach((candle, i) => {
+      const x = toX(i);
+      const isBull = candle.close >= candle.open;
+      const color = isBull ? bullish : bearish;
 
+      const highY = toY(candle.high);
+      const lowY = toY(candle.low);
+      const openY = toY(candle.open);
+      const closeY = toY(candle.close);
+      const bodyTop = Math.min(openY, closeY);
+      const bodyH = Math.max(Math.abs(closeY - openY), 1);
+
+      // Wick
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.5;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 4;
       ctx.beginPath();
-      data.forEach((price, i) => {
-        const x = toX(i);
-        const y = toY(price);
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      });
-      ctx.lineTo(toX(data.length - 1), h);
-      ctx.lineTo(toX(0), h);
-      ctx.closePath();
-      ctx.fillStyle = fillGrad;
-      ctx.fill();
-
-      // Main line — purple
-      ctx.beginPath();
-      data.forEach((price, i) => {
-        const x = toX(i);
-        const y = toY(price);
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      });
-      ctx.strokeStyle = purple;
-      ctx.lineWidth = 2.5;
-      ctx.shadowColor = purple;
-      ctx.shadowBlur = 10;
+      ctx.moveTo(x, highY);
+      ctx.lineTo(x, lowY);
       ctx.stroke();
       ctx.shadowBlur = 0;
 
-      // Second pass for extra glow
-      ctx.beginPath();
-      data.forEach((price, i) => {
-        const x = toX(i);
-        const y = toY(price);
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      });
-      ctx.strokeStyle = 'rgba(128, 70, 220, 0.4)';
-      ctx.lineWidth = 6;
-      ctx.shadowColor = purple;
-      ctx.shadowBlur = 20;
-      ctx.stroke();
+      // Body
+      ctx.fillStyle = isBull ? color : color;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 6;
+      ctx.fillRect(x - bodyWidth / 2, bodyTop, bodyWidth, bodyH);
       ctx.shadowBlur = 0;
 
-      // Current price dot
-      const lastX = toX(data.length - 1);
-      const lastY = toY(data[data.length - 1]);
+      // Body border
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x - bodyWidth / 2, bodyTop, bodyWidth, bodyH);
 
-      // Outer glow
-      ctx.beginPath();
-      ctx.arc(lastX, lastY, 8, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(128, 70, 220, 0.2)';
-      ctx.fill();
+      // If it's the last candle, add purple glow outline
+      if (i === candles.length - 1) {
+        ctx.strokeStyle = purple;
+        ctx.lineWidth = 2;
+        ctx.shadowColor = purple;
+        ctx.shadowBlur = 12;
+        ctx.strokeRect(x - bodyWidth / 2 - 2, bodyTop - 2, bodyWidth + 4, bodyH + 4);
+        ctx.shadowBlur = 0;
+      }
+    });
 
-      // Inner dot
-      ctx.beginPath();
-      ctx.arc(lastX, lastY, 4, 0, Math.PI * 2);
-      ctx.fillStyle = purple;
-      ctx.shadowColor = purple;
-      ctx.shadowBlur = 15;
-      ctx.fill();
-      ctx.shadowBlur = 0;
-
-      // White center
-      ctx.beginPath();
-      ctx.arc(lastX, lastY, 1.5, 0, Math.PI * 2);
-      ctx.fillStyle = '#F5F5FF';
-      ctx.fill();
-    }
-  }, [priceHistory, entryPrice, positive, size, direction]);
+  }, [candles, entryPrice, positive, size, direction]);
 
   return (
     <div ref={containerRef} className="w-full h-52 sm:h-64 relative">
-      <canvas
-        ref={canvasRef}
-        className="w-full h-full"
-        style={{ display: 'block' }}
-      />
-      <div className="absolute top-2 left-3 text-[9px] text-muted-foreground/50 font-mono tracking-wider">10s TIMEFRAME</div>
-      <div className="absolute top-2 right-3 text-[9px] text-muted-foreground/50 font-mono">{Math.min(priceHistory.length, MAX_POINTS)}/{MAX_POINTS}</div>
+      <canvas ref={canvasRef} className="w-full h-full" style={{ display: 'block' }} />
+      <div className="absolute top-1 left-3 text-[9px] text-muted-foreground/50 font-mono tracking-wider">10s CANDLES</div>
+      <div className="absolute top-1 right-3 text-[9px] text-muted-foreground/50 font-mono">{candles.length}/{MAX_CANDLES}</div>
     </div>
   );
 }
