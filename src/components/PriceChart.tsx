@@ -41,13 +41,33 @@ function formatPriceShort(p: number): string {
   return p.toPrecision(5);
 }
 
+/** Catmull-Rom spline through points for smooth curves */
+function catmullRomPath(ctx: CanvasRenderingContext2D, pts: { x: number; y: number }[], tension = 0.3) {
+  if (pts.length < 2) return;
+  ctx.moveTo(pts[0].x, pts[0].y);
+  if (pts.length === 2) {
+    ctx.lineTo(pts[1].x, pts[1].y);
+    return;
+  }
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[Math.max(i - 1, 0)];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[Math.min(i + 2, pts.length - 1)];
+    const cp1x = p1.x + (p2.x - p0.x) * tension;
+    const cp1y = p1.y + (p2.y - p0.y) * tension;
+    const cp2x = p2.x - (p3.x - p1.x) * tension;
+    const cp2y = p2.y - (p3.y - p1.y) * tension;
+    ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
+  }
+}
+
 export default function PriceChart({ candles, entryPrice, positive, direction, stopLoss, takeProfit, leverage }: PriceChartProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
-  
-  // Smoothed price range to prevent jittery rescaling
-  const smoothedRangeRef = useRef<{ min: number; max: number } | null>(null);
+  const animFrameRef = useRef(0);
+  const timeRef = useRef(0);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -60,11 +80,6 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
     return () => obs.disconnect();
   }, []);
 
-  // Reset smoothed range when entry price changes (new trade)
-  useEffect(() => {
-    smoothedRangeRef.current = null;
-  }, [entryPrice]);
-
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || candles.length < 1 || size.w === 0) return;
@@ -75,8 +90,8 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
     const dpr = window.devicePixelRatio || 1;
     canvas.width = size.w * dpr;
     canvas.height = size.h * dpr;
-    ctx.scale(dpr, dpr);
 
+    // Compute static values once
     const w = size.w;
     const h = size.h;
     const priceAxisW = 110;
@@ -85,7 +100,6 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
     const chartW = w - pad.left - pad.right;
     const chartH = h - pad.top - pad.bottom;
 
-    // SL/TP price levels
     const slPriceChange = stopLoss / leverage / 100;
     const tpPriceChange = takeProfit / leverage / 100;
     const slPrice = direction === 'LONG'
@@ -95,224 +109,294 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       ? entryPrice * (1 + tpPriceChange)
       : entryPrice * (1 - tpPriceChange);
 
-    // Fixed price range: SL and TP are the boundaries
     const lowerPrice = Math.min(slPrice, tpPrice);
     const upperPrice = Math.max(slPrice, tpPrice);
     const boundaryRange = upperPrice - lowerPrice;
-    const pricePad = boundaryRange * 0.08; // small padding beyond SL/TP
+    const pricePad = boundaryRange * 0.08;
     const min = lowerPrice - pricePad;
     const max = upperPrice + pricePad;
     const range = max - min || 1;
 
-    // Current candle always at center; older candles scroll left
     const candleSpacing = chartW / Math.max(MAX_VISIBLE - 1, 1);
-    const centerIdx = candles.length - 1; // latest candle index
+    const centerIdx = candles.length - 1;
     const centerX = pad.left + chartW / 2;
 
     const toY = (v: number) => pad.top + chartH - ((v - min) / range) * chartH;
     const toX = (i: number) => centerX + (i - centerIdx) * candleSpacing;
 
-    ctx.clearRect(0, 0, w, h);
+    // Proximity to TP/SL (0..1)
+    const lastClose = candles[candles.length - 1]?.close ?? entryPrice;
+    const pnlPct = direction === 'LONG'
+      ? ((lastClose - entryPrice) / entryPrice) * leverage * 100
+      : ((entryPrice - lastClose) / entryPrice) * leverage * 100;
+    const slProximity = Math.min(Math.abs(pnlPct / stopLoss), 1);
+    const tpProximity = Math.min(Math.abs(pnlPct / takeProfit), 1);
+    const proximity = Math.max(slProximity, tpProximity);
 
-    // Background
-    ctx.fillStyle = 'rgba(10, 6, 20, 0.6)';
-    ctx.fillRect(pad.left, pad.top, chartW, chartH);
-
-    // --- TP/SL GRADIENT ZONES ---
-    const tpYZone = toY(tpPrice);
-    const slYZone = toY(slPrice);
-    const entryYZone = toY(entryPrice);
-
-    // Green zone: from TP line fading toward entry
-    const greenGrad = ctx.createLinearGradient(0, Math.min(tpYZone, entryYZone), 0, Math.max(tpYZone, entryYZone));
-    if (direction === 'LONG') {
-      greenGrad.addColorStop(0, 'rgba(7, 228, 110, 0.18)');
-      greenGrad.addColorStop(1, 'rgba(7, 228, 110, 0.0)');
-    } else {
-      greenGrad.addColorStop(0, 'rgba(7, 228, 110, 0.0)');
-      greenGrad.addColorStop(1, 'rgba(7, 228, 110, 0.18)');
-    }
-    ctx.fillStyle = greenGrad;
-    const greenTop = Math.min(tpYZone, entryYZone);
-    const greenBot = Math.max(tpYZone, entryYZone);
-    ctx.fillRect(pad.left, greenTop, chartW, greenBot - greenTop);
-
-    // Red zone: from SL line fading toward entry
-    const redGrad = ctx.createLinearGradient(0, Math.min(slYZone, entryYZone), 0, Math.max(slYZone, entryYZone));
-    if (direction === 'LONG') {
-      redGrad.addColorStop(0, 'rgba(239, 68, 68, 0.0)');
-      redGrad.addColorStop(1, 'rgba(239, 68, 68, 0.18)');
-    } else {
-      redGrad.addColorStop(0, 'rgba(239, 68, 68, 0.18)');
-      redGrad.addColorStop(1, 'rgba(239, 68, 68, 0.0)');
-    }
-    ctx.fillStyle = redGrad;
-    const redTop = Math.min(slYZone, entryYZone);
-    const redBot = Math.max(slYZone, entryYZone);
-    ctx.fillRect(pad.left, redTop, chartW, redBot - redTop);
-
-    const entryY = toY(entryPrice);
-    const winAbove = direction === 'LONG';
-
-    // Find entry index
     const entryIdx = candles.findIndex(c => c.time >= 0);
     const entryX = entryIdx >= 0 ? toX(entryIdx) : pad.left;
 
-    // --- PRICE LINE (close prices) only, no confidence band ---
+    // Build smooth points
+    const pts = candles.map((c, i) => ({ x: toX(i), y: toY(c.close) }));
 
-    // --- PRICE LINE (close prices) ---
-    if (candles.length > 1) {
-      // Glow layer
-      ctx.beginPath();
-      for (let i = 0; i < candles.length; i++) {
-        const x = toX(i);
-        const y = toY(candles[i].close);
-        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    let running = true;
+
+    const draw = (t: number) => {
+      if (!running) return;
+      timeRef.current = t;
+
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+
+      // Background
+      ctx.fillStyle = 'rgba(10, 6, 20, 0.6)';
+      ctx.fillRect(pad.left, pad.top, chartW, chartH);
+
+      // --- TP/SL GRADIENT ZONES ---
+      const tpYZone = toY(tpPrice);
+      const slYZone = toY(slPrice);
+      const entryYZone = toY(entryPrice);
+
+      // Green zone
+      const greenGrad = ctx.createLinearGradient(0, Math.min(tpYZone, entryYZone), 0, Math.max(tpYZone, entryYZone));
+      if (direction === 'LONG') {
+        greenGrad.addColorStop(0, 'rgba(7, 228, 110, 0.18)');
+        greenGrad.addColorStop(1, 'rgba(7, 228, 110, 0.0)');
+      } else {
+        greenGrad.addColorStop(0, 'rgba(7, 228, 110, 0.0)');
+        greenGrad.addColorStop(1, 'rgba(7, 228, 110, 0.18)');
       }
-      ctx.strokeStyle = 'rgba(200, 180, 255, 0.3)';
-      ctx.lineWidth = 4;
+      ctx.fillStyle = greenGrad;
+      ctx.fillRect(pad.left, Math.min(tpYZone, entryYZone), chartW, Math.abs(tpYZone - entryYZone));
+
+      // Red zone
+      const redGrad = ctx.createLinearGradient(0, Math.min(slYZone, entryYZone), 0, Math.max(slYZone, entryYZone));
+      if (direction === 'LONG') {
+        redGrad.addColorStop(0, 'rgba(239, 68, 68, 0.0)');
+        redGrad.addColorStop(1, 'rgba(239, 68, 68, 0.18)');
+      } else {
+        redGrad.addColorStop(0, 'rgba(239, 68, 68, 0.18)');
+        redGrad.addColorStop(1, 'rgba(239, 68, 68, 0.0)');
+      }
+      ctx.fillStyle = redGrad;
+      ctx.fillRect(pad.left, Math.min(slYZone, entryYZone), chartW, Math.abs(slYZone - entryYZone));
+
+      // --- GRID ---
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      const gridSteps = 6;
+      for (let i = 0; i <= gridSteps; i++) {
+        const price = min + (range / gridSteps) * i;
+        const y = toY(price);
+        ctx.strokeStyle = 'rgba(128, 70, 220, 0.08)';
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + chartW, y); ctx.stroke();
+        ctx.fillStyle = 'rgba(200, 180, 255, 0.25)';
+        ctx.font = '9px monospace';
+        ctx.fillText(formatPrice(price), pad.left + chartW + 8, y);
+      }
+
+      // --- SMOOTH PRICE LINE ---
+      if (pts.length > 1) {
+        // Animated glow intensity based on proximity to TP/SL
+        const pulse = 0.5 + 0.5 * Math.sin(t / 300);
+        const glowBase = 8 + proximity * 20;
+        const glowAnim = glowBase + pulse * proximity * 10;
+        const glowColor = positive ? '#07e46e' : '#ef4444';
+        const lineGlowColor = proximity > 0.6 ? glowColor : '#8046dc';
+
+        // Outer glow (intensifies near TP/SL)
+        ctx.save();
+        ctx.beginPath();
+        catmullRomPath(ctx, pts);
+        ctx.strokeStyle = proximity > 0.6
+          ? (positive ? `rgba(7, 228, 110, ${0.15 + pulse * 0.15})` : `rgba(239, 68, 68, ${0.15 + pulse * 0.15})`)
+          : 'rgba(200, 180, 255, 0.2)';
+        ctx.lineWidth = 6;
+        ctx.shadowColor = lineGlowColor;
+        ctx.shadowBlur = glowAnim;
+        ctx.stroke();
+        ctx.restore();
+
+        // Middle glow
+        ctx.save();
+        ctx.beginPath();
+        catmullRomPath(ctx, pts);
+        ctx.strokeStyle = proximity > 0.6
+          ? (positive ? 'rgba(7, 228, 110, 0.35)' : 'rgba(239, 68, 68, 0.35)')
+          : 'rgba(200, 180, 255, 0.3)';
+        ctx.lineWidth = 3;
+        ctx.shadowColor = lineGlowColor;
+        ctx.shadowBlur = glowAnim * 0.5;
+        ctx.stroke();
+        ctx.restore();
+
+        // Main crisp line
+        ctx.beginPath();
+        catmullRomPath(ctx, pts);
+        ctx.strokeStyle = '#e0d4ff';
+        ctx.lineWidth = 1.8;
+        ctx.stroke();
+
+        // --- PULSATING DOT ---
+        const lastPt = pts[pts.length - 1];
+        const dotColor = positive ? '#07e46e' : '#ef4444';
+        const dotPulse = 0.5 + 0.5 * Math.sin(t / 200);
+        const dotR = 3 + dotPulse * 2.5;
+        const ringR = dotR + 3 + dotPulse * 4;
+
+        // Outer ring glow
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(lastPt.x, lastPt.y, ringR, 0, Math.PI * 2);
+        ctx.fillStyle = dotColor + Math.round(20 + dotPulse * 30).toString(16).padStart(2, '0');
+        ctx.shadowColor = dotColor;
+        ctx.shadowBlur = 15 + dotPulse * 10;
+        ctx.fill();
+        ctx.restore();
+
+        // Inner dot
+        ctx.beginPath();
+        ctx.arc(lastPt.x, lastPt.y, dotR, 0, Math.PI * 2);
+        ctx.fillStyle = dotColor;
+        ctx.fill();
+
+        // White center
+        ctx.beginPath();
+        ctx.arc(lastPt.x, lastPt.y, 1.5, 0, Math.PI * 2);
+        ctx.fillStyle = '#F5F5FF';
+        ctx.fill();
+      }
+
+      // --- ENTRY LINE ---
+      const entryY = toY(entryPrice);
+      ctx.strokeStyle = '#8046dc';
+      ctx.setLineDash([4, 4]);
+      ctx.lineWidth = 1.5;
       ctx.shadowColor = '#8046dc';
-      ctx.shadowBlur = 12;
-      ctx.stroke();
+      ctx.shadowBlur = 8;
+      ctx.beginPath(); ctx.moveTo(pad.left, entryY); ctx.lineTo(pad.left + chartW, entryY); ctx.stroke();
       ctx.shadowBlur = 0;
-
-      // Main line
-      ctx.beginPath();
-      for (let i = 0; i < candles.length; i++) {
-        const x = toX(i);
-        const y = toY(candles[i].close);
-        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-      }
-      ctx.strokeStyle = '#e0d4ff';
-      ctx.lineWidth = 1.8;
-      ctx.stroke();
-
-      // Current price dot (small indicator on chart)
-      const lastX = toX(candles.length - 1);
-      const lastY = toY(candles[candles.length - 1].close);
-      const dotColor = positive ? '#07e46e' : '#ef4444';
-      ctx.beginPath();
-      ctx.arc(lastX, lastY, 3, 0, Math.PI * 2);
-      ctx.fillStyle = dotColor;
-      ctx.fill();
-    }
-
-    // --- GRID LINES + PRICE LABELS ---
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-    const gridSteps = 6;
-    for (let i = 0; i <= gridSteps; i++) {
-      const price = min + (range / gridSteps) * i;
-      const y = toY(price);
-      ctx.strokeStyle = 'rgba(128, 70, 220, 0.08)';
-      ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + chartW, y); ctx.stroke();
-      ctx.fillStyle = 'rgba(200, 180, 255, 0.25)';
-      ctx.font = '9px monospace';
-      ctx.fillText(formatPrice(price), pad.left + chartW + 8, y);
-    }
-
-    // --- ENTRY LINE ---
-    ctx.strokeStyle = '#8046dc';
-    ctx.setLineDash([4, 4]);
-    ctx.lineWidth = 1.5;
-    ctx.shadowColor = '#8046dc';
-    ctx.shadowBlur = 8;
-    ctx.beginPath(); ctx.moveTo(pad.left, entryY); ctx.lineTo(pad.left + chartW, entryY); ctx.stroke();
-    ctx.shadowBlur = 0;
-    ctx.setLineDash([]);
-    // Entry label
-    ctx.fillStyle = '#8046dc';
-    ctx.fillRect(pad.left + chartW + 4, entryY - 8, priceAxisW - 8, 16);
-    ctx.fillStyle = '#F5F5FF';
-    ctx.font = 'bold 9px monospace';
-    ctx.fillText(formatPrice(entryPrice), pad.left + chartW + 7, entryY);
-
-    // --- TAKE PROFIT LINE ---
-    const tpY = toY(tpPrice);
-    ctx.strokeStyle = 'rgba(7, 228, 110, 0.5)';
-    ctx.setLineDash([6, 3]);
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(pad.left, tpY); ctx.lineTo(pad.left + chartW, tpY); ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle = '#07e46e';
-    ctx.fillRect(pad.left + chartW + 4, tpY - 8, priceAxisW - 8, 16);
-    ctx.fillStyle = '#0a0a0a';
-    ctx.font = 'bold 8px monospace';
-    ctx.fillText('TP ' + formatPriceShort(tpPrice), pad.left + chartW + 6, tpY);
-
-    // --- STOP LOSS LINE ---
-    const slY = toY(slPrice);
-    ctx.strokeStyle = 'rgba(239, 68, 68, 0.5)';
-    ctx.setLineDash([6, 3]);
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(pad.left, slY); ctx.lineTo(pad.left + chartW, slY); ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle = '#ef4444';
-    ctx.fillRect(pad.left + chartW + 4, slY - 8, priceAxisW - 8, 16);
-    ctx.fillStyle = '#F5F5FF';
-    ctx.font = 'bold 8px monospace';
-    ctx.fillText('SL ' + formatPriceShort(slPrice), pad.left + chartW + 6, slY);
-
-    // --- CURRENT PRICE TAG ---
-    if (candles.length > 0) {
-      const lastClose = candles[candles.length - 1].close;
-      const curY = toY(lastClose);
-      const curColor = positive ? '#07e46e' : '#ef4444';
-      // Dotted line
-      ctx.strokeStyle = curColor + '40';
-      ctx.setLineDash([2, 2]);
-      ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(pad.left, curY); ctx.lineTo(pad.left + chartW, curY); ctx.stroke();
-      ctx.setLineDash([]);
-      // Tag
-      ctx.fillStyle = curColor;
-      ctx.fillRect(pad.left + chartW + 4, curY - 8, priceAxisW - 8, 16);
-      ctx.fillStyle = '#0a0a0a';
-      ctx.font = 'bold 9px monospace';
-      ctx.fillText(formatPrice(lastClose), pad.left + chartW + 7, curY);
-    }
-
-    // --- ENTRY VERTICAL MARKER ---
-    if (entryIdx > 0) {
-      ctx.strokeStyle = 'rgba(128, 70, 220, 0.3)';
-      ctx.setLineDash([4, 3]);
-      ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(entryX, pad.top); ctx.lineTo(entryX, pad.top + chartH); ctx.stroke();
       ctx.setLineDash([]);
       ctx.fillStyle = '#8046dc';
+      ctx.fillRect(pad.left + chartW + 4, entryY - 8, priceAxisW - 8, 16);
+      ctx.fillStyle = '#F5F5FF';
+      ctx.font = 'bold 9px monospace';
+      ctx.fillText(formatPrice(entryPrice), pad.left + chartW + 7, entryY);
+
+      // --- TAKE PROFIT LINE ---
+      const tpY = toY(tpPrice);
+      const tpPulse = tpProximity > 0.6 ? (0.5 + 0.5 * Math.sin(t / 250)) : 0;
+      ctx.save();
+      ctx.strokeStyle = `rgba(7, 228, 110, ${0.4 + tpPulse * 0.4})`;
+      ctx.setLineDash([6, 3]);
+      ctx.lineWidth = 1 + tpPulse;
+      if (tpProximity > 0.6) {
+        ctx.shadowColor = '#07e46e';
+        ctx.shadowBlur = 6 + tpPulse * 12;
+      }
+      ctx.beginPath(); ctx.moveTo(pad.left, tpY); ctx.lineTo(pad.left + chartW, tpY); ctx.stroke();
+      ctx.restore();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#07e46e';
+      ctx.fillRect(pad.left + chartW + 4, tpY - 8, priceAxisW - 8, 16);
+      ctx.fillStyle = '#0a0a0a';
       ctx.font = 'bold 8px monospace';
+      ctx.fillText('TP ' + formatPriceShort(tpPrice), pad.left + chartW + 6, tpY);
+
+      // --- STOP LOSS LINE ---
+      const slY = toY(slPrice);
+      const slPulse = slProximity > 0.6 ? (0.5 + 0.5 * Math.sin(t / 250)) : 0;
+      ctx.save();
+      ctx.strokeStyle = `rgba(239, 68, 68, ${0.4 + slPulse * 0.4})`;
+      ctx.setLineDash([6, 3]);
+      ctx.lineWidth = 1 + slPulse;
+      if (slProximity > 0.6) {
+        ctx.shadowColor = '#ef4444';
+        ctx.shadowBlur = 6 + slPulse * 12;
+      }
+      ctx.beginPath(); ctx.moveTo(pad.left, slY); ctx.lineTo(pad.left + chartW, slY); ctx.stroke();
+      ctx.restore();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#ef4444';
+      ctx.fillRect(pad.left + chartW + 4, slY - 8, priceAxisW - 8, 16);
+      ctx.fillStyle = '#F5F5FF';
+      ctx.font = 'bold 8px monospace';
+      ctx.fillText('SL ' + formatPriceShort(slPrice), pad.left + chartW + 6, slY);
+
+      // --- CURRENT PRICE TAG ---
+      if (candles.length > 0) {
+        const curY = toY(lastClose);
+        const curColor = positive ? '#07e46e' : '#ef4444';
+        ctx.strokeStyle = curColor + '40';
+        ctx.setLineDash([2, 2]);
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(pad.left, curY); ctx.lineTo(pad.left + chartW, curY); ctx.stroke();
+        ctx.setLineDash([]);
+        // Animated tag
+        const tagPulse = 0.5 + 0.5 * Math.sin(t / 400);
+        ctx.save();
+        ctx.shadowColor = curColor;
+        ctx.shadowBlur = 4 + tagPulse * 6;
+        ctx.fillStyle = curColor;
+        ctx.fillRect(pad.left + chartW + 4, curY - 8, priceAxisW - 8, 16);
+        ctx.restore();
+        ctx.fillStyle = '#0a0a0a';
+        ctx.font = 'bold 9px monospace';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(formatPrice(lastClose), pad.left + chartW + 7, curY);
+      }
+
+      // --- ENTRY VERTICAL MARKER ---
+      if (entryIdx > 0) {
+        ctx.strokeStyle = 'rgba(128, 70, 220, 0.3)';
+        ctx.setLineDash([4, 3]);
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(entryX, pad.top); ctx.lineTo(entryX, pad.top + chartH); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#8046dc';
+        ctx.font = 'bold 8px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.shadowColor = '#8046dc';
+        ctx.shadowBlur = 6;
+        ctx.fillText('▼ ENTRY', entryX, pad.top - 1);
+        ctx.shadowBlur = 0;
+      }
+
+      // --- TIME AXIS ---
+      ctx.font = '8px monospace';
       ctx.textAlign = 'center';
-      ctx.textBaseline = 'bottom';
-      ctx.shadowColor = '#8046dc';
-      ctx.shadowBlur = 6;
-      ctx.fillText('▼ ENTRY', entryX, pad.top - 1);
-      ctx.shadowBlur = 0;
-    }
+      ctx.textBaseline = 'top';
+      const timeY = pad.top + chartH + 5;
+      candles.forEach((candle, i) => {
+        if (candles.length > 10 && i % 4 !== 0 && i !== candles.length - 1) return;
+        const x = toX(i);
+        const sec = candle.time;
+        const absSec = Math.abs(sec);
+        const m = Math.floor(absSec / 60);
+        const s = absSec % 60;
+        const prefix = sec < 0 ? '-' : '';
+        ctx.fillStyle = sec < 0 ? 'rgba(200,180,255,0.15)' : 'rgba(200,180,255,0.3)';
+        ctx.fillText(`${prefix}${m}:${s.toString().padStart(2, '0')}`, x, timeY);
+      });
 
-    // --- TIME AXIS ---
-    ctx.font = '8px monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    const timeY = pad.top + chartH + 5;
-    candles.forEach((candle, i) => {
-      if (candles.length > 10 && i % 4 !== 0 && i !== candles.length - 1) return;
-      const x = toX(i);
-      const sec = candle.time;
-      const absSec = Math.abs(sec);
-      const m = Math.floor(absSec / 60);
-      const s = absSec % 60;
-      const prefix = sec < 0 ? '-' : '';
-      ctx.fillStyle = sec < 0 ? 'rgba(200,180,255,0.15)' : 'rgba(200,180,255,0.3)';
-      ctx.fillText(`${prefix}${m}:${s.toString().padStart(2, '0')}`, x, timeY);
-    });
+      // --- AXIS BORDERS ---
+      ctx.strokeStyle = 'rgba(128, 70, 220, 0.15)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(pad.left, pad.top + chartH); ctx.lineTo(pad.left + chartW, pad.top + chartH); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(pad.left + chartW, pad.top); ctx.lineTo(pad.left + chartW, pad.top + chartH); ctx.stroke();
 
-    // --- AXIS BORDERS ---
-    ctx.strokeStyle = 'rgba(128, 70, 220, 0.15)';
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(pad.left, pad.top + chartH); ctx.lineTo(pad.left + chartW, pad.top + chartH); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(pad.left + chartW, pad.top); ctx.lineTo(pad.left + chartW, pad.top + chartH); ctx.stroke();
+      animFrameRef.current = requestAnimationFrame(draw);
+    };
 
+    animFrameRef.current = requestAnimationFrame(draw);
+
+    return () => {
+      running = false;
+      cancelAnimationFrame(animFrameRef.current);
+    };
   }, [candles, entryPrice, positive, size, direction, stopLoss, takeProfit, leverage]);
 
   return (
