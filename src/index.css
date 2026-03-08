@@ -7,49 +7,53 @@
 @layer base {
   :root {
     --background: 240 20% 3%;
-    --foreground: 60 100% 95%;
+    --foreground: 240 100% 98%;
 
     --card: 240 20% 6%;
-    --card-foreground: 60 100% 95%;
+    --card-foreground: 240 100% 98%;
 
     --popover: 240 20% 6%;
-    --popover-foreground: 60 100% 95%;
+    --popover-foreground: 240 100% 98%;
 
-    --primary: 120 100% 50%;
-    --primary-foreground: 240 20% 3%;
+    --primary: 265 66% 55%;
+    --primary-foreground: 240 100% 98%;
 
-    --secondary: 330 100% 55%;
-    --secondary-foreground: 60 100% 95%;
+    --secondary: 25 95% 53%;
+    --secondary-foreground: 240 20% 3%;
 
     --muted: 240 15% 10%;
     --muted-foreground: 240 10% 50%;
 
-    --accent: 50 100% 55%;
+    --accent: 25 95% 53%;
     --accent-foreground: 240 20% 3%;
 
     --destructive: 0 100% 50%;
-    --destructive-foreground: 60 100% 95%;
+    --destructive-foreground: 240 100% 98%;
 
-    --border: 120 100% 50%;
+    --border: 265 66% 55%;
     --input: 240 20% 12%;
-    --ring: 120 100% 50%;
+    --ring: 265 66% 55%;
 
     --radius: 0px;
 
     /* Arcade neon tokens */
-    --neon-green: 120 100% 50%;
+    --neon-green: 150 95% 46%;
+    --neon-purple: 265 66% 55%;
+    --neon-orange: 25 95% 53%;
     --neon-magenta: 330 100% 55%;
     --neon-cyan: 180 100% 55%;
     --neon-amber: 50 100% 55%;
     --neon-red: 0 100% 50%;
     --neon-blue: 220 100% 60%;
     --terminal-bg: 240 20% 4%;
-    --terminal-border: 120 100% 50%;
+    --terminal-border: 265 66% 55%;
 
     --font-display: 'Press Start 2P', cursive;
     --font-mono: 'JetBrains Mono', monospace;
 
-    --glow-green: 0 0 4px hsl(120 100% 50%), 0 0 12px hsl(120 100% 50% / 0.6), 0 0 30px hsl(120 100% 50% / 0.3);
+    --glow-purple: 0 0 4px hsl(265 66% 55%), 0 0 12px hsl(265 66% 55% / 0.6), 0 0 30px hsl(265 66% 55% / 0.3);
+    --glow-orange: 0 0 4px hsl(25 95% 53%), 0 0 12px hsl(25 95% 53% / 0.6), 0 0 30px hsl(25 95% 53% / 0.3);
+    --glow-green: 0 0 4px hsl(150 95% 46%), 0 0 12px hsl(150 95% 46% / 0.6), 0 0 30px hsl(150 95% 46% / 0.3);
     --glow-magenta: 0 0 4px hsl(330 100% 55%), 0 0 12px hsl(330 100% 55% / 0.6), 0 0 30px hsl(330 100% 55% / 0.3);
     --glow-red: 0 0 4px hsl(0 100% 50%), 0 0 12px hsl(0 100% 50% / 0.5);
     --glow-amber: 0 0 4px hsl(50 100% 55%), 0 0 12px hsl(50 100% 55% / 0.5);
