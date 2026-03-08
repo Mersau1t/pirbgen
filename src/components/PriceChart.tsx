@@ -117,42 +117,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
     const entryIdx = candles.findIndex(c => c.time >= 0);
     const entryX = entryIdx >= 0 ? toX(entryIdx) : pad.left;
 
-    // --- CONFIDENCE BAND (high-low area) ---
-    // Pre-entry: muted, Post-entry: vibrant purple
-    if (candles.length > 1) {
-      // Full band path
-      ctx.beginPath();
-      for (let i = 0; i < candles.length; i++) {
-        const x = toX(i);
-        const y = toY(candles[i].high);
-        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-      }
-      for (let i = candles.length - 1; i >= 0; i--) {
-        ctx.lineTo(toX(i), toY(candles[i].low));
-      }
-      ctx.closePath();
-
-      // Gradient fill for band
-      const bandGrad = ctx.createLinearGradient(0, pad.top, 0, pad.top + chartH);
-      bandGrad.addColorStop(0, 'rgba(128, 70, 220, 0.35)');
-      bandGrad.addColorStop(0.5, 'rgba(128, 70, 220, 0.15)');
-      bandGrad.addColorStop(1, 'rgba(128, 70, 220, 0.35)');
-      ctx.fillStyle = bandGrad;
-      ctx.fill();
-
-      // Band edges (subtle)
-      for (const key of ['high', 'low'] as const) {
-        ctx.beginPath();
-        for (let i = 0; i < candles.length; i++) {
-          const x = toX(i);
-          const y = toY(candles[i][key]);
-          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-        }
-        ctx.strokeStyle = 'rgba(128, 70, 220, 0.25)';
-        ctx.lineWidth = 0.8;
-        ctx.stroke();
-      }
-    }
+    // --- PRICE LINE (close prices) only, no confidence band ---
 
     // --- PRICE LINE (close prices) ---
     if (candles.length > 1) {
