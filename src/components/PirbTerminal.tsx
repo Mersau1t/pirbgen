@@ -76,6 +76,25 @@ export default function PirbTerminal() {
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
   const [status, setStatus] = useState<GameStatus>('IDLE');
   const [pnl, setPnl] = useState(0);
+  const [musicOn, setMusicOn] = useState(false);
+
+  const toggleMusic = () => {
+    if (isBgMusicPlaying()) {
+      stopBgMusic();
+      setMusicOn(false);
+    } else {
+      startBgMusic();
+      setMusicOn(true);
+    }
+  };
+
+  // Stop music when leaving IDLE
+  useEffect(() => {
+    if (status !== 'IDLE' && isBgMusicPlaying()) {
+      stopBgMusic();
+      setMusicOn(false);
+    }
+  }, [status]);
   const [pnlPercent, setPnlPercent] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [candles, setCandles] = useState<Candle[]>([]);
