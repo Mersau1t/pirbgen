@@ -18,7 +18,7 @@ interface PriceChartProps {
   leverage: number;
 }
 
-const MAX_CANDLES = 20;
+const MAX_CANDLES = 28;
 
 export default function PriceChart({ candles, entryPrice, positive, direction, stopLoss, takeProfit, leverage }: PriceChartProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -186,24 +186,40 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
     }
 
     // Time axis
-    ctx.fillStyle = 'rgba(245,245,255,0.2)';
     ctx.font = '8px monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     const timeY = pad.top + chartH + 4;
     candles.forEach((candle, i) => {
-      // Show every few labels to avoid crowding
-      if (candles.length > 8 && i % 3 !== 0 && i !== candles.length - 1) return;
+      if (candles.length > 10 && i % 4 !== 0 && i !== candles.length - 1) return;
       const x = toX(i);
       const sec = candle.time;
-      const m = Math.floor(sec / 60);
-      const s = sec % 60;
-      ctx.fillText(`${m}:${s.toString().padStart(2, '0')}`, x, timeY);
-      // Tick mark
+      const absSec = Math.abs(sec);
+      const m = Math.floor(absSec / 60);
+      const s = absSec % 60;
+      const prefix = sec < 0 ? '-' : '';
+      ctx.fillStyle = sec < 0 ? 'rgba(245,245,255,0.15)' : 'rgba(245,245,255,0.25)';
+      ctx.fillText(`${prefix}${m}:${s.toString().padStart(2, '0')}`, x, timeY);
       ctx.strokeStyle = 'rgba(255,255,255,0.06)';
       ctx.lineWidth = 1;
       ctx.beginPath(); ctx.moveTo(x, pad.top + chartH); ctx.lineTo(x, pad.top + chartH + 3); ctx.stroke();
     });
+
+    // Entry vertical marker — find the first candle with time >= 0
+    const entryIdx = candles.findIndex(c => c.time >= 0);
+    if (entryIdx > 0) {
+      const ex = toX(entryIdx) - slotW / 2;
+      ctx.strokeStyle = 'rgba(128,70,220,0.3)';
+      ctx.setLineDash([3, 3]);
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(ex, pad.top); ctx.lineTo(ex, pad.top + chartH); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = 'rgba(128,70,220,0.4)';
+      ctx.font = 'bold 8px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText('▼ ENTRY', ex, pad.top - 1);
+    }
 
     // Axis borders
     ctx.strokeStyle = 'rgba(255,255,255,0.08)';
@@ -219,8 +235,11 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
 
     candles.forEach((candle, i) => {
       const x = toX(i);
+      const isHistory = candle.time < 0;
       const isBull = candle.close >= candle.open;
       const color = isBull ? bullColor : bearColor;
+      const alpha = isHistory ? 0.45 : 1;
+      ctx.globalAlpha = alpha;
 
       const highY = toY(candle.high);
       const lowY = toY(candle.low);
@@ -254,6 +273,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
         ctx.fillRect(x - bodyW / 2, bodyTop, bodyW, bodyH);
       }
       ctx.shadowBlur = 0;
+      ctx.globalAlpha = 1;
     });
 
     // Last candle purple highlight
