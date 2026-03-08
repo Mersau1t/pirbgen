@@ -220,8 +220,8 @@ export default function Profile() {
                 { label: 'Best Trade', value: `${bestTrade >= 0 ? '+' : ''}${bestTrade.toFixed(1)}%`, color: bestTrade >= 0 ? 'text-neon-green' : 'text-neon-red' },
                 { label: 'Total PnL', value: `${totalPnl >= 0 ? '+' : ''}${totalPnl.toFixed(1)}%`, color: totalPnl >= 0 ? 'text-neon-green' : 'text-neon-red' },
               ].map(stat => (
-                <div key={stat.label} className="bg-muted/20 border border-border/20 p-3 rounded-sm text-center">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{stat.label}</p>
+                <div key={stat.label} className="border-2 border-neon-green/20 p-3 text-center bg-neon-green/5">
+                  <p className="text-[8px] font-display text-neon-green/50 uppercase tracking-wider">{stat.label}</p>
                   <p className={`text-lg font-mono font-bold ${stat.color}`}>{stat.value}</p>
                 </div>
               ))}
@@ -229,9 +229,9 @@ export default function Profile() {
           </div>
 
           {/* Trade History */}
-          <div className="glass-panel rounded-sm border border-border/30 overflow-hidden">
-            <div className="px-4 py-3 border-b border-border/20 bg-muted/20">
-              <h3 className="font-display text-sm tracking-[0.2em] text-muted-foreground uppercase">📜 Trade History</h3>
+          <div className="pixel-border-cyan overflow-hidden bg-background/90">
+            <div className="px-4 py-3 border-b-2 border-neon-cyan/20 bg-neon-cyan/5">
+              <h3 className="font-display text-[10px] tracking-[0.2em] text-neon-cyan text-glow-cyan uppercase">📜 TRADE HISTORY</h3>
             </div>
 
             {loading ? (
