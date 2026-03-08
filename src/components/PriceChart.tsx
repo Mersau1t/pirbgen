@@ -157,7 +157,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
     const entryLabelY = entryY;
     ctx.fillRect(pad.left + chartW + 2, entryLabelY - 7, priceAxisW - 4, 14);
     ctx.fillStyle = '#F5F5FF';
-    ctx.fillText('$' + entryPrice.toFixed(2), pad.left + chartW + 5, entryLabelY);
+    ctx.fillText(formatPrice(entryPrice), pad.left + chartW + 5, entryLabelY);
 
     // Take Profit line
     const tpY = toY(tpPrice);
