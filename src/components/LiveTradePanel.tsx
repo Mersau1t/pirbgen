@@ -52,7 +52,7 @@ function fmtPrice(p: number): string {
 }
 
 function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandles, onResult, onExitEarly, playerName, walletAddress, timerSeconds }: LiveTradePanelProps) {
-  const [entryPrice, setEntryPrice] = useState(initialEntryPrice);
+  const [entryPrice] = useState(initialEntryPrice);
   const [currentPrice, setCurrentPrice] = useState(initialEntryPrice);
   const [pnl, setPnl] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -82,11 +82,10 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
     };
 
     const cleanup = streamPythPriceById(position.feedId, (tick) => {
-      if (!entrySetRef.current) {
-        entrySetRef.current = true;
-        setEntryPrice(tick.price);
-        setCurrentPrice(tick.price);
-        return;
+      candleRef.current.ticks.push(tick);
+      pendingPrice = tick.price;
+      if (!rafId) {
+        rafId = requestAnimationFrame(flushPrice);
       }
       candleRef.current.ticks.push(tick);
       pendingPrice = tick.price;
