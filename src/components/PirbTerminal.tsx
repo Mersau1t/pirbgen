@@ -73,9 +73,9 @@ export default function PirbTerminal() {
   const navigate = useNavigate();
   const [activePos, setActivePos] = useState<DegenPosition | null>(null);
   const [entryPrice, setEntryPrice] = useState<number | null>(null);
-  const [currentPrice, setCurrentPrice] = useState<number | null>(null);
+  const [initialCandles, setInitialCandles] = useState<Candle[]>([]);
   const [status, setStatus] = useState<GameStatus>('IDLE');
-  const [pnl, setPnl] = useState(0);
+  const [finalPnl, setFinalPnl] = useState(0);
   const [musicOn, setMusicOn] = useState(false);
 
   const toggleMusic = () => {
@@ -95,10 +95,7 @@ export default function PirbTerminal() {
       setMusicOn(false);
     }
   }, [status]);
-  const [pnlPercent, setPnlPercent] = useState(0);
-  const [elapsedTime, setElapsedTime] = useState(0);
-  const [candles, setCandles] = useState<Candle[]>([]);
-  const candleRef = useRef<{ ticks: number[]; }>({ ticks: [] });
+
   const [particles] = useState(() =>
     Array.from({ length: 25 }, () => ({
       left: Math.random() * 100,
@@ -118,7 +115,6 @@ export default function PirbTerminal() {
         setActivePos(pos);
         setEntryPrice(price);
         setStatus('PLAYING');
-        setCurrentPrice(price);
       }
     }
   }, []);
@@ -132,101 +128,15 @@ export default function PirbTerminal() {
     }
   }, [activePos, entryPrice, status]);
 
-  // Real-time Pyth price streaming — throttled to 1 update/sec
-  useEffect(() => {
-    if (status !== 'PLAYING' || !activePos) return;
-
-    let latestPrice: number | null = null;
-
-    const cleanup = streamPythPrice(activePos.ticker, (newPrice) => {
-      // Buffer ticks in ref, don't setState here
-      latestPrice = newPrice;
-      candleRef.current.ticks.push(newPrice);
-    });
-
-    // Flush buffered price to state once per second
-    const tick = setInterval(() => {
-      if (latestPrice !== null) {
-        setCurrentPrice(latestPrice);
-      }
-
-      if (candleRef.current.ticks.length >= 2) {
-        const ticks = candleRef.current.ticks;
-        const candle: Candle = {
-          open: ticks[0],
-          high: Math.max(...ticks),
-          low: Math.min(...ticks),
-          close: ticks[ticks.length - 1],
-          time: 0,
-        };
-        setCandles(c => {
-          const liveCount = c.filter(x => x.time >= 0).length;
-          candle.time = (liveCount + 1) * 2;
-          return [...c.slice(-27), candle];
-        });
-        candleRef.current.ticks = [];
-      }
-    }, 1000);
-
-    // Elapsed time counter (reuse same interval)
-    const elapsedTimer = setInterval(() => {
-      setElapsedTime(t => t + 1);
-    }, 1000);
-
-    return () => {
-      cleanup();
-      clearInterval(tick);
-      clearInterval(elapsedTimer);
-    };
-  }, [status, activePos]);
-
-  // PnL calculation
-  useEffect(() => {
-    if (status !== 'PLAYING' || !currentPrice || !entryPrice || !activePos) return;
-    const diff = ((currentPrice - entryPrice) / entryPrice) * 100;
-    const calculatedPnl = activePos.direction === 'LONG' ? diff * activePos.leverage : -diff * activePos.leverage;
-    setPnl(calculatedPnl);
-    setPnlPercent(diff);
-
-    if (calculatedPnl <= activePos.stopLoss) {
-      setStatus('REKT');
-      playRektSound();
-      supabase.from('leaderboard').insert({
-        player_name: profile?.display_name || 'Anonymous',
-        ticker: activePos.ticker,
-        direction: activePos.direction,
-        leverage: activePos.leverage,
-        pnl_percent: Number(calculatedPnl.toFixed(1)),
-        rarity: activePos.rarity,
-        wallet_address: walletAddress || null,
-      }).then(() => {});
-    } else if (calculatedPnl >= activePos.takeProfit) {
-      setStatus('WIN');
-      playWinSound();
-      supabase.from('leaderboard').insert({
-        player_name: profile?.display_name || 'Anonymous',
-        ticker: activePos.ticker,
-        direction: activePos.direction,
-        leverage: activePos.leverage,
-        pnl_percent: Number(calculatedPnl.toFixed(1)),
-        rarity: activePos.rarity,
-        wallet_address: walletAddress || null,
-      }).then(() => {});
-    }
-  }, [currentPrice, entryPrice, activePos, status]);
-
   const generatePosition = useCallback(async () => {
     playGenerateClick();
     setStatus('GENERATING');
-    setElapsedTime(0);
 
     const pos = POSITIONS[Math.floor(Math.random() * POSITIONS.length)];
-
-    // Fetch real price from Pyth
     const realPrice = await fetchPythPrice(pos.ticker);
-    const price = realPrice ?? (Math.random() * 1000 + 100); // fallback if Pyth fails
+    const price = realPrice ?? (Math.random() * 1000 + 100);
 
-    // Generate pre-history candles around real entry price
+    // Generate pre-history candles
     const historyCandles: Candle[] = [];
     const histCount = 8;
     let histPrice = price;
@@ -240,12 +150,7 @@ export default function PirbTerminal() {
         ticks.push(histPrice);
       }
       const open = histPrice;
-      rawCandles.unshift({
-        open,
-        high: Math.max(...ticks),
-        low: Math.min(...ticks),
-        close,
-      });
+      rawCandles.unshift({ open, high: Math.max(...ticks), low: Math.min(...ticks), close });
     }
     rawCandles.forEach((c, i) => {
       historyCandles.push({ ...c, time: -(histCount - i) * 2 });
@@ -253,47 +158,29 @@ export default function PirbTerminal() {
 
     setActivePos(pos);
     setEntryPrice(price);
-    setCurrentPrice(price);
-    setPnl(0);
-    setPnlPercent(0);
-    setCandles(historyCandles);
-    candleRef.current = { ticks: [] };
+    setInitialCandles(historyCandles);
+    setFinalPnl(0);
     setStatus('PLAYING');
   }, []);
 
-  const exitEarly = useCallback(() => {
-    if (status !== 'PLAYING' || !activePos) return;
-    // Save to leaderboard
-    supabase.from('leaderboard').insert({
-      player_name: profile?.display_name || 'Anonymous',
-      ticker: activePos.ticker,
-      direction: activePos.direction,
-      leverage: activePos.leverage,
-      pnl_percent: Number(pnl.toFixed(1)),
-      rarity: activePos.rarity,
-      wallet_address: walletAddress || null,
-    }).then(() => {});
-    if (pnl >= 0) {
-      setStatus('WIN');
-      playWinSound();
-    } else {
-      setStatus('REKT');
-      playRektSound();
-    }
-  }, [status, pnl, activePos]);
+  const handleTradeResult = useCallback((result: 'WIN' | 'REKT', pnl: number) => {
+    setFinalPnl(pnl);
+    setStatus(result);
+  }, []);
+
+  const handleExitEarly = useCallback((pnl: number) => {
+    setFinalPnl(pnl);
+    setStatus(pnl >= 0 ? 'WIN' : 'REKT');
+  }, []);
 
   const resetTerminal = () => {
     setStatus('IDLE');
     setActivePos(null);
     setEntryPrice(null);
-    setCurrentPrice(null);
-    setPnl(0);
-    setCandles([]);
-    candleRef.current = { ticks: [] };
-    setElapsedTime(0);
+    setInitialCandles([]);
+    setFinalPnl(0);
   };
 
-  const formatTime = (s: number) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
   const rarityStyle = activePos ? RARITY_STYLES[activePos.rarity] : RARITY_STYLES.common;
 
   return (
