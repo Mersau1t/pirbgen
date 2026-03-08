@@ -267,9 +267,23 @@ export default function PirbTerminal() {
               <span className="w-2 h-2 rounded-full bg-neon-green animate-pulse-neon" />
               <span>BASE MAINNET</span>
             </div>
-            <button className="glass-panel px-4 py-1.5 text-xs font-display tracking-wider text-foreground hover:box-glow-green transition-all duration-300 cursor-pointer">
-              CONNECT WALLET
-            </button>
+            {walletAddress && profile ? (
+              <button
+                onClick={() => navigate('/profile')}
+                className="glass-panel px-4 py-1.5 text-xs font-display tracking-wider text-foreground hover:box-glow-green transition-all duration-300 cursor-pointer flex items-center gap-2"
+              >
+                <span>{getAvatarEmoji(profile.avatar)}</span>
+                <span>{profile.display_name}</span>
+              </button>
+            ) : (
+              <button
+                onClick={connectWallet}
+                disabled={isConnecting}
+                className="glass-panel px-4 py-1.5 text-xs font-display tracking-wider text-foreground hover:box-glow-green transition-all duration-300 cursor-pointer disabled:opacity-50"
+              >
+                {isConnecting ? '⏳ CONNECTING...' : '🔗 CONNECT WALLET'}
+              </button>
+            )}
           </div>
         </div>
       </header>
