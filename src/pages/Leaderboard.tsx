@@ -74,18 +74,14 @@ export default function Leaderboard() {
   };
 
   return (
-    <div className="min-h-screen bg-background grid-bg scanlines relative overflow-hidden animate-flicker">
-      {/* Header */}
-      <header className="relative z-10 border-b border-border/30 bg-muted/20 backdrop-blur-sm">
+    <div className="min-h-screen bg-background grid-bg scanlines crt-vignette relative overflow-hidden animate-flicker">
+      <header className="relative z-10 border-b-2 border-neon-green/40 bg-background/90">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">🐦</span>
-            <span className="font-display text-sm tracking-[0.3em] text-foreground text-glow-green">PIRBGEN</span>
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">🕹️</span>
+            <span className="font-display text-[10px] sm:text-xs tracking-[0.3em] text-neon-green text-glow-green">PIRBGEN</span>
           </div>
-          <Link
-            to="/"
-            className="glass-panel px-4 py-1.5 text-xs font-display tracking-wider text-foreground hover:box-glow-green transition-all duration-300"
-          >
+          <Link to="/" className="arcade-btn arcade-btn-primary text-[8px] sm:text-[10px] py-2 px-3">
             ← TERMINAL
           </Link>
         </div>
@@ -97,20 +93,18 @@ export default function Leaderboard() {
           animate={{ opacity: 1, y: 0 }}
           className="space-y-6"
         >
-          {/* Title */}
-          <div className="text-center space-y-2">
-            <h1 className="font-display text-4xl sm:text-5xl tracking-wider text-foreground text-glow-green">
-              🏆 LEADERBOARD
+          <div className="text-center space-y-3">
+            <h1 className="font-display text-2xl sm:text-3xl tracking-wider text-neon-amber text-glow-amber">
+              🏆 HIGH SCORES
             </h1>
-            <p className="text-xs text-muted-foreground tracking-widest uppercase">
-              Top degens ranked by PnL
+            <p className="font-display text-[8px] text-neon-cyan text-glow-cyan tracking-[0.2em]">
+              TOP DEGENS RANKED BY PNL
             </p>
           </div>
 
-          {/* Table */}
-          <div className="glass-panel rounded-sm overflow-hidden border border-border/30">
+          <div className="pixel-border-amber overflow-hidden bg-background/90">
             {/* Table header */}
-            <div className="grid grid-cols-[40px_1fr_70px_60px_70px_100px_80px] sm:grid-cols-[50px_1fr_80px_70px_80px_120px_90px] gap-1 px-4 py-3 bg-muted/30 border-b border-border/20 text-[10px] font-display tracking-wider text-muted-foreground uppercase">
+            <div className="grid grid-cols-[40px_1fr_70px_60px_70px_100px_80px] sm:grid-cols-[50px_1fr_80px_70px_80px_120px_90px] gap-1 px-4 py-3 bg-neon-green/5 border-b-2 border-neon-green/20 text-[8px] font-display tracking-wider text-neon-green/60 uppercase">
               <span>#</span>
               <span>Player</span>
               <span>Ticker</span>
@@ -184,12 +178,8 @@ export default function Leaderboard() {
             )}
           </div>
 
-          {/* Back button */}
           <div className="text-center pt-4">
-            <Link
-              to="/"
-              className="inline-block px-8 py-3 bg-primary/10 border border-primary/40 text-foreground font-display text-sm tracking-wider hover:bg-primary/20 hover:box-glow-green transition-all duration-300"
-            >
+            <Link to="/" className="arcade-btn arcade-btn-primary text-[10px] py-3 px-8 inline-block">
               🎲 BACK TO TERMINAL
             </Link>
           </div>

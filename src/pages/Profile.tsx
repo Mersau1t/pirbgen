@@ -146,17 +146,14 @@ export default function Profile() {
   };
 
   return (
-    <div className="min-h-screen bg-background grid-bg scanlines relative overflow-hidden animate-flicker">
-      <header className="relative z-10 border-b border-border/30 bg-muted/20 backdrop-blur-sm">
+    <div className="min-h-screen bg-background grid-bg scanlines crt-vignette relative overflow-hidden animate-flicker">
+      <header className="relative z-10 border-b-2 border-neon-green/40 bg-background/90">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">🐦</span>
-            <span className="font-display text-sm tracking-[0.3em] text-foreground text-glow-green">PIRBGEN</span>
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">🕹️</span>
+            <span className="font-display text-[10px] sm:text-xs tracking-[0.3em] text-neon-green text-glow-green">PIRBGEN</span>
           </div>
-          <Link
-            to="/"
-            className="glass-panel px-4 py-1.5 text-xs font-display tracking-wider text-foreground hover:box-glow-green transition-all duration-300"
-          >
+          <Link to="/" className="arcade-btn arcade-btn-primary text-[8px] sm:text-[10px] py-2 px-3">
             ← TERMINAL
           </Link>
         </div>
@@ -169,7 +166,7 @@ export default function Profile() {
           className="space-y-6"
         >
           {/* Profile Card */}
-          <div className="glass-panel rounded-sm border border-border/30 p-6 space-y-6">
+          <div className="pixel-border p-6 space-y-6 bg-background/90">
             <div className="flex items-center gap-4">
               {/* Clickable Avatar */}
               <div className="relative">
@@ -223,8 +220,8 @@ export default function Profile() {
                 { label: 'Best Trade', value: `${bestTrade >= 0 ? '+' : ''}${bestTrade.toFixed(1)}%`, color: bestTrade >= 0 ? 'text-neon-green' : 'text-neon-red' },
                 { label: 'Total PnL', value: `${totalPnl >= 0 ? '+' : ''}${totalPnl.toFixed(1)}%`, color: totalPnl >= 0 ? 'text-neon-green' : 'text-neon-red' },
               ].map(stat => (
-                <div key={stat.label} className="bg-muted/20 border border-border/20 p-3 rounded-sm text-center">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{stat.label}</p>
+                <div key={stat.label} className="border-2 border-neon-green/20 p-3 text-center bg-neon-green/5">
+                  <p className="text-[8px] font-display text-neon-green/50 uppercase tracking-wider">{stat.label}</p>
                   <p className={`text-lg font-mono font-bold ${stat.color}`}>{stat.value}</p>
                 </div>
               ))}
@@ -232,9 +229,9 @@ export default function Profile() {
           </div>
 
           {/* Trade History */}
-          <div className="glass-panel rounded-sm border border-border/30 overflow-hidden">
-            <div className="px-4 py-3 border-b border-border/20 bg-muted/20">
-              <h3 className="font-display text-sm tracking-[0.2em] text-muted-foreground uppercase">📜 Trade History</h3>
+          <div className="pixel-border-cyan overflow-hidden bg-background/90">
+            <div className="px-4 py-3 border-b-2 border-neon-cyan/20 bg-neon-cyan/5">
+              <h3 className="font-display text-[10px] tracking-[0.2em] text-neon-cyan text-glow-cyan uppercase">📜 TRADE HISTORY</h3>
             </div>
 
             {loading ? (
@@ -299,12 +296,8 @@ export default function Profile() {
             )}
           </div>
 
-          {/* Back */}
           <div className="text-center pt-4">
-            <Link
-              to="/"
-              className="inline-block px-8 py-3 bg-primary/10 border border-primary/40 text-foreground font-display text-sm tracking-wider hover:bg-primary/20 hover:box-glow-green transition-all duration-300"
-            >
+            <Link to="/" className="arcade-btn arcade-btn-primary text-[10px] py-3 px-8 inline-block">
               🎲 BACK TO TERMINAL
             </Link>
           </div>
@@ -318,7 +311,7 @@ export default function Profile() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[200] flex items-center justify-center bg-background/80 backdrop-blur-md p-4"
+              className="fixed inset-0 z-[200] flex items-center justify-center bg-background/85 backdrop-blur-sm p-4"
               onClick={() => setAvatarPickerOpen(false)}
             >
               <motion.div
@@ -326,11 +319,11 @@ export default function Profile() {
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.92, opacity: 0 }}
                 onClick={e => e.stopPropagation()}
-                className="glass-panel border border-border/40 rounded-sm p-8 w-full max-w-2xl space-y-6"
+                className="pixel-border-magenta p-8 w-full max-w-2xl space-y-6 bg-background/95"
               >
                 <div className="flex items-center justify-between">
-                  <p className="font-display text-base tracking-[0.2em] text-foreground text-glow-green uppercase">Choose Avatar</p>
-                  <button onClick={() => setAvatarPickerOpen(false)} className="text-muted-foreground hover:text-foreground text-xl">✕</button>
+                  <p className="font-display text-[10px] sm:text-xs tracking-[0.2em] text-neon-magenta text-glow-magenta uppercase">SELECT AVATAR</p>
+                  <button onClick={() => setAvatarPickerOpen(false)} className="text-neon-red hover:text-glow-red text-xl font-display">✕</button>
                 </div>
 
                 <div className="grid grid-cols-4 sm:grid-cols-6 gap-3">
@@ -340,14 +333,14 @@ export default function Profile() {
                       whileHover={{ scale: 1.08 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={() => handleSelectAvatar(av.id)}
-                      className={`flex flex-col items-center gap-2 p-4 rounded-sm border transition-all cursor-pointer ${
+                      className={`flex flex-col items-center gap-2 p-4 border-2 transition-all cursor-pointer ${
                         profile.avatar === av.id && !profile.avatar_url
-                          ? 'border-primary/60 bg-primary/10 box-glow-green'
-                          : 'border-border/20 bg-muted/10 hover:border-border/40'
+                          ? 'border-neon-green bg-neon-green/10 box-glow-green'
+                          : 'border-muted-foreground/20 bg-muted/10 hover:border-neon-magenta/40'
                       }`}
                     >
                       <span className="text-3xl">{av.emoji}</span>
-                      <span className="text-[10px] text-muted-foreground font-display tracking-wider">{av.label}</span>
+                      <span className="text-[8px] text-muted-foreground font-display tracking-wider">{av.label}</span>
                     </motion.button>
                   ))}
                 </div>
@@ -355,7 +348,7 @@ export default function Profile() {
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
-                  className="w-full py-3 bg-primary/10 border border-primary/40 text-foreground font-display text-sm tracking-[0.2em] hover:bg-primary/20 hover:box-glow-green transition-all cursor-pointer disabled:opacity-50"
+                  className="arcade-btn arcade-btn-cyan w-full text-[10px] py-3 disabled:opacity-50"
                 >
                   {uploading ? '⏳ UPLOADING...' : '📷 UPLOAD PHOTO'}
                 </button>
@@ -369,7 +362,7 @@ export default function Profile() {
 
                 <button
                   onClick={() => setAvatarPickerOpen(false)}
-                  className="w-full py-2.5 bg-muted/30 border border-border/30 text-muted-foreground font-display text-xs tracking-[0.2em] hover:text-foreground hover:border-border/60 transition-all cursor-pointer"
+                  className="arcade-btn arcade-btn-secondary w-full text-[10px] py-2.5"
                 >
                   ← BACK
                 </button>
