@@ -6,6 +6,7 @@ import pirbMascot from '@/assets/pirb-mascot.png';
 import { playGenerateClick, playWinSound, playRektSound, playCoinSound, startBgMusic, stopBgMusic, isBgMusicPlaying } from '@/lib/sounds';
 import PriceChart, { type Candle } from '@/components/PriceChart';
 import PixelConfetti from '@/components/PixelConfetti';
+import { fetchPythPrice, streamPythPrice, PRICE_FEED_IDS } from '@/lib/pyth';
 import { useWallet, shortenAddress } from '@/contexts/WalletContext';
 import { getAvatarEmoji } from '@/pages/Profile';
 
