@@ -352,8 +352,8 @@ export default function PirbTerminal() {
     else setStreak(recordLoss());
     if (isDaily) markDailyDone();
     setDailyDone(hasDoneDaily());
-    // Delay switching to result screen so user sees the chart result
-    setTimeout(() => setStatus(r), 3000);
+    // Manual close — show result immediately
+    setStatus(r);
   }, [isDaily]);
 
   const resetTerminal = () => {
