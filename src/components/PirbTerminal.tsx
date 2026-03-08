@@ -519,7 +519,7 @@ export default function PirbTerminal() {
                       <span className="font-display text-[10px] text-neon-orange text-glow-orange tracking-wider">AWAITING RESOLUTION...</span>
                     </div>
                     <button
-                      onClick={exitEarly}
+                      onClick={() => { playCoinSound(); exitEarly(); }}
                       className="arcade-btn arcade-btn-secondary w-full text-[10px] py-3"
                     >
                       ⚡ CLOSE POSITION
