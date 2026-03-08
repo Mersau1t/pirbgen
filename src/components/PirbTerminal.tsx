@@ -506,7 +506,7 @@ export default function PirbTerminal() {
                     transition={{ delay: 0.5 }}
                     className="flex gap-3"
                   >
-                    <button onClick={generatePosition} className="arcade-btn arcade-btn-primary text-[10px] py-2.5 px-6">
+                    <button onClick={() => generatePosition()} className="arcade-btn arcade-btn-primary text-[10px] py-2.5 px-6">
                       🎲 ROLL AGAIN
                     </button>
                     <button
