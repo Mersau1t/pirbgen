@@ -22,17 +22,34 @@ export async function fetchAllPythFeeds(): Promise<PythFeed[]> {
   }
 
   try {
-    const res = await fetch(`${HERMES_URL}/v2/price_feeds?query=usd&asset_type=crypto`);
-    if (!res.ok) throw new Error(`Hermes API error: ${res.status}`);
+    // Fetch all asset types in parallel
+    const [cryptoRes, equityRes, fxRes, metalRes] = await Promise.all([
+      fetch(`${HERMES_URL}/v2/price_feeds?query=usd&asset_type=crypto`),
+      fetch(`${HERMES_URL}/v2/price_feeds?query=usd&asset_type=equity`),
+      fetch(`${HERMES_URL}/v2/price_feeds?query=usd&asset_type=fx`),
+      fetch(`${HERMES_URL}/v2/price_feeds?query=usd&asset_type=metal`),
+    ]);
 
-    const data: Array<{ id: string; attributes: { symbol: string; base: string; quote_currency: string } }> = await res.json();
+    const allData: Array<{ id: string; attributes: { symbol: string; base: string; quote_currency: string } }> = [];
+    for (const res of [cryptoRes, equityRes, fxRes, metalRes]) {
+      if (res.ok) {
+        const d = await res.json();
+        allData.push(...d);
+      }
+    }
 
-    // Filter to only X/USD pairs, deduplicate by base, exclude stablecoins
-    const STABLECOINS = new Set(['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'FDUSD', 'FRAX', 'LUSD', 'USDD', 'GUSD', 'PYUSD', 'USDP', 'SUSD', 'CRVUSD', 'GHO', 'MKUSD', 'USDE', 'EUSD', 'DOLA', 'MIM', 'USDJ', 'ALUSD', 'FEUSD', 'SUIUSDE', 'EZETH', 'MSOL', 'BBSOL', 'KHYPE']);
+    // Stablecoins & pegged assets to exclude
+    const STABLECOINS = new Set([
+      'USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'FDUSD', 'FRAX', 'LUSD', 'USDD', 'GUSD',
+      'PYUSD', 'USDP', 'SUSD', 'CRVUSD', 'GHO', 'MKUSD', 'USDE', 'EUSD', 'DOLA', 'MIM',
+      'USDJ', 'ALUSD', 'FEUSD', 'SUIUSDE', 'EZETH', 'MSOL', 'BBSOL', 'KHYPE',
+      'SATS', 'USDU', 'XSGD', 'CBETH', 'STETH', 'WSTETH', 'RETH', 'AFSUI',
+      'BSOL', 'JITOSOL', 'USDB', 'UST', 'USTC', 'CUSD', 'FLEXUSD',
+    ]);
     const seen = new Set<string>();
     const feeds: PythFeed[] = [];
 
-    for (const feed of data) {
+    for (const feed of allData) {
       const base = feed.attributes?.base?.toUpperCase();
       const quote = feed.attributes?.quote_currency?.toUpperCase();
       if (!base || quote !== 'USD') continue;
@@ -49,7 +66,7 @@ export async function fetchAllPythFeeds(): Promise<PythFeed[]> {
 
     feedsCache = feeds;
     feedsCacheTime = Date.now();
-    console.log(`Loaded ${feeds.length} Pyth crypto/USD feeds`);
+    console.log(`Loaded ${feeds.length} Pyth feeds (crypto + equity + fx + metal)`);
     return feeds;
   } catch (err) {
     console.error('Failed to fetch Pyth feeds:', err);
