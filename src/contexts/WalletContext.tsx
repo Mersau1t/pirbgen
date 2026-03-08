@@ -103,7 +103,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     setProfile(null);
   }, []);
 
-  const updateProfile = useCallback(async (updates: { display_name?: string; avatar?: string }) => {
+  const updateProfile = useCallback(async (updates: { display_name?: string; avatar?: string; avatar_url?: string | null }) => {
     if (!walletAddress) return;
 
     const { data } = await supabase
