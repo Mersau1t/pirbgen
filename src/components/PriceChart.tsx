@@ -1,6 +1,4 @@
 import { useRef, useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import mascotSrc from '@/assets/pirb-mascot.png';
 
 export interface Candle {
   open: number;
