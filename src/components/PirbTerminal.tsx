@@ -459,7 +459,7 @@ export default function PirbTerminal() {
               <div className="glass-panel rounded-sm p-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-neon-green animate-pulse-neon" />
+                    <span className="w-2 h-2 rounded-full bg-neon-purple animate-pulse-neon" />
                     <span className="text-[10px] font-display tracking-[0.2em] text-muted-foreground">PYTH PRICE FEED</span>
                   </div>
                   <span className="text-xs text-muted-foreground font-mono">{formatTime(elapsedTime)}</span>
