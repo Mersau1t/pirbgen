@@ -116,8 +116,13 @@ export default function PirbTerminal() {
     setPnl(calculatedPnl);
     setPnlPercent(diff);
 
-    if (calculatedPnl <= activePos.stopLoss) setStatus('REKT');
-    else if (calculatedPnl >= activePos.takeProfit) setStatus('WIN');
+    if (calculatedPnl <= activePos.stopLoss) {
+      setStatus('REKT');
+      playRektSound();
+    } else if (calculatedPnl >= activePos.takeProfit) {
+      setStatus('WIN');
+      playWinSound();
+    }
   }, [currentPrice, entryPrice, activePos, status]);
 
   const generatePosition = useCallback(() => {
