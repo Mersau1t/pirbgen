@@ -104,7 +104,7 @@ export default function Profile() {
   };
 
   const handleSelectAvatar = async (avatarId: string) => {
-    await updateProfile({ avatar: avatarId, avatar_url: undefined });
+    await updateProfile({ avatar: avatarId, avatar_url: null });
     setAvatarPickerOpen(false);
   };
 
