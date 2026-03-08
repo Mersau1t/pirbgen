@@ -169,6 +169,7 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
     if (finalResult === 'WIN') playWinSound(); else playRektSound();
     saveToLeaderboard(pnl);
     onExitEarly(pnl);
+    setTimeout(() => setShowResultAnim(true), 1500);
   }, [pnl, result]);
 
   return (
