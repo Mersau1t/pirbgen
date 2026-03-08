@@ -55,7 +55,7 @@ const RARITY_STYLES: Record<string, { border: string; text: string; bg: string; 
 };
 
 const TickerMarquee = () => {
-  const tickers = ['PYTH LIVE FEEDS 🔴', 'BTC/USD', 'ETH/USD', 'SOL/USD', 'DOGE/USD', 'PEPE/USD', 'AVAX/USD', 'POWERED BY PYTH NETWORK ⚡'];
+  const tickers = ['PYTH LIVE FEEDS 🔴', '500+ CRYPTO PAIRS', 'VOLATILITY WEIGHTED 📊', 'ANY TOKEN ANY TIME', 'POWERED BY PYTH NETWORK ⚡'];
   const doubled = [...tickers, ...tickers];
   return (
     <div className="overflow-hidden border-b-2 border-neon-purple/30 bg-background/80 py-1.5">
