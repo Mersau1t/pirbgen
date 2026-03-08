@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import pirbMascot from '@/assets/pirb-mascot.png';
 import { playGenerateClick, playCoinSound, startBgMusic, stopBgMusic, isBgMusicPlaying } from '@/lib/sounds';
 import { type Candle } from '@/components/PriceChart';
-import { fetchPythPrice } from '@/lib/pyth';
+import { pickVolatileFeed } from '@/lib/pyth';
 import { useWallet } from '@/contexts/WalletContext';
 import { getAvatarEmoji } from '@/pages/Profile';
 import LiveTradePanel from '@/components/LiveTradePanel';
@@ -17,6 +17,7 @@ interface DegenPosition {
   id: number;
   asset: string;
   ticker: string;
+  feedId: string;
   direction: TradeDirection;
   leverage: number;
   stopLoss: number;
@@ -24,19 +25,27 @@ interface DegenPosition {
   rarity: 'common' | 'rare' | 'legendary' | 'degen';
 }
 
-// --- POSITION DATABASE ---
-const POSITIONS: DegenPosition[] = [
-  { id: 1, asset: 'Bitcoin', ticker: 'BTC', direction: 'LONG', leverage: 5, stopLoss: -20, takeProfit: 100, rarity: 'common' },
-  { id: 2, asset: 'Ethereum', ticker: 'ETH', direction: 'LONG', leverage: 10, stopLoss: -10, takeProfit: 100, rarity: 'common' },
-  { id: 3, asset: 'Solana', ticker: 'SOL', direction: 'SHORT', leverage: 20, stopLoss: -50, takeProfit: 200, rarity: 'rare' },
-  { id: 4, asset: 'Dogecoin', ticker: 'DOGE', direction: 'LONG', leverage: 50, stopLoss: -100, takeProfit: 500, rarity: 'rare' },
-  { id: 5, asset: 'Bitcoin', ticker: 'BTC', direction: 'SHORT', leverage: 100, stopLoss: -100, takeProfit: 500, rarity: 'legendary' },
-  { id: 6, asset: 'Ethereum', ticker: 'ETH', direction: 'SHORT', leverage: 75, stopLoss: -100, takeProfit: 300, rarity: 'legendary' },
-  { id: 7, asset: 'Dogecoin', ticker: 'DOGE', direction: 'SHORT', leverage: 125, stopLoss: -100, takeProfit: 1000, rarity: 'degen' },
-  { id: 8, asset: 'Solana', ticker: 'SOL', direction: 'LONG', leverage: 100, stopLoss: -100, takeProfit: 800, rarity: 'degen' },
-  { id: 9, asset: 'Pepe', ticker: 'PEPE', direction: 'LONG', leverage: 125, stopLoss: -100, takeProfit: 1250, rarity: 'degen' },
-  { id: 10, asset: 'Avalanche', ticker: 'AVAX', direction: 'SHORT', leverage: 30, stopLoss: -30, takeProfit: 150, rarity: 'rare' },
+// --- RARITY CONFIG (determines leverage/risk) ---
+const RARITY_CONFIG = [
+  { rarity: 'common' as const, weight: 40, leverageRange: [3, 10], slRange: [-10, -30], tpRange: [50, 150] },
+  { rarity: 'rare' as const, weight: 30, leverageRange: [15, 50], slRange: [-30, -80], tpRange: [100, 400] },
+  { rarity: 'legendary' as const, weight: 20, leverageRange: [50, 100], slRange: [-80, -100], tpRange: [200, 800] },
+  { rarity: 'degen' as const, weight: 10, leverageRange: [100, 150], slRange: [-100, -100], tpRange: [500, 1500] },
 ];
+
+function pickRarity() {
+  const total = RARITY_CONFIG.reduce((s, r) => s + r.weight, 0);
+  let roll = Math.random() * total;
+  for (const r of RARITY_CONFIG) {
+    roll -= r.weight;
+    if (roll <= 0) return r;
+  }
+  return RARITY_CONFIG[0];
+}
+
+function randInt(min: number, max: number) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
 
 const RARITY_STYLES: Record<string, { border: string; text: string; bg: string; label: string }> = {
   common: { border: 'border-muted-foreground/30', text: 'text-muted-foreground', bg: 'bg-muted/20', label: 'COMMON' },
@@ -46,7 +55,7 @@ const RARITY_STYLES: Record<string, { border: string; text: string; bg: string; 
 };
 
 const TickerMarquee = () => {
-  const tickers = ['PYTH LIVE FEEDS 🔴', 'BTC/USD', 'ETH/USD', 'SOL/USD', 'DOGE/USD', 'PEPE/USD', 'AVAX/USD', 'POWERED BY PYTH NETWORK ⚡'];
+  const tickers = ['PYTH LIVE FEEDS 🔴', '500+ CRYPTO PAIRS', 'VOLATILITY WEIGHTED 📊', 'ANY TOKEN ANY TIME', 'POWERED BY PYTH NETWORK ⚡'];
   const doubled = [...tickers, ...tickers];
   return (
     <div className="overflow-hidden border-b-2 border-neon-purple/30 bg-background/80 py-1.5">
@@ -132,9 +141,32 @@ export default function PirbTerminal() {
     playGenerateClick();
     setStatus('GENERATING');
 
-    const pos = POSITIONS[Math.floor(Math.random() * POSITIONS.length)];
-    const realPrice = await fetchPythPrice(pos.ticker);
-    const price = realPrice ?? (Math.random() * 1000 + 100);
+    // Pick a volatile feed from all Pyth crypto feeds
+    const picked = await pickVolatileFeed();
+    if (!picked) {
+      console.error('Could not pick a Pyth feed');
+      setStatus('IDLE');
+      return;
+    }
+
+    const { feed, price } = picked;
+    const rarity = pickRarity();
+    const direction: TradeDirection = Math.random() > 0.5 ? 'LONG' : 'SHORT';
+    const leverage = randInt(rarity.leverageRange[0], rarity.leverageRange[1]);
+    const stopLoss = randInt(rarity.slRange[0], rarity.slRange[1]);
+    const takeProfit = randInt(rarity.tpRange[0], rarity.tpRange[1]);
+
+    const pos: DegenPosition = {
+      id: Date.now(),
+      asset: feed.ticker,
+      ticker: feed.ticker,
+      feedId: feed.id,
+      direction,
+      leverage,
+      stopLoss,
+      takeProfit,
+      rarity: rarity.rarity,
+    };
 
     // Generate pre-history candles
     const historyCandles: Candle[] = [];

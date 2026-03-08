@@ -3,13 +3,14 @@ import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import PriceChart, { type Candle } from '@/components/PriceChart';
 import PixelConfetti from '@/components/PixelConfetti';
-import { streamPythPrice } from '@/lib/pyth';
+import { streamPythPriceById } from '@/lib/pyth';
 import { playWinSound, playRektSound, playCoinSound } from '@/lib/sounds';
 
 interface DegenPosition {
   id: number;
   asset: string;
   ticker: string;
+  feedId: string;
   direction: 'LONG' | 'SHORT';
   leverage: number;
   stopLoss: number;
@@ -52,7 +53,7 @@ function LiveTradePanel({ position, entryPrice, initialCandles, onResult, onExit
     if (result) return;
     let latestPrice: number | null = null;
 
-    const cleanup = streamPythPrice(position.ticker, (price) => {
+    const cleanup = streamPythPriceById(position.feedId, (price) => {
       latestPrice = price;
       candleRef.current.ticks.push(price);
     });
