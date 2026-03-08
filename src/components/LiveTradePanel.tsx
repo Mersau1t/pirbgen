@@ -53,7 +53,7 @@ function LiveTradePanel({ position, entryPrice, initialCandles, onResult, onExit
     if (result) return;
     let latestPrice: number | null = null;
 
-    const cleanup = streamPythPrice(position.ticker, (price) => {
+    const cleanup = streamPythPriceById(position.feedId, (price) => {
       latestPrice = price;
       candleRef.current.ticks.push(price);
     });
