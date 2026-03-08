@@ -279,7 +279,7 @@ export async function fetchHistoricalCandles(
   const startTs = now - totalSpan;
 
   try {
-    const promises: Promise<{ idx: number; price: number | null }>[] = [];
+    const promises: Promise<{ idx: number; price: number | null; confidence: number }>[] = [];
 
     for (let i = 0; i < count; i++) {
       const ts = startTs + i * intervalSec;
@@ -288,29 +288,36 @@ export async function fetchHistoricalCandles(
       promises.push(
         fetch(url)
           .then(async (res) => {
-            if (!res.ok) return { idx: i, price: null };
+            if (!res.ok) return { idx: i, price: null, confidence: 0 };
             const data = await res.json();
             const parsed = data.parsed?.[0]?.price;
-            if (!parsed) return { idx: i, price: null };
-            return { idx: i, price: parsePythPrice(parsed) };
+            if (!parsed) return { idx: i, price: null, confidence: 0 };
+            return {
+              idx: i,
+              price: parsePythPrice(parsed),
+              confidence: Number(parsed.conf) * Math.pow(10, parsed.expo),
+            };
           })
-          .catch(() => ({ idx: i, price: null }))
+          .catch(() => ({ idx: i, price: null, confidence: 0 }))
       );
     }
 
     const results = await Promise.all(promises);
     results.sort((a, b) => a.idx - b.idx);
 
-    // Build candles from consecutive price points
+    // Build candles from consecutive price points using confidence for high/low
     for (let i = 0; i < results.length - 1; i++) {
       const open = results[i].price;
       const close = results[i + 1].price;
       if (open === null || close === null) continue;
       
+      const confA = results[i].confidence;
+      const confB = results[i + 1].confidence;
+      
       candles.push({
         open,
-        high: Math.max(open, close),
-        low: Math.min(open, close),
+        high: Math.max(open + confA, close + confB),
+        low: Math.min(open - confA, close - confB),
         close,
         time: -(count - i) * 2,
       });
@@ -327,9 +334,14 @@ export async function fetchHistoricalCandles(
 /**
  * Create a streaming connection to Pyth Hermes SSE by feed ID
  */
+export interface PythPriceTick {
+  price: number;
+  confidence: number;
+}
+
 export function streamPythPriceById(
   feedId: string,
-  onPrice: (price: number) => void
+  onPrice: (tick: PythPriceTick) => void
 ): () => void {
   const url = `${HERMES_URL}/v2/updates/price/stream?ids[]=${feedId}&parsed=true`;
   const eventSource = new EventSource(url);
@@ -339,7 +351,9 @@ export function streamPythPriceById(
       const data = JSON.parse(event.data);
       const parsed = data.parsed?.[0]?.price;
       if (parsed) {
-        onPrice(parsePythPrice(parsed));
+        const price = parsePythPrice(parsed);
+        const confidence = Number(parsed.conf) * Math.pow(10, parsed.expo);
+        onPrice({ price, confidence });
       }
     } catch (err) {
       console.error('Error parsing Pyth stream data:', err);
