@@ -77,16 +77,6 @@ export default function Profile() {
     if (profile) setNameInput(profile.display_name);
   }, [profile]);
 
-  // Close picker on outside click
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
-        setAvatarPickerOpen(false);
-      }
-    };
-    if (avatarPickerOpen) document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [avatarPickerOpen]);
 
   if (!walletAddress || !profile) return null;
 
