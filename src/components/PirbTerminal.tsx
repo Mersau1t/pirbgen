@@ -333,7 +333,7 @@ export default function PirbTerminal() {
               <motion.img
                 src={pirbMascot}
                 alt="Pirb the pigeon"
-                className="w-36 h-36 sm:w-44 sm:h-44 object-contain drop-shadow-[0_0_40px_hsl(120,100%,50%,0.4)]"
+                className="w-36 h-36 sm:w-44 sm:h-44 object-contain drop-shadow-[0_0_40px_hsl(265,66%,55%,0.4)]"
                 animate={{ y: [0, -10, 0] }}
                 transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
               />
