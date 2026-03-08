@@ -27,7 +27,8 @@ export async function fetchAllPythFeeds(): Promise<PythFeed[]> {
 
     const data: Array<{ id: string; attributes: { symbol: string; base: string; quote_currency: string } }> = await res.json();
 
-    // Filter to only X/USD pairs and deduplicate by base
+    // Filter to only X/USD pairs, deduplicate by base, exclude stablecoins
+    const STABLECOINS = new Set(['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'FDUSD', 'FRAX', 'LUSD', 'USDD', 'GUSD', 'PYUSD', 'USDP', 'SUSD', 'CRVUSD', 'GHO', 'MKUSD', 'USDE', 'EUSD', 'DOLA', 'MIM', 'USDJ', 'ALUSD', 'FEUSD', 'SUIUSDE', 'EZETH', 'MSOL', 'BBSOL', 'KHYPE']);
     const seen = new Set<string>();
     const feeds: PythFeed[] = [];
 
@@ -35,6 +36,7 @@ export async function fetchAllPythFeeds(): Promise<PythFeed[]> {
       const base = feed.attributes?.base?.toUpperCase();
       const quote = feed.attributes?.quote_currency?.toUpperCase();
       if (!base || quote !== 'USD') continue;
+      if (STABLECOINS.has(base)) continue;
       if (seen.has(base)) continue;
       seen.add(base);
 
