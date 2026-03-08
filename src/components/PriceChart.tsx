@@ -1,4 +1,5 @@
-import { useRef, useEffect, useState, useMemo } from 'react';
+import { useRef, useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import mascotSrc from '@/assets/pirb-mascot.png';
 
 export interface Candle {
@@ -46,27 +47,6 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
-  const mascotImg = useRef<HTMLImageElement | null>(null);
-  const animFrame = useRef(0);
-
-  // Load mascot image once
-  useEffect(() => {
-    const img = new Image();
-    img.src = mascotSrc;
-    img.onload = () => { mascotImg.current = img; };
-  }, []);
-
-  // Blink animation loop
-  useEffect(() => {
-    let running = true;
-    const tick = () => {
-      if (!running) return;
-      animFrame.current = (animFrame.current + 1) % 60;
-      requestAnimationFrame(tick);
-    };
-    tick();
-    return () => { running = false; };
-  }, []);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -203,49 +183,14 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       ctx.lineWidth = 1.8;
       ctx.stroke();
 
-      // Current price — mascot icon with animations
+      // Current price dot (small indicator on chart)
       const lastX = toX(candles.length - 1);
       const lastY = toY(candles[candles.length - 1].close);
-      const glowColor = positive ? '#07e46e' : '#ef4444';
-      const t = Date.now();
-      const mascotSize = 30;
-
-      // Animations
-      const pulse = Math.sin(t / 300) * 0.15 + 1; // scale 0.85-1.15
-      const bobY = Math.sin(t / 500) * 3; // float up/down
-      const tilt = Math.sin(t / 700) * 0.12; // slight rotation
-      const colorPulse = Math.sin(t / 200) * 0.5 + 0.5; // 0-1
-
-      ctx.save();
-
-      if (mascotImg.current) {
-        // Draw tinted mascot on offscreen canvas (tint only mascot pixels)
-        const off = document.createElement('canvas');
-        const s = Math.ceil(mascotSize * pulse * dpr);
-        off.width = s;
-        off.height = s;
-        const octx = off.getContext('2d')!;
-        octx.drawImage(mascotImg.current, 0, 0, s, s);
-        // Apply color tint only to existing pixels
-        octx.globalCompositeOperation = 'source-atop';
-        octx.fillStyle = glowColor;
-        octx.globalAlpha = 0.3 + colorPulse * 0.5;
-        octx.fillRect(0, 0, s, s);
-
-        // Draw to main canvas with transform
-        const drawSize = mascotSize * pulse;
-        const cx = lastX;
-        const cy = lastY + bobY;
-        ctx.translate(cx, cy);
-        ctx.rotate(tilt);
-        ctx.drawImage(off, -drawSize / 2, -drawSize / 2, drawSize, drawSize);
-      } else {
-        ctx.beginPath();
-        ctx.arc(lastX, lastY, 5, 0, Math.PI * 2);
-        ctx.fillStyle = glowColor;
-        ctx.fill();
-      }
-      ctx.restore();
+      const dotColor = positive ? '#07e46e' : '#ef4444';
+      ctx.beginPath();
+      ctx.arc(lastX, lastY, 3, 0, Math.PI * 2);
+      ctx.fillStyle = dotColor;
+      ctx.fill();
     }
 
     // --- GRID LINES + PRICE LABELS ---
@@ -366,10 +311,39 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
 
   }, [candles, entryPrice, positive, size, direction, stopLoss, takeProfit, leverage]);
 
+  const glowColor = positive ? '#07e46e' : '#ef4444';
+  const glowFilter = positive
+    ? 'drop-shadow(0 0 8px #07e46e) drop-shadow(0 0 20px #07e46eaa)'
+    : 'drop-shadow(0 0 8px #ef4444) drop-shadow(0 0 20px #ef4444aa)';
+
   return (
-    <div ref={containerRef} className="w-full h-full relative">
-      <canvas ref={canvasRef} className="w-full h-full" style={{ display: 'block' }} />
-      <div className="absolute top-1 left-3 text-[9px] text-muted-foreground/40 font-mono tracking-wider">PYTH LIVE · CONFIDENCE BAND</div>
+    <div className="w-full h-full flex flex-col relative">
+      {/* Mascot row above chart */}
+      <div className="flex items-center gap-2 px-3 py-1 shrink-0">
+        <motion.img
+          src={mascotSrc}
+          alt="PIRB"
+          className="w-14 h-14 object-contain pointer-events-none"
+          animate={{
+            y: [0, -6, 0, 4, 0],
+            rotate: [0, -8, 0, 8, 0],
+            scale: [1, 1.08, 1, 0.95, 1],
+          }}
+          transition={{
+            duration: 2.5,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+          style={{
+            filter: glowFilter,
+          }}
+        />
+        <div className="text-[9px] text-muted-foreground/40 font-mono tracking-wider">PYTH LIVE · CONFIDENCE BAND</div>
+      </div>
+      {/* Chart */}
+      <div ref={containerRef} className="w-full flex-1 relative min-h-0">
+        <canvas ref={canvasRef} className="w-full h-full" style={{ display: 'block' }} />
+      </div>
     </div>
   );
 }
