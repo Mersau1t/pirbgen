@@ -356,7 +356,7 @@ export default function PirbTerminal() {
                   🏆 LEADERBOARD
                 </Link>
                 {walletAddress && (
-                  <Link to="/profile" onClick={() => playCoinSound()} className="arcade-btn arcade-btn-primary w-full text-[10px] py-3 text-center block">
+                  <Link to="/profile" onClick={() => playCoinSound()} className="arcade-btn w-full text-[10px] py-3 text-center block" style={{ borderColor: 'hsl(var(--neon-green))', color: 'hsl(var(--neon-green))', background: 'hsl(var(--neon-green) / 0.1)', boxShadow: 'var(--glow-green)' }}>
                     👤 PROFILE
                   </Link>
                 )}
