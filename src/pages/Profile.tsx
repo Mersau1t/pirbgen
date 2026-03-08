@@ -213,7 +213,7 @@ export default function Profile() {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {[
                 { label: 'Trades', value: totalTrades.toString(), color: 'text-foreground' },
                 { label: 'Win Rate', value: `${winRate}%`, color: Number(winRate) >= 50 ? 'text-neon-green' : 'text-neon-red' },
