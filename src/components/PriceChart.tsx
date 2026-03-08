@@ -124,11 +124,14 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       ctx.fillText('$' + price.toFixed(2), pad.left + chartW + 6, y);
     }
 
-    // Entry price line
-    ctx.strokeStyle = 'rgba(128,70,220,0.5)';
-    ctx.setLineDash([4, 3]);
-    ctx.lineWidth = 1;
+    // Entry price line — bold & prominent
+    ctx.strokeStyle = '#8046dc';
+    ctx.setLineDash([6, 4]);
+    ctx.lineWidth = 2;
+    ctx.shadowColor = '#8046dc';
+    ctx.shadowBlur = 6;
     ctx.beginPath(); ctx.moveTo(pad.left, entryY); ctx.lineTo(pad.left + chartW, entryY); ctx.stroke();
+    ctx.shadowBlur = 0;
     ctx.setLineDash([]);
     // Entry label on price axis
     ctx.fillStyle = '#8046dc';
