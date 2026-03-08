@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import pirbMascot from '@/assets/pirb-mascot.png';
 import { playGenerateClick, playCoinSound, startBgMusic, stopBgMusic, isBgMusicPlaying } from '@/lib/sounds';
 import { type Candle } from '@/components/PriceChart';
-import { pickVolatileFeed } from '@/lib/pyth';
+import { pickVolatileFeed, fetchHistoricalCandles } from '@/lib/pyth';
 import { useWallet } from '@/contexts/WalletContext';
 import { getAvatarEmoji } from '@/pages/Profile';
 import LiveTradePanel from '@/components/LiveTradePanel';
@@ -170,25 +170,32 @@ export default function PirbTerminal() {
       rarity: rarity.rarity,
     };
 
-    // Generate pre-history candles
-    const historyCandles: Candle[] = [];
-    const histCount = 8;
-    let histPrice = price;
-    const rawCandles: { open: number; high: number; low: number; close: number }[] = [];
-    for (let i = 0; i < histCount; i++) {
-      const vol = histPrice * 0.004;
-      const close = histPrice;
-      const ticks = [close];
-      for (let t = 0; t < 4; t++) {
-        histPrice += (Math.random() - 0.5) * vol;
-        ticks.push(histPrice);
-      }
-      const open = histPrice;
-      rawCandles.unshift({ open, high: Math.max(...ticks), low: Math.min(...ticks), close });
+    // Fetch real historical candles from Pyth Benchmarks
+    let historyCandles: Candle[] = [];
+    try {
+      historyCandles = await fetchHistoricalCandles(picked.feed.id, 10, 5);
+    } catch (err) {
+      console.error('Failed to load history, using fallback:', err);
     }
-    rawCandles.forEach((c, i) => {
-      historyCandles.push({ ...c, time: -(histCount - i) * 2 });
-    });
+    
+    // Fallback to synthetic candles if API fails
+    if (historyCandles.length < 3) {
+      const histCount = 8;
+      let histPrice = price;
+      const rawCandles: { open: number; high: number; low: number; close: number }[] = [];
+      for (let i = 0; i < histCount; i++) {
+        const vol = histPrice * 0.004;
+        const close = histPrice;
+        const ticks = [close];
+        for (let t = 0; t < 4; t++) {
+          histPrice += (Math.random() - 0.5) * vol;
+          ticks.push(histPrice);
+        }
+        const open = histPrice;
+        rawCandles.unshift({ open, high: Math.max(...ticks), low: Math.min(...ticks), close });
+      }
+      historyCandles = rawCandles.map((c, i) => ({ ...c, time: -(histCount - i) * 2 }));
+    }
 
     setActivePos(pos);
     setEntryPrice(price);
