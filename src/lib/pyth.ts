@@ -2,21 +2,57 @@
 
 const HERMES_URL = 'https://hermes.pyth.network';
 
-// Pyth Price Feed IDs (Stable feeds)
-export const PRICE_FEED_IDS: Record<string, string> = {
-  BTC: '0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43',
-  ETH: '0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace',
-  SOL: '0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d',
-  DOGE: '0xdcef50dd0a4cd2dcc17e45df1676dcb336a11a61c69df7a0299b0150c672d25c',
-  PEPE: '0xd69731a2e74ac1ce884fc3890f7ee324b6deb66147055249568869ed700882e4',
-  AVAX: '0x93da3352f9f1d105fdfe4971cfa80e9dd777bfc5d0f683ebb6e1294b92137bb7',
-};
+export interface PythFeed {
+  id: string;
+  ticker: string;    // e.g. "BTC"
+  pair: string;      // e.g. "BTC/USD"
+}
 
-export interface PythPrice {
-  price: number;
-  confidence: number;
-  expo: number;
-  publishTime: number;
+// Cache of available feeds
+let feedsCache: PythFeed[] | null = null;
+let feedsCacheTime = 0;
+const CACHE_TTL = 5 * 60 * 1000; // 5 min
+
+/**
+ * Fetch all crypto/USD price feeds from Pyth Hermes
+ */
+export async function fetchAllPythFeeds(): Promise<PythFeed[]> {
+  if (feedsCache && Date.now() - feedsCacheTime < CACHE_TTL) {
+    return feedsCache;
+  }
+
+  try {
+    const res = await fetch(`${HERMES_URL}/v2/price_feeds?query=usd&asset_type=crypto`);
+    if (!res.ok) throw new Error(`Hermes API error: ${res.status}`);
+
+    const data: Array<{ id: string; attributes: { symbol: string; base: string; quote_currency: string } }> = await res.json();
+
+    // Filter to only X/USD pairs and deduplicate by base
+    const seen = new Set<string>();
+    const feeds: PythFeed[] = [];
+
+    for (const feed of data) {
+      const base = feed.attributes?.base?.toUpperCase();
+      const quote = feed.attributes?.quote_currency?.toUpperCase();
+      if (!base || quote !== 'USD') continue;
+      if (seen.has(base)) continue;
+      seen.add(base);
+
+      feeds.push({
+        id: '0x' + feed.id,
+        ticker: base,
+        pair: `${base}/USD`,
+      });
+    }
+
+    feedsCache = feeds;
+    feedsCacheTime = Date.now();
+    console.log(`Loaded ${feeds.length} Pyth crypto/USD feeds`);
+    return feeds;
+  } catch (err) {
+    console.error('Failed to fetch Pyth feeds:', err);
+    return feedsCache || [];
+  }
 }
 
 /**
@@ -27,15 +63,9 @@ function parsePythPrice(priceObj: { price: string; expo: number }): number {
 }
 
 /**
- * Fetch the latest price for a given ticker from Pyth Hermes
+ * Fetch the latest price for a feed by its Pyth feed ID
  */
-export async function fetchPythPrice(ticker: string): Promise<number | null> {
-  const feedId = PRICE_FEED_IDS[ticker];
-  if (!feedId) {
-    console.warn(`No Pyth feed ID for ticker: ${ticker}`);
-    return null;
-  }
-
+export async function fetchPythPriceById(feedId: string): Promise<number | null> {
   try {
     const res = await fetch(
       `${HERMES_URL}/v2/updates/price/latest?ids[]=${feedId}&parsed=true`
@@ -48,25 +78,80 @@ export async function fetchPythPrice(ticker: string): Promise<number | null> {
 
     return parsePythPrice(parsed);
   } catch (err) {
-    console.error(`Failed to fetch Pyth price for ${ticker}:`, err);
+    console.error(`Failed to fetch Pyth price for ${feedId}:`, err);
     return null;
   }
 }
 
 /**
- * Create a streaming connection to Pyth Hermes SSE for real-time price updates
- * Returns a cleanup function to close the connection
+ * Fetch prices for multiple feeds at once — used to find volatile ones
  */
-export function streamPythPrice(
-  ticker: string,
-  onPrice: (price: number) => void
-): () => void {
-  const feedId = PRICE_FEED_IDS[ticker];
-  if (!feedId) {
-    console.warn(`No Pyth feed ID for ticker: ${ticker}`);
-    return () => {};
+export async function fetchMultiplePrices(feedIds: string[]): Promise<Map<string, { price: number; confidence: number }>> {
+  const result = new Map<string, { price: number; confidence: number }>();
+  if (feedIds.length === 0) return result;
+
+  try {
+    const params = feedIds.map(id => `ids[]=${id}`).join('&');
+    const res = await fetch(`${HERMES_URL}/v2/updates/price/latest?${params}&parsed=true`);
+    if (!res.ok) throw new Error(`Hermes API error: ${res.status}`);
+
+    const data = await res.json();
+    for (const item of data.parsed || []) {
+      const price = parsePythPrice(item.price);
+      const conf = Number(item.price.conf) * Math.pow(10, item.price.expo);
+      result.set('0x' + item.id, { price, confidence: conf });
+    }
+  } catch (err) {
+    console.error('Failed to fetch multiple Pyth prices:', err);
   }
 
+  return result;
+}
+
+/**
+ * Pick a random feed, weighted toward more volatile ones.
+ * Volatility proxy = confidence / price (higher = more volatile)
+ */
+export async function pickVolatileFeed(): Promise<{ feed: PythFeed; price: number } | null> {
+  const feeds = await fetchAllPythFeeds();
+  if (feeds.length === 0) return null;
+
+  // Sample a random batch of ~30 feeds to check volatility
+  const batchSize = Math.min(30, feeds.length);
+  const shuffled = [...feeds].sort(() => Math.random() - 0.5);
+  const batch = shuffled.slice(0, batchSize);
+
+  const prices = await fetchMultiplePrices(batch.map(f => f.id));
+
+  // Score by relative confidence (volatility proxy)
+  const scored: Array<{ feed: PythFeed; price: number; volatility: number }> = [];
+  for (const feed of batch) {
+    const data = prices.get(feed.id);
+    if (!data || data.price <= 0) continue;
+    scored.push({
+      feed,
+      price: data.price,
+      volatility: data.confidence / data.price,
+    });
+  }
+
+  if (scored.length === 0) return null;
+
+  // Sort by volatility descending, pick from top half with weight
+  scored.sort((a, b) => b.volatility - a.volatility);
+  const topHalf = scored.slice(0, Math.max(Math.ceil(scored.length / 2), 3));
+  const pick = topHalf[Math.floor(Math.random() * topHalf.length)];
+
+  return { feed: pick.feed, price: pick.price };
+}
+
+/**
+ * Create a streaming connection to Pyth Hermes SSE by feed ID
+ */
+export function streamPythPriceById(
+  feedId: string,
+  onPrice: (price: number) => void
+): () => void {
   const url = `${HERMES_URL}/v2/updates/price/stream?ids[]=${feedId}&parsed=true`;
   const eventSource = new EventSource(url);
 
@@ -75,19 +160,16 @@ export function streamPythPrice(
       const data = JSON.parse(event.data);
       const parsed = data.parsed?.[0]?.price;
       if (parsed) {
-        const price = parsePythPrice(parsed);
-        onPrice(price);
+        onPrice(parsePythPrice(parsed));
       }
     } catch (err) {
       console.error('Error parsing Pyth stream data:', err);
     }
   };
 
-  eventSource.onerror = (err) => {
-    console.error('Pyth SSE stream error:', err);
+  eventSource.onerror = () => {
+    console.error('Pyth SSE stream error for feed:', feedId);
   };
 
-  return () => {
-    eventSource.close();
-  };
+  return () => eventSource.close();
 }
