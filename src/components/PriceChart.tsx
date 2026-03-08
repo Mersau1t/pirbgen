@@ -139,7 +139,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       // Price label
       ctx.fillStyle = 'rgba(245,245,255,0.3)';
       ctx.font = '9px monospace';
-      ctx.fillText('$' + price.toFixed(2), pad.left + chartW + 6, y);
+      ctx.fillText(formatPrice(price), pad.left + chartW + 6, y);
     }
 
     // Entry price line — bold & prominent
