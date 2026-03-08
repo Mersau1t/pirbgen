@@ -352,26 +352,26 @@ export default function PirbTerminal() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex flex-col items-center justify-center gap-6 pt-24"
+              className="flex flex-col items-center justify-center gap-6 pt-20"
             >
               <motion.img
                 src={pirbMascot}
                 alt="Pirb pecking"
-                className="w-32 h-32 object-contain"
+                className="w-32 h-32 object-contain drop-shadow-[0_0_30px_hsl(120,100%,50%,0.4)]"
                 animate={{ rotate: [-5, 5, -10, 8, -5], y: [0, 3, 0, 2, 0] }}
                 transition={{ duration: 0.6, repeat: Infinity }}
               />
-              <div className="text-center space-y-2">
-                <p className="font-display text-xl text-foreground text-glow-green tracking-wider">PIRB IS PECKING...</p>
-                <p className="text-xs text-muted-foreground animate-pulse-neon">Requesting entropy from Pyth Oracle</p>
+              <div className="text-center space-y-3">
+                <p className="font-display text-sm sm:text-lg text-neon-green text-glow-green tracking-wider">PIRB IS PECKING...</p>
+                <p className="font-display text-[8px] text-neon-amber animate-blink tracking-widest">REQUESTING ENTROPY</p>
               </div>
-              <div className="flex gap-1">
+              <div className="flex gap-1.5">
                 {[0, 1, 2, 3, 4].map(i => (
                   <motion.div
                     key={i}
-                    className="w-2 h-6 bg-primary/60"
+                    className="w-3 h-8 bg-neon-green"
                     animate={{ scaleY: [0.3, 1, 0.3] }}
-                    transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.1 }}
+                    transition={{ duration: 0.5, repeat: Infinity, delay: i * 0.1 }}
                   />
                 ))}
               </div>
