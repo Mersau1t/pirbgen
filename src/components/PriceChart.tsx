@@ -1,4 +1,5 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useMemo } from 'react';
+import mascotSrc from '@/assets/pirb-mascot.png';
 
 export interface Candle {
   open: number;
