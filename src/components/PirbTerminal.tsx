@@ -158,7 +158,8 @@ export default function PirbTerminal() {
       setCurrentPrice(price);
       setPnl(0);
       setPnlPercent(0);
-      setPriceHistory([price]);
+      setCandles([]);
+      candleRef.current = { ticks: [] };
       setStatus('PLAYING');
     }, 2000);
   }, []);
