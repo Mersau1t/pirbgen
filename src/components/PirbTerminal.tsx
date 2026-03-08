@@ -488,12 +488,12 @@ export default function PirbTerminal() {
                 {status === 'PLAYING' && (
                   <div className="flex flex-col items-center gap-3 py-2">
                     <div className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-neon-amber animate-pulse-neon" />
-                      <span className="text-xs text-neon-amber font-display tracking-wider">AWAITING RESOLUTION...</span>
+                      <span className="w-2 h-2 bg-neon-amber animate-blink" />
+                      <span className="font-display text-[10px] text-neon-amber text-glow-amber tracking-wider">AWAITING RESOLUTION...</span>
                     </div>
                     <button
                       onClick={exitEarly}
-                      className="w-full py-2.5 bg-secondary/10 border border-secondary/40 text-secondary font-display text-xs tracking-[0.2em] hover:bg-secondary/20 hover:shadow-[0_0_15px_hsl(var(--secondary)/0.3)] transition-all duration-300 cursor-pointer active:scale-95"
+                      className="arcade-btn arcade-btn-secondary w-full text-[10px] py-3"
                     >
                       ⚡ CLOSE POSITION
                     </button>
