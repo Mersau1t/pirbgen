@@ -220,9 +220,9 @@ export default function Profile() {
                 { label: 'Best Trade', value: `${bestTrade >= 0 ? '+' : ''}${bestTrade.toFixed(1)}%`, color: bestTrade >= 0 ? 'text-neon-green' : 'text-neon-red' },
                 { label: 'Total PnL', value: `${totalPnl >= 0 ? '+' : ''}${totalPnl.toFixed(1)}%`, color: totalPnl >= 0 ? 'text-neon-green' : 'text-neon-red' },
               ].map(stat => (
-                <div key={stat.label} className="border-2 border-neon-green/20 p-3 text-center bg-neon-green/5">
+                <div key={stat.label} className="border-2 border-neon-green/20 p-2 text-center bg-neon-green/5">
                   <p className="text-[8px] font-display text-neon-green/50 uppercase tracking-wider">{stat.label}</p>
-                  <p className={`text-lg font-mono font-bold ${stat.color}`}>{stat.value}</p>
+                  <p className={`text-base font-mono font-bold ${stat.color}`}>{stat.value}</p>
                 </div>
               ))}
             </div>
