@@ -285,15 +285,15 @@ export default function PirbTerminal() {
         })}
       </div>
       {/* Top bar */}
-      <header className="relative z-10 border-b-2 border-neon-green/40 bg-background/90">
+      <header className="relative z-10 border-b-2 border-neon-purple/40 bg-background/90">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
             <span className="text-2xl">🕹️</span>
-            <span className="font-display text-[10px] sm:text-xs tracking-[0.3em] text-neon-green text-glow-green">PIRBGEN</span>
+            <span className="font-display text-[10px] sm:text-xs tracking-[0.3em] text-neon-purple text-glow-purple">PIRBGEN</span>
           </div>
           <div className="flex items-center gap-3">
             <div className="hidden sm:flex items-center gap-2 text-[10px] font-display text-neon-cyan">
-              <span className="w-2 h-2 bg-neon-green animate-blink" />
+              <span className="w-2 h-2 bg-neon-purple animate-blink" />
               <span>BASE</span>
             </div>
             {walletAddress && profile ? (
