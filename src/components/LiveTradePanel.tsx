@@ -82,11 +82,10 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
     };
 
     const cleanup = streamPythPriceById(position.feedId, (tick) => {
-      if (!entrySetRef.current) {
-        entrySetRef.current = true;
-        setEntryPrice(tick.price);
-        setCurrentPrice(tick.price);
-        return;
+      candleRef.current.ticks.push(tick);
+      pendingPrice = tick.price;
+      if (!rafId) {
+        rafId = requestAnimationFrame(flushPrice);
       }
       candleRef.current.ticks.push(tick);
       pendingPrice = tick.price;
