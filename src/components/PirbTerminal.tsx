@@ -339,10 +339,10 @@ export default function PirbTerminal() {
               />
 
               <div className="text-center space-y-4">
-                <h1 className="font-display text-3xl sm:text-5xl tracking-wider text-neon-green text-glow-green">
+                <h1 className="font-display text-3xl sm:text-5xl tracking-wider text-neon-purple text-glow-purple">
                   <GlitchText>PIRBGEN</GlitchText>
                 </h1>
-                <p className="font-display text-[8px] sm:text-[10px] text-neon-amber text-glow-amber tracking-[0.2em]">
+                <p className="font-display text-[8px] sm:text-[10px] text-neon-orange text-glow-orange tracking-[0.2em]">
                   INSERT COIN TO PLAY
                 </p>
               </div>
