@@ -578,10 +578,10 @@ export default function PirbTerminal() {
       </main>
 
       {/* Bottom info */}
-      <footer className="fixed bottom-0 inset-x-0 z-10 border-t-2 border-neon-green/20 bg-background/90 py-2 px-4">
+      <footer className="fixed bottom-0 inset-x-0 z-10 border-t-2 border-neon-purple/20 bg-background/90 py-2 px-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between text-[8px] font-display text-muted-foreground/40 tracking-wider">
           <span>PIRBGEN v0.1</span>
-          <span className="text-neon-green/30 animate-pulse-neon">● LIVE</span>
+          <span className="text-neon-purple/30 animate-pulse-neon">● LIVE</span>
           <span className="hidden sm:inline">BASE L2</span>
         </div>
       </footer>
