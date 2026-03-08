@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useWallet, shortenAddress } from '@/contexts/WalletContext';
 
@@ -47,6 +47,10 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState('');
+  const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const pickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!walletAddress) {
@@ -73,6 +77,17 @@ export default function Profile() {
     if (profile) setNameInput(profile.display_name);
   }, [profile]);
 
+  // Close picker on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setAvatarPickerOpen(false);
+      }
+    };
+    if (avatarPickerOpen) document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [avatarPickerOpen]);
+
   if (!walletAddress || !profile) return null;
 
   const totalTrades = trades.length;
@@ -89,7 +104,32 @@ export default function Profile() {
   };
 
   const handleSelectAvatar = async (avatarId: string) => {
-    await updateProfile({ avatar: avatarId });
+    await updateProfile({ avatar: avatarId, avatar_url: null });
+    setAvatarPickerOpen(false);
+  };
+
+  const handleUploadAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !walletAddress) return;
+
+    setUploading(true);
+    const ext = file.name.split('.').pop();
+    const path = `${walletAddress}.${ext}`;
+
+    const { error } = await supabase.storage
+      .from('avatars')
+      .upload(path, file, { upsert: true });
+
+    if (!error) {
+      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
+      // Add cache buster
+      const url = `${urlData.publicUrl}?t=${Date.now()}`;
+      await updateProfile({ avatar: 'custom', avatar_url: url });
+    }
+
+    setUploading(false);
+    setAvatarPickerOpen(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const timeAgo = (dateStr: string) => {
@@ -100,6 +140,19 @@ export default function Profile() {
     const hrs = Math.floor(mins / 60);
     if (hrs < 24) return `${hrs}h ago`;
     return `${Math.floor(hrs / 24)}d ago`;
+  };
+
+  const renderAvatar = () => {
+    if (profile.avatar === 'custom' && profile.avatar_url) {
+      return (
+        <img
+          src={profile.avatar_url}
+          alt="Avatar"
+          className="w-16 h-16 rounded-full object-cover border-2 border-primary/40"
+        />
+      );
+    }
+    return <span className="text-5xl">{getAvatarEmoji(profile.avatar)}</span>;
   };
 
   return (
@@ -128,9 +181,66 @@ export default function Profile() {
           {/* Profile Card */}
           <div className="glass-panel rounded-sm border border-border/30 p-6 space-y-6">
             <div className="flex items-center gap-4">
-              <div className="text-5xl">
-                {getAvatarEmoji(profile.avatar)}
+              {/* Clickable Avatar */}
+              <div className="relative" ref={pickerRef}>
+                <button
+                  onClick={() => setAvatarPickerOpen(!avatarPickerOpen)}
+                  className="relative cursor-pointer group"
+                >
+                  {renderAvatar()}
+                  <div className="absolute inset-0 flex items-center justify-center bg-background/60 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="text-xs font-display text-foreground">✏️</span>
+                  </div>
+                </button>
+
+                {/* Avatar Picker Popover */}
+                <AnimatePresence>
+                  {avatarPickerOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9, y: -8 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.9, y: -8 }}
+                      className="absolute top-full left-0 mt-2 z-50 glass-panel border border-border/40 rounded-sm p-4 w-64"
+                    >
+                      <p className="text-[10px] font-display tracking-[0.2em] text-muted-foreground uppercase mb-3">Choose Avatar</p>
+                      <div className="grid grid-cols-4 gap-2 mb-3">
+                        {AVATARS.map(av => (
+                          <motion.button
+                            key={av.id}
+                            whileHover={{ scale: 1.15 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => handleSelectAvatar(av.id)}
+                            className={`flex items-center justify-center p-2 rounded-sm border transition-all cursor-pointer ${
+                              profile.avatar === av.id && !profile.avatar_url
+                                ? 'border-primary/60 bg-primary/10 box-glow-green'
+                                : 'border-border/20 bg-muted/10 hover:border-border/40'
+                            }`}
+                          >
+                            <span className="text-xl">{av.emoji}</span>
+                          </motion.button>
+                        ))}
+                      </div>
+
+                      {/* Upload button */}
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploading}
+                        className="w-full py-2 bg-muted/30 border border-border/30 text-muted-foreground font-display text-[10px] tracking-[0.2em] hover:text-foreground hover:border-border/60 transition-all cursor-pointer disabled:opacity-50"
+                      >
+                        {uploading ? '⏳ UPLOADING...' : '📷 UPLOAD PHOTO'}
+                      </button>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleUploadAvatar}
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
+
               <div className="flex-1 space-y-1">
                 {editingName ? (
                   <div className="flex items-center gap-2">
@@ -173,29 +283,6 @@ export default function Profile() {
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{stat.label}</p>
                   <p className={`text-lg font-mono font-bold ${stat.color}`}>{stat.value}</p>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Avatar Picker */}
-          <div className="glass-panel rounded-sm border border-border/30 p-6 space-y-4">
-            <h3 className="font-display text-sm tracking-[0.2em] text-muted-foreground uppercase">Choose Avatar</h3>
-            <div className="grid grid-cols-4 sm:grid-cols-6 gap-3">
-              {AVATARS.map(av => (
-                <motion.button
-                  key={av.id}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => handleSelectAvatar(av.id)}
-                  className={`flex flex-col items-center gap-1 p-3 rounded-sm border transition-all cursor-pointer ${
-                    profile.avatar === av.id
-                      ? 'border-primary/60 bg-primary/10 box-glow-green'
-                      : 'border-border/20 bg-muted/10 hover:border-border/40'
-                  }`}
-                >
-                  <span className="text-2xl">{av.emoji}</span>
-                  <span className="text-[9px] text-muted-foreground font-display tracking-wider">{av.label}</span>
-                </motion.button>
               ))}
             </div>
           </div>

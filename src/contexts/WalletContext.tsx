@@ -6,6 +6,7 @@ interface Profile {
   wallet_address: string;
   display_name: string;
   avatar: string;
+  avatar_url: string | null;
   created_at: string;
 }
 
@@ -15,7 +16,7 @@ interface WalletContextType {
   isConnecting: boolean;
   connectWallet: () => Promise<void>;
   disconnectWallet: () => void;
-  updateProfile: (updates: { display_name?: string; avatar?: string }) => Promise<void>;
+  updateProfile: (updates: { display_name?: string; avatar?: string; avatar_url?: string | null }) => Promise<void>;
 }
 
 const WalletContext = createContext<WalletContextType | null>(null);
@@ -102,7 +103,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     setProfile(null);
   }, []);
 
-  const updateProfile = useCallback(async (updates: { display_name?: string; avatar?: string }) => {
+  const updateProfile = useCallback(async (updates: { display_name?: string; avatar?: string; avatar_url?: string | null }) => {
     if (!walletAddress) return;
 
     const { data } = await supabase
