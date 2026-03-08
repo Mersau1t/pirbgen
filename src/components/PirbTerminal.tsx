@@ -297,7 +297,7 @@ export default function PirbTerminal() {
             {walletAddress && profile ? (
               <button
                 onClick={() => { playCoinSound(); navigate('/profile'); }}
-                className="arcade-btn arcade-btn-primary text-[8px] sm:text-[10px] py-2 px-3 flex items-center gap-2"
+                className="arcade-btn text-[8px] sm:text-[10px] py-2 px-3 flex items-center gap-2" style={{ borderColor: 'hsl(var(--neon-green))', color: 'hsl(var(--neon-green))', background: 'hsl(var(--neon-green) / 0.1)', boxShadow: 'var(--glow-green)' }}
               >
                 <span>{getAvatarEmoji(profile.avatar)}</span>
                 <span>{profile.display_name}</span>
