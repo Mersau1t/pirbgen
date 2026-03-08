@@ -563,7 +563,7 @@ export default function PirbTerminal() {
                     </button>
                     <button
                       onClick={() => { playCoinSound(); resetTerminal(); }}
-                      className="arcade-btn arcade-btn-cyan flex-1 text-[10px] py-3"
+                      className="arcade-btn arcade-btn-amber flex-1 text-[10px] py-3"
                     >
                       🏠 HOME
                     </button>
