@@ -68,6 +68,8 @@ const GlitchText = ({ children, className = '' }: { children: React.ReactNode; c
 );
 
 export default function PirbTerminal() {
+  const { walletAddress, profile, isConnecting, connectWallet } = useWallet();
+  const navigate = useNavigate();
   const [activePos, setActivePos] = useState<DegenPosition | null>(null);
   const [entryPrice, setEntryPrice] = useState<number | null>(null);
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
