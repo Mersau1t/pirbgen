@@ -399,13 +399,55 @@ export default function PirbTerminal() {
                   walletAddress={walletAddress || null}
                 />
               ) : (
-                <div className="flex flex-col items-center justify-center flex-1 gap-4">
+                <div className="flex flex-col items-center justify-center flex-1 gap-4 overflow-hidden">
+                  {/* Mascot flies in from side */}
+                  <motion.div
+                    initial={{ x: status === 'WIN' ? 300 : -300, opacity: 0, rotate: status === 'WIN' ? 15 : -15 }}
+                    animate={{ x: 0, opacity: 1, rotate: 0 }}
+                    transition={{ type: 'spring', stiffness: 120, damping: 12, delay: 0.2 }}
+                    className="relative"
+                  >
+                    <motion.img
+                      src={pirbMascot}
+                      alt="Pirb"
+                      className="w-28 h-28 sm:w-36 sm:h-36 object-contain"
+                      style={{
+                        filter: status === 'WIN'
+                          ? 'drop-shadow(0 0 20px #07e46e) drop-shadow(0 0 40px #07e46eaa)'
+                          : 'drop-shadow(0 0 20px #ef4444) drop-shadow(0 0 40px #ef4444aa)',
+                        transform: status === 'REKT' ? 'scaleX(-1)' : undefined,
+                      }}
+                      animate={status === 'WIN'
+                        ? { y: [0, -8, 0], rotate: [0, -5, 3, -2, 0] }
+                        : { y: [0, 2, 0], rotate: [0, -3, 5, -8, 3, 0], scale: [1, 1.05, 1, 1.08, 1] }
+                      }
+                      transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                    />
+                    {/* Speech bubble */}
+                    <motion.div
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: 0.7, type: 'spring', stiffness: 200 }}
+                      className={`absolute -top-2 ${status === 'WIN' ? '-right-4' : '-left-4'} pixel-border px-3 py-1.5 text-[9px] sm:text-[11px] font-display tracking-wider whitespace-nowrap ${
+                        status === 'WIN'
+                          ? 'bg-neon-green/10 border-neon-green/40 text-neon-green'
+                          : 'bg-neon-red/10 border-neon-red/40 text-neon-red'
+                      }`}
+                    >
+                      {status === 'WIN'
+                        ? ['😏 LUCKY...', '🍀 JUST LUCK BRO', '😒 WHATEVER...', '🥱 EZ TRADE'][Math.floor(Math.random() * 4)]
+                        : ['😡 REKT NOOB!', '🔥 GET REKT!', '💀 SKILL ISSUE', '😈 NGMI'][Math.floor(Math.random() * 4)]
+                      }
+                    </motion.div>
+                  </motion.div>
+
                   <p className={`font-display text-2xl ${status === 'WIN' ? 'text-neon-green text-glow-green animate-rainbow' : 'text-neon-red text-glow-red'}`}>
                     {status === 'WIN' ? `🎯 TARGET HIT! +${finalPnl.toFixed(2)}%` : `💀 LIQUIDATED ${finalPnl.toFixed(2)}%`}
                   </p>
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
                     className="flex gap-3"
                   >
                     <button onClick={generatePosition} className="arcade-btn arcade-btn-primary text-[10px] py-2.5 px-6">
