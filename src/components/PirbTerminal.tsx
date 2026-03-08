@@ -48,7 +48,7 @@ const TickerMarquee = () => {
   const tickers = ['BTC $67,432 ▲2.3%', 'ETH $3,521 ▼0.8%', 'SOL $178 ▲5.1%', 'DOGE $0.18 ▲12.4%', 'PEPE $0.00001 ▲42.0%', 'AVAX $38 ▼1.2%'];
   const doubled = [...tickers, ...tickers];
   return (
-    <div className="overflow-hidden border-b-2 border-neon-green/30 bg-background/80 py-1.5">
+    <div className="overflow-hidden border-b-2 border-neon-purple/30 bg-background/80 py-1.5">
       <div className="animate-marquee flex whitespace-nowrap gap-10 text-[10px] font-display">
         {doubled.map((t, i) => (
           <span key={i} className={t.includes('▲') ? 'text-neon-green text-glow-green' : 'text-neon-red text-glow-red'}>
