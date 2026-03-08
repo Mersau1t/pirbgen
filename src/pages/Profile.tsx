@@ -296,12 +296,8 @@ export default function Profile() {
             )}
           </div>
 
-          {/* Back */}
           <div className="text-center pt-4">
-            <Link
-              to="/"
-              className="inline-block px-8 py-3 bg-primary/10 border border-primary/40 text-foreground font-display text-sm tracking-wider hover:bg-primary/20 hover:box-glow-green transition-all duration-300"
-            >
+            <Link to="/" className="arcade-btn arcade-btn-primary text-[10px] py-3 px-8 inline-block">
               🎲 BACK TO TERMINAL
             </Link>
           </div>
