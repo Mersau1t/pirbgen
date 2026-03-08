@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef, useCallback, memo, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import PriceChart, { type Candle } from '@/components/PriceChart';
 import PixelConfetti from '@/components/PixelConfetti';
 import { streamPythPriceById, type PythPriceTick } from '@/lib/pyth';
 import { playWinSound, playRektSound, playCoinSound } from '@/lib/sounds';
+import { playTimerTick, playTimerUrgent } from '@/lib/timerSounds';
 
 interface DegenPosition {
   id: number;
@@ -33,11 +34,11 @@ interface LiveTradePanelProps {
   onExitEarly: (pnl: number) => void;
   playerName: string;
   walletAddress: string | null;
+  timerSeconds?: number; // optional countdown timer (e.g. 90 for daily challenge)
 }
 
 const formatTime = (s: number) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
 
-/** Smart price formatting */
 function fmtPrice(p: number): string {
   const abs = Math.abs(p);
   if (abs >= 10000) return '$' + p.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -49,11 +50,12 @@ function fmtPrice(p: number): string {
   return '$' + p.toPrecision(6);
 }
 
-function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandles, onResult, onExitEarly, playerName, walletAddress }: LiveTradePanelProps) {
+function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandles, onResult, onExitEarly, playerName, walletAddress, timerSeconds }: LiveTradePanelProps) {
   const [entryPrice, setEntryPrice] = useState(initialEntryPrice);
   const [currentPrice, setCurrentPrice] = useState(initialEntryPrice);
   const [pnl, setPnl] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(timerSeconds ?? 0);
   const [candles, setCandles] = useState<Candle[]>(initialCandles);
   const [result, setResult] = useState<'WIN' | 'REKT' | null>(null);
   const [showResultAnim, setShowResultAnim] = useState(false);
@@ -61,9 +63,10 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
   const resultFiredRef = useRef(false);
   const entrySetRef = useRef(false);
 
+  const hasTimer = !!timerSeconds && timerSeconds > 0;
   const rarityStyle = RARITY_STYLES[position.rarity];
 
-  // Pyth streaming — update price on every tick, candles 1x/sec
+  // Pyth streaming
   useEffect(() => {
     if (result) return;
     let rafId = 0;
@@ -78,12 +81,11 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
     };
 
     const cleanup = streamPythPriceById(position.feedId, (tick) => {
-      // Set entry price from the very first live tick
       if (!entrySetRef.current) {
         entrySetRef.current = true;
         setEntryPrice(tick.price);
         setCurrentPrice(tick.price);
-        return; // skip this tick for candle data
+        return;
       }
       candleRef.current.ticks.push(tick);
       pendingPrice = tick.price;
@@ -92,7 +94,6 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
       }
     });
 
-    // Candle formation every 1s — use Pyth confidence for real high/low
     const candleTick = setInterval(() => {
       if (candleRef.current.ticks.length >= 2) {
         const ticks = candleRef.current.ticks;
@@ -121,6 +122,39 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
       clearInterval(elapsedTimer);
     };
   }, [position.ticker, result]);
+
+  // Countdown timer
+  useEffect(() => {
+    if (!hasTimer || result) return;
+    setTimeLeft(timerSeconds!);
+    const iv = setInterval(() => {
+      setTimeLeft(t => {
+        const next = t - 1;
+        if (next <= 0) {
+          clearInterval(iv);
+          return 0;
+        }
+        // Sound effects
+        if (next <= 10) playTimerUrgent();
+        else if (next % 10 === 0) playTimerTick();
+        return next;
+      });
+    }, 1000);
+    return () => clearInterval(iv);
+  }, [hasTimer, timerSeconds, result]);
+
+  // Auto-close on timer expiry
+  useEffect(() => {
+    if (hasTimer && timeLeft === 0 && !resultFiredRef.current && !result) {
+      resultFiredRef.current = true;
+      const finalResult = pnl >= 0 ? 'WIN' : 'REKT';
+      setResult(finalResult);
+      if (finalResult === 'WIN') playWinSound(); else playRektSound();
+      saveToLeaderboard(pnl);
+      onExitEarly(pnl);
+      setTimeout(() => setShowResultAnim(true), 1500);
+    }
+  }, [timeLeft, hasTimer, result, pnl]);
 
   // PnL calculation
   useEffect(() => {
@@ -172,9 +206,12 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
     setTimeout(() => setShowResultAnim(true), 1500);
   }, [pnl, result]);
 
+  const timerPct = hasTimer ? (timeLeft / timerSeconds!) * 100 : 0;
+  const timerUrgent = hasTimer && timeLeft <= 15;
+
   return (
     <div className="flex flex-col flex-1 min-h-0 gap-2">
-      {/* Wide position info table */}
+      {/* Position info */}
       <div className="glass-panel rounded-sm px-4 py-2 shrink-0">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -236,6 +273,7 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
           </div>
         </div>
 
+        {/* PnL progress bar */}
         <div className="mt-2">
           <div className="h-2 bg-muted/20 rounded-full overflow-hidden relative border border-border/20">
             <div className="absolute left-1/2 top-0 w-0.5 h-full bg-muted-foreground/40 z-10 -translate-x-1/2" />
@@ -257,6 +295,25 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
             <span className="text-neon-green">+{position.takeProfit}%</span>
           </div>
         </div>
+
+        {/* Timer bar */}
+        {hasTimer && !result && (
+          <div className="mt-1.5">
+            <div className="flex items-center gap-2">
+              <span className={`text-[9px] font-display tracking-wider ${timerUrgent ? 'text-neon-red animate-pulse' : 'text-neon-orange'}`}>
+                ⏱ {formatTime(timeLeft)}
+              </span>
+              <div className="flex-1 h-1.5 bg-muted/20 rounded-full overflow-hidden border border-border/20">
+                <motion.div
+                  className={`h-full rounded-full ${timerUrgent ? 'bg-neon-red' : 'bg-neon-orange'}`}
+                  style={{ width: `${timerPct}%` }}
+                  animate={timerUrgent ? { opacity: [0.5, 1, 0.5] } : {}}
+                  transition={{ duration: 0.5, repeat: Infinity }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Chart */}
@@ -270,7 +327,9 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 flex-1">
               <span className="w-2 h-2 bg-neon-orange animate-blink" />
-              <span className="font-display text-[10px] text-neon-orange text-glow-orange tracking-wider">AWAITING RESOLUTION...</span>
+              <span className="font-display text-[10px] text-neon-orange text-glow-orange tracking-wider">
+                {hasTimer ? 'DAILY CHALLENGE · TIMED' : 'AWAITING RESOLUTION...'}
+              </span>
             </div>
             <button onClick={handleExit} className="arcade-btn arcade-btn-primary text-[10px] py-2 px-6">
               ⚡ CLOSE POSITION
