@@ -372,7 +372,7 @@ export default function PirbTerminal() {
                 </p>
               </div>
 
-              <div className="pixel-border p-6 sm:p-8 w-full max-w-md space-y-4 bg-background/90">
+              <div className="pixel-border p-4 sm:p-6 w-full max-w-md space-y-3 bg-background/90">
                 <button
                   onClick={generatePosition}
                   className="arcade-btn arcade-btn-primary w-full text-sm sm:text-base py-4"
