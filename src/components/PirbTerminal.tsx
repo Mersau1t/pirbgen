@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import pirbMascot from '@/assets/pirb-mascot.png';
+import { playGenerateClick, playWinSound, playRektSound } from '@/lib/sounds';
 
 // --- TYPES ---
 type TradeDirection = 'LONG' | 'SHORT';
@@ -115,11 +116,17 @@ export default function PirbTerminal() {
     setPnl(calculatedPnl);
     setPnlPercent(diff);
 
-    if (calculatedPnl <= activePos.stopLoss) setStatus('REKT');
-    else if (calculatedPnl >= activePos.takeProfit) setStatus('WIN');
+    if (calculatedPnl <= activePos.stopLoss) {
+      setStatus('REKT');
+      playRektSound();
+    } else if (calculatedPnl >= activePos.takeProfit) {
+      setStatus('WIN');
+      playWinSound();
+    }
   }, [currentPrice, entryPrice, activePos, status]);
 
   const generatePosition = useCallback(() => {
+    playGenerateClick();
     setStatus('GENERATING');
     setElapsedTime(0);
     setTimeout(() => {
