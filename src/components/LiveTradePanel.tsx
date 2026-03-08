@@ -192,8 +192,17 @@ function LiveTradePanel({ position, entryPrice, initialCandles, onResult, onExit
             </div>
             <div className="text-center">
               <p className="text-[8px] text-muted-foreground/60 uppercase">PnL</p>
-              <p className="font-mono text-lg font-bold transition-colors duration-500 ease-in-out"
-                 style={{ color: pnl >= 0 ? '#07e46e' : '#ef4444' }}>
+              <p className={`font-mono text-lg font-bold transition-colors duration-500 ease-in-out ${
+                pnl >= 0
+                  ? (pnl / position.takeProfit > 0.7 ? 'animate-pulse' : '')
+                  : (pnl / position.stopLoss > 0.7 ? 'animate-pulse' : '')
+              }`}
+                 style={{
+                   color: pnl >= 0 ? '#07e46e' : '#ef4444',
+                   textShadow: (pnl >= 0 ? pnl / position.takeProfit : pnl / position.stopLoss) > 0.7
+                     ? `0 0 20px ${pnl >= 0 ? '#07e46e' : '#ef4444'}, 0 0 40px ${pnl >= 0 ? '#07e46eaa' : '#ef4444aa'}`
+                     : undefined,
+                 }}>
                 {pnl >= 0 ? '+' : ''}{pnl.toFixed(2)}%
               </p>
             </div>
