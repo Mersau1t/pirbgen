@@ -168,7 +168,7 @@ function LiveTradePanel({ position, entryPrice, initialCandles, onResult, onExit
             </div>
             <div className="text-center">
               <p className="text-[8px] text-muted-foreground/60 uppercase">Entry</p>
-              <p className="font-mono text-sm text-neon-purple">${entryPrice.toFixed(2)}</p>
+              <p className="font-mono text-sm text-neon-purple">{fmtPrice(entryPrice)}</p>
             </div>
             <div className="text-center">
               <p className="text-[8px] text-muted-foreground/60 uppercase">PnL</p>
