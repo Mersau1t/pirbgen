@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import pirbMascot from '@/assets/pirb-mascot.png';
 import { playGenerateClick, playWinSound, playRektSound } from '@/lib/sounds';
+import PriceChart from '@/components/PriceChart';
 
 // --- TYPES ---
 type TradeDirection = 'LONG' | 'SHORT';
@@ -70,6 +71,7 @@ export default function PirbTerminal() {
   const [pnl, setPnl] = useState(0);
   const [pnlPercent, setPnlPercent] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [priceHistory, setPriceHistory] = useState<number[]>([]);
 
   // Restore session
   useEffect(() => {
@@ -101,7 +103,9 @@ export default function PirbTerminal() {
       setCurrentPrice(prev => {
         if (!prev) return 100;
         const volatility = prev * (0.002 + (activePos.leverage / 5000));
-        return prev + (Math.random() - 0.5) * volatility;
+        const newPrice = prev + (Math.random() - 0.5) * volatility;
+        setPriceHistory(h => [...h.slice(-(9)), newPrice]);
+        return newPrice;
       });
       setElapsedTime(t => t + 1);
     }, 1000);
@@ -137,6 +141,7 @@ export default function PirbTerminal() {
       setCurrentPrice(price);
       setPnl(0);
       setPnlPercent(0);
+      setPriceHistory([price]);
       setStatus('PLAYING');
     }, 2000);
   }, []);
@@ -158,6 +163,7 @@ export default function PirbTerminal() {
     setEntryPrice(null);
     setCurrentPrice(null);
     setPnl(0);
+    setPriceHistory([]);
     setElapsedTime(0);
   };
 
@@ -332,6 +338,13 @@ export default function PirbTerminal() {
                     Entry: ${entryPrice?.toFixed(2)}
                   </p>
                 </div>
+
+                {/* Price Chart */}
+                {entryPrice && (
+                  <div className="border border-border/20 rounded-sm overflow-hidden bg-muted/10">
+                    <PriceChart priceHistory={priceHistory} entryPrice={entryPrice} positive={pnl >= 0} />
+                  </div>
+                )}
 
                 {/* PnL Bar */}
                 <div className="space-y-2">
