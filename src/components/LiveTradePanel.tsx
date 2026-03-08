@@ -56,6 +56,7 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
   const [elapsedTime, setElapsedTime] = useState(0);
   const [candles, setCandles] = useState<Candle[]>(initialCandles);
   const [result, setResult] = useState<'WIN' | 'REKT' | null>(null);
+  const [showResultAnim, setShowResultAnim] = useState(false);
   const candleRef = useRef<{ ticks: number[] }>({ ticks: [] });
   const resultFiredRef = useRef(false);
   const entrySetRef = useRef(false);
@@ -135,12 +136,14 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
         playRektSound();
         onResult('REKT', calculatedPnl);
         saveToLeaderboard(calculatedPnl);
+        setTimeout(() => setShowResultAnim(true), 1500);
       } else if (calculatedPnl >= position.takeProfit) {
         resultFiredRef.current = true;
         setResult('WIN');
         playWinSound();
         onResult('WIN', calculatedPnl);
         saveToLeaderboard(calculatedPnl);
+        setTimeout(() => setShowResultAnim(true), 1500);
       }
     }
   }, [currentPrice, entryPrice, position, result]);
@@ -166,6 +169,7 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
     if (finalResult === 'WIN') playWinSound(); else playRektSound();
     saveToLeaderboard(pnl);
     onExitEarly(pnl);
+    setTimeout(() => setShowResultAnim(true), 1500);
   }, [pnl, result]);
 
   return (
@@ -274,7 +278,20 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
           </div>
         )}
 
-        {result === 'WIN' && (
+        {result && !showResultAnim && (
+          <div className="text-center py-1">
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0.4, 1, 0.4] }}
+              transition={{ duration: 0.8, repeat: Infinity }}
+              className={`font-display text-sm tracking-wider ${result === 'WIN' ? 'text-neon-green' : 'text-neon-red'}`}
+            >
+              CLOSING...
+            </motion.p>
+          </div>
+        )}
+
+        {showResultAnim && result === 'WIN' && (
           <>
             <PixelConfetti active={true} />
             <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center py-1">
@@ -283,7 +300,7 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
           </>
         )}
 
-        {result === 'REKT' && (
+        {showResultAnim && result === 'REKT' && (
           <>
             <PixelConfetti active={true} variant="rekt" />
             <motion.div
