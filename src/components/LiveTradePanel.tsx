@@ -52,7 +52,7 @@ function fmtPrice(p: number): string {
 }
 
 function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandles, onResult, onExitEarly, playerName, walletAddress, timerSeconds }: LiveTradePanelProps) {
-  const [entryPrice, setEntryPrice] = useState(initialEntryPrice);
+  const [entryPrice] = useState(initialEntryPrice);
   const [currentPrice, setCurrentPrice] = useState(initialEntryPrice);
   const [pnl, setPnl] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
