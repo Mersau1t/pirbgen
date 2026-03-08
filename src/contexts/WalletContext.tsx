@@ -1,4 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import { useAccount, useDisconnect } from 'wagmi';
+import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Profile {
@@ -27,81 +29,60 @@ export function useWallet() {
   return ctx;
 }
 
-function generateWalletAddress(): string {
-  const chars = '0123456789abcdef';
-  let addr = '0x';
-  for (let i = 0; i < 40; i++) {
-    addr += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return addr;
-}
-
-function shortenAddress(addr: string): string {
+export function shortenAddress(addr: string): string {
   return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 }
 
-export { shortenAddress };
-
 export function WalletProvider({ children }: { children: ReactNode }) {
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const { address, isConnecting: wagmiConnecting } = useAccount();
+  const { disconnect } = useDisconnect();
+  const { openConnectModal } = useConnectModal();
+
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [isConnecting, setIsConnecting] = useState(false);
 
-  // Restore wallet from localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem('pirbWallet');
-    if (saved) {
-      setWalletAddress(saved);
-    }
-  }, []);
+  const walletAddress = address ? address.toLowerCase() : null;
 
-  // Fetch profile when wallet changes
+  // Fetch or create profile when wallet changes
   useEffect(() => {
     if (!walletAddress) {
       setProfile(null);
       return;
     }
 
-    const fetchProfile = async () => {
-      const { data } = await supabase
+    const fetchOrCreateProfile = async () => {
+      // Try to find existing profile
+      const { data: existing } = await supabase
         .from('profiles')
         .select('*')
         .eq('wallet_address', walletAddress)
         .maybeSingle();
 
-      if (data) {
-        setProfile(data as Profile);
+      if (existing) {
+        setProfile(existing as Profile);
+        return;
       }
+
+      // Create new profile
+      const { data: created } = await supabase
+        .from('profiles')
+        .insert({ wallet_address: walletAddress, display_name: shortenAddress(walletAddress) })
+        .select()
+        .single();
+
+      if (created) setProfile(created as Profile);
     };
 
-    fetchProfile();
+    fetchOrCreateProfile();
   }, [walletAddress]);
 
   const connectWallet = useCallback(async () => {
-    setIsConnecting(true);
-    // Simulate wallet connection delay
-    await new Promise(r => setTimeout(r, 1200));
-
-    const addr = generateWalletAddress();
-    localStorage.setItem('pirbWallet', addr);
-    setWalletAddress(addr);
-
-    // Create profile in DB
-    const { data } = await supabase
-      .from('profiles')
-      .insert({ wallet_address: addr, display_name: shortenAddress(addr) })
-      .select()
-      .single();
-
-    if (data) setProfile(data as Profile);
-    setIsConnecting(false);
-  }, []);
+    openConnectModal?.();
+  }, [openConnectModal]);
 
   const disconnectWallet = useCallback(() => {
-    localStorage.removeItem('pirbWallet');
-    setWalletAddress(null);
+    disconnect();
     setProfile(null);
-  }, []);
+  }, [disconnect]);
 
   const updateProfile = useCallback(async (updates: { display_name?: string; avatar?: string; avatar_url?: string | null }) => {
     if (!walletAddress) return;
@@ -117,7 +98,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   }, [walletAddress]);
 
   return (
-    <WalletContext.Provider value={{ walletAddress, profile, isConnecting, connectWallet, disconnectWallet, updateProfile }}>
+    <WalletContext.Provider value={{ walletAddress, profile, isConnecting: wagmiConnecting, connectWallet, disconnectWallet, updateProfile }}>
       {children}
     </WalletContext.Provider>
   );
