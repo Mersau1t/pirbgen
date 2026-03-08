@@ -506,8 +506,8 @@ export default function PirbTerminal() {
                     animate={{ scale: 1, opacity: 1 }}
                     className="text-center py-4 space-y-2"
                   >
-                    <p className="font-display text-3xl text-neon-green text-glow-green tracking-wider">🎯 TARGET HIT!</p>
-                    <p className="text-neon-green text-sm font-mono">+{pnl.toFixed(2)}% PROFIT</p>
+                    <p className="font-display text-xl sm:text-2xl text-neon-green text-glow-green animate-rainbow">🎯 TARGET HIT!</p>
+                    <p className="font-display text-[10px] text-neon-green">+{pnl.toFixed(2)}% PROFIT</p>
                   </motion.div>
                 )}
 
@@ -517,8 +517,8 @@ export default function PirbTerminal() {
                     animate={{ scale: 1, opacity: 1 }}
                     className="text-center py-4 space-y-2"
                   >
-                    <p className="font-display text-3xl text-neon-red text-glow-red tracking-wider">💀 LIQUIDATED</p>
-                    <p className="text-neon-red text-sm font-mono">{pnl.toFixed(2)}% — REKT</p>
+                    <p className="font-display text-xl sm:text-2xl text-neon-red text-glow-red">💀 LIQUIDATED</p>
+                    <p className="font-display text-[10px] text-neon-red">{pnl.toFixed(2)}% — REKT</p>
                   </motion.div>
                 )}
 
@@ -530,13 +530,13 @@ export default function PirbTerminal() {
                   >
                     <button
                       onClick={generatePosition}
-                      className="flex-1 py-3 bg-primary/10 border border-primary/40 text-foreground font-display text-sm tracking-[0.2em] hover:bg-primary/20 hover:box-glow-green transition-all duration-300 cursor-pointer active:scale-95"
+                      className="arcade-btn arcade-btn-primary flex-1 text-[10px] py-3"
                     >
                       🎲 ROLL AGAIN
                     </button>
                     <button
                       onClick={resetTerminal}
-                      className="flex-1 py-3 bg-muted/30 border border-border/30 text-muted-foreground font-display text-sm tracking-[0.2em] hover:text-foreground hover:border-border/60 transition-all duration-300 cursor-pointer active:scale-95"
+                      className="arcade-btn arcade-btn-cyan flex-1 text-[10px] py-3"
                     >
                       🏠 HOME
                     </button>
