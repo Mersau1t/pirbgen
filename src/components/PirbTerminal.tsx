@@ -117,10 +117,12 @@ export default function PirbTerminal() {
     }))
   );
 
-  // Fetch top volatile tokens for display
-  const [topVolatile, setTopVolatile] = useState<VolatileToken[]>([]);
+  // Fetch top volatile tokens from DB
+  interface DbVolatileToken { feed_id: string; ticker: string; pair: string; price: number; volatility: number }
+  const [topVolatile, setTopVolatile] = useState<DbVolatileToken[]>([]);
   useEffect(() => {
-    getTopVolatileTokens().then(tokens => setTopVolatile(tokens.slice(0, 6)));
+    supabase.from('volatile_tokens').select('*').order('volatility', { ascending: false }).limit(8)
+      .then(({ data }) => { if (data) setTopVolatile(data as unknown as DbVolatileToken[]); });
   }, []);
 
   // Restore session
