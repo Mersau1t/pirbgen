@@ -147,10 +147,8 @@ export async function pickVolatileFeed(): Promise<{ feed: PythFeed; price: numbe
   return { feed: pick.feed, price: pick.price };
 }
 
-const BENCHMARKS_URL = 'https://benchmarks.pyth.network';
-
 /**
- * Fetch historical price candles from Pyth Benchmarks API.
+ * Fetch historical price candles from Hermes timestamp API (CORS-friendly).
  * Returns ~count candles of ~intervalSec seconds each, ending at now.
  */
 export async function fetchHistoricalCandles(
@@ -160,53 +158,48 @@ export async function fetchHistoricalCandles(
 ): Promise<Array<{ open: number; high: number; low: number; close: number; time: number }>> {
   const candles: Array<{ open: number; high: number; low: number; close: number; time: number }> = [];
   const now = Math.floor(Date.now() / 1000);
-  
-  // Fetch price updates for each interval going back in time
-  // Use the interval endpoint: /v1/updates/price/{timestamp}/{interval}
   const totalSpan = count * intervalSec;
   const startTs = now - totalSpan;
 
   try {
-    // Fetch in batches — each call covers up to 60s
-    const batchDuration = Math.min(intervalSec, 60);
-    const promises: Promise<{ ts: number; prices: number[] }>[] = [];
+    const promises: Promise<{ idx: number; price: number | null }>[] = [];
 
     for (let i = 0; i < count; i++) {
       const ts = startTs + i * intervalSec;
-      const cleanId = feedId.startsWith('0x') ? feedId.slice(2) : feedId;
-      const url = `${BENCHMARKS_URL}/v1/updates/price/${ts}/${batchDuration}?ids=${cleanId}&parsed=true`;
+      const url = `${HERMES_URL}/v2/updates/price/${ts}?ids[]=${feedId}&parsed=true`;
       
       promises.push(
         fetch(url)
           .then(async (res) => {
-            if (!res.ok) return { ts, prices: [] };
+            if (!res.ok) return { idx: i, price: null };
             const data = await res.json();
-            const prices: number[] = [];
-            for (const update of data.parsed || []) {
-              if (update.price) {
-                prices.push(parsePythPrice(update.price));
-              }
-            }
-            return { ts, prices };
+            const parsed = data.parsed?.[0]?.price;
+            if (!parsed) return { idx: i, price: null };
+            return { idx: i, price: parsePythPrice(parsed) };
           })
-          .catch(() => ({ ts, prices: [] }))
+          .catch(() => ({ idx: i, price: null }))
       );
     }
 
     const results = await Promise.all(promises);
-    
-    for (let i = 0; i < results.length; i++) {
-      const { prices } = results[i];
-      if (prices.length === 0) continue;
+    results.sort((a, b) => a.idx - b.idx);
+
+    // Build candles from consecutive price points
+    for (let i = 0; i < results.length - 1; i++) {
+      const open = results[i].price;
+      const close = results[i + 1].price;
+      if (open === null || close === null) continue;
       
       candles.push({
-        open: prices[0],
-        high: Math.max(...prices),
-        low: Math.min(...prices),
-        close: prices[prices.length - 1],
+        open,
+        high: Math.max(open, close),
+        low: Math.min(open, close),
+        close,
         time: -(count - i) * 2,
       });
     }
+    
+    console.log(`Loaded ${candles.length} historical candles from Hermes for ${feedId}`);
   } catch (err) {
     console.error('Failed to fetch historical candles:', err);
   }
