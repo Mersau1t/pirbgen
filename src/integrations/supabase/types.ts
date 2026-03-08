@@ -24,6 +24,7 @@ export type Database = {
           pnl_percent: number
           rarity: string
           ticker: string
+          wallet_address: string | null
         }
         Insert: {
           created_at?: string
@@ -34,6 +35,7 @@ export type Database = {
           pnl_percent: number
           rarity?: string
           ticker: string
+          wallet_address?: string | null
         }
         Update: {
           created_at?: string
@@ -44,6 +46,31 @@ export type Database = {
           pnl_percent?: number
           rarity?: string
           ticker?: string
+          wallet_address?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar: string
+          created_at: string
+          display_name: string
+          id: string
+          wallet_address: string
+        }
+        Insert: {
+          avatar?: string
+          created_at?: string
+          display_name?: string
+          id?: string
+          wallet_address: string
+        }
+        Update: {
+          avatar?: string
+          created_at?: string
+          display_name?: string
+          id?: string
+          wallet_address?: string
         }
         Relationships: []
       }

@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import pirbMascot from '@/assets/pirb-mascot.png';
 import { playGenerateClick, playWinSound, playRektSound } from '@/lib/sounds';
 import PriceChart, { type Candle } from '@/components/PriceChart';
+import { useWallet, shortenAddress } from '@/contexts/WalletContext';
+import { getAvatarEmoji } from '@/pages/Profile';
 
 // --- TYPES ---
 type TradeDirection = 'LONG' | 'SHORT';
@@ -66,6 +68,8 @@ const GlitchText = ({ children, className = '' }: { children: React.ReactNode; c
 );
 
 export default function PirbTerminal() {
+  const { walletAddress, profile, isConnecting, connectWallet } = useWallet();
+  const navigate = useNavigate();
   const [activePos, setActivePos] = useState<DegenPosition | null>(null);
   const [entryPrice, setEntryPrice] = useState<number | null>(null);
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
@@ -145,25 +149,26 @@ export default function PirbTerminal() {
     if (calculatedPnl <= activePos.stopLoss) {
       setStatus('REKT');
       playRektSound();
-      // Save to leaderboard
       supabase.from('leaderboard').insert({
-        player_name: 'Anonymous',
+        player_name: profile?.display_name || 'Anonymous',
         ticker: activePos.ticker,
         direction: activePos.direction,
         leverage: activePos.leverage,
         pnl_percent: Number(calculatedPnl.toFixed(1)),
         rarity: activePos.rarity,
+        wallet_address: walletAddress || null,
       }).then(() => {});
     } else if (calculatedPnl >= activePos.takeProfit) {
       setStatus('WIN');
       playWinSound();
       supabase.from('leaderboard').insert({
-        player_name: 'Anonymous',
+        player_name: profile?.display_name || 'Anonymous',
         ticker: activePos.ticker,
         direction: activePos.direction,
         leverage: activePos.leverage,
         pnl_percent: Number(calculatedPnl.toFixed(1)),
         rarity: activePos.rarity,
+        wallet_address: walletAddress || null,
       }).then(() => {});
     }
   }, [currentPrice, entryPrice, activePos, status]);
@@ -217,12 +222,13 @@ export default function PirbTerminal() {
     if (status !== 'PLAYING' || !activePos) return;
     // Save to leaderboard
     supabase.from('leaderboard').insert({
-      player_name: 'Anonymous',
+      player_name: profile?.display_name || 'Anonymous',
       ticker: activePos.ticker,
       direction: activePos.direction,
       leverage: activePos.leverage,
       pnl_percent: Number(pnl.toFixed(1)),
       rarity: activePos.rarity,
+      wallet_address: walletAddress || null,
     }).then(() => {});
     if (pnl >= 0) {
       setStatus('WIN');
@@ -261,9 +267,23 @@ export default function PirbTerminal() {
               <span className="w-2 h-2 rounded-full bg-neon-green animate-pulse-neon" />
               <span>BASE MAINNET</span>
             </div>
-            <button className="glass-panel px-4 py-1.5 text-xs font-display tracking-wider text-foreground hover:box-glow-green transition-all duration-300 cursor-pointer">
-              CONNECT WALLET
-            </button>
+            {walletAddress && profile ? (
+              <button
+                onClick={() => navigate('/profile')}
+                className="glass-panel px-4 py-1.5 text-xs font-display tracking-wider text-foreground hover:box-glow-green transition-all duration-300 cursor-pointer flex items-center gap-2"
+              >
+                <span>{getAvatarEmoji(profile.avatar)}</span>
+                <span>{profile.display_name}</span>
+              </button>
+            ) : (
+              <button
+                onClick={connectWallet}
+                disabled={isConnecting}
+                className="glass-panel px-4 py-1.5 text-xs font-display tracking-wider text-foreground hover:box-glow-green transition-all duration-300 cursor-pointer disabled:opacity-50"
+              >
+                {isConnecting ? '⏳ CONNECTING...' : '🔗 CONNECT WALLET'}
+              </button>
+            )}
           </div>
         </div>
       </header>
