@@ -221,7 +221,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
 
         // Main crisp line
         ctx.beginPath();
-        catmullRomPath(ctx, pts);
+        sharpLinePath(ctx, pts);
         ctx.strokeStyle = '#e0d4ff';
         ctx.lineWidth = 1.8;
         ctx.stroke();
