@@ -262,7 +262,7 @@ export default function PirbTerminal() {
           const left = Math.random() * 100;
           const delay = Math.random() * 12;
           const duration = 8 + Math.random() * 12;
-          const colors = ['hsl(var(--neon-green))', 'hsl(var(--neon-cyan))', 'hsl(var(--neon-magenta))', 'hsl(var(--neon-amber))'];
+          const colors = ['hsl(var(--neon-purple))', 'hsl(var(--neon-orange))', 'hsl(var(--neon-cyan))', 'hsl(var(--neon-purple))'];
           const color = colors[i % colors.length];
           const opacity = 0.3 + Math.random() * 0.5;
           return (
