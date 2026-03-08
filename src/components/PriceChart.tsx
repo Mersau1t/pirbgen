@@ -196,7 +196,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
         // Outer glow (intensifies near TP/SL)
         ctx.save();
         ctx.beginPath();
-        catmullRomPath(ctx, pts);
+        sharpLinePath(ctx, pts);
         ctx.strokeStyle = proximity > 0.6
           ? (positive ? `rgba(7, 228, 110, ${0.15 + pulse * 0.15})` : `rgba(239, 68, 68, ${0.15 + pulse * 0.15})`)
           : 'rgba(200, 180, 255, 0.2)';
