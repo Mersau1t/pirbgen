@@ -18,7 +18,7 @@ interface PriceChartProps {
   leverage: number;
 }
 
-const MAX_POINTS = 28;
+const MAX_VISIBLE = 28;
 
 function formatPrice(p: number): string {
   const abs = Math.abs(p);
