@@ -49,14 +49,16 @@ function fmtPrice(p: number): string {
   return '$' + p.toPrecision(6);
 }
 
-function LiveTradePanel({ position, entryPrice, initialCandles, onResult, onExitEarly, playerName, walletAddress }: LiveTradePanelProps) {
-  const [currentPrice, setCurrentPrice] = useState(entryPrice);
+function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandles, onResult, onExitEarly, playerName, walletAddress }: LiveTradePanelProps) {
+  const [entryPrice, setEntryPrice] = useState(initialEntryPrice);
+  const [currentPrice, setCurrentPrice] = useState(initialEntryPrice);
   const [pnl, setPnl] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [candles, setCandles] = useState<Candle[]>(initialCandles);
   const [result, setResult] = useState<'WIN' | 'REKT' | null>(null);
   const candleRef = useRef<{ ticks: number[] }>({ ticks: [] });
   const resultFiredRef = useRef(false);
+  const entrySetRef = useRef(false);
 
   const rarityStyle = RARITY_STYLES[position.rarity];
 
@@ -75,9 +77,15 @@ function LiveTradePanel({ position, entryPrice, initialCandles, onResult, onExit
     };
 
     const cleanup = streamPythPriceById(position.feedId, (price) => {
+      // Set entry price from the very first live tick
+      if (!entrySetRef.current) {
+        entrySetRef.current = true;
+        setEntryPrice(price);
+        setCurrentPrice(price);
+        return; // skip this tick for candle data
+      }
       candleRef.current.ticks.push(price);
       pendingPrice = price;
-      // Schedule a single state update per animation frame to avoid flicker
       if (!rafId) {
         rafId = requestAnimationFrame(flushPrice);
       }
