@@ -222,12 +222,13 @@ export default function PirbTerminal() {
     if (status !== 'PLAYING' || !activePos) return;
     // Save to leaderboard
     supabase.from('leaderboard').insert({
-      player_name: 'Anonymous',
+      player_name: profile?.display_name || 'Anonymous',
       ticker: activePos.ticker,
       direction: activePos.direction,
       leverage: activePos.leverage,
       pnl_percent: Number(pnl.toFixed(1)),
       rarity: activePos.rarity,
+      wallet_address: walletAddress || null,
     }).then(() => {});
     if (pnl >= 0) {
       setStatus('WIN');
