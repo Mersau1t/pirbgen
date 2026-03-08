@@ -229,9 +229,12 @@ export default function Profile() {
           </div>
 
           {/* Trade History */}
-          <div className="pixel-border-cyan overflow-hidden bg-background/90">
-            <div className="px-4 py-3 border-b-2 border-neon-cyan/20 bg-neon-cyan/5">
+          <div className="pixel-border-cyan flex flex-col min-h-0 flex-1 bg-background/90">
+            <div className="px-4 py-2 border-b-2 border-neon-cyan/20 bg-neon-cyan/5 shrink-0 flex items-center justify-between">
               <h3 className="font-display text-[10px] tracking-[0.2em] text-neon-cyan text-glow-cyan uppercase">📜 TRADE HISTORY</h3>
+              <Link to="/" className="text-[8px] font-display text-muted-foreground hover:text-neon-green tracking-wider transition-colors">
+                ← TERMINAL
+              </Link>
             </div>
 
             {loading ? (
@@ -260,14 +263,14 @@ export default function Profile() {
                 </Link>
               </div>
             ) : (
-              <div className="divide-y divide-border/10">
+              <div className="divide-y divide-border/10 overflow-y-auto flex-1 min-h-0">
                 {trades.map((trade, i) => (
                   <motion.div
                     key={trade.id}
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.02 }}
-                    className="flex items-center justify-between px-4 py-3 hover:bg-muted/20 transition-colors"
+                    className="flex items-center justify-between px-4 py-2.5 hover:bg-muted/20 transition-colors"
                   >
                     <div className="flex items-center gap-3">
                       <span className={`text-xs font-display tracking-wider ${
@@ -294,12 +297,6 @@ export default function Profile() {
                 ))}
               </div>
             )}
-          </div>
-
-          <div className="text-center pt-4">
-            <Link to="/" className="arcade-btn arcade-btn-primary text-[10px] py-3 px-8 inline-block">
-              🎲 BACK TO TERMINAL
-            </Link>
           </div>
         </motion.div>
       </main>
