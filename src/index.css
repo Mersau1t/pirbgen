@@ -7,45 +7,45 @@
 @layer base {
   :root {
     --background: 220 20% 4%;
-    --foreground: 150 100% 60%;
+    --foreground: 240 100% 97%;
 
     --card: 220 25% 7%;
-    --card-foreground: 150 100% 60%;
+    --card-foreground: 240 100% 97%;
 
     --popover: 220 25% 7%;
-    --popover-foreground: 150 100% 60%;
+    --popover-foreground: 240 100% 97%;
 
-    --primary: 150 100% 50%;
+    --primary: 265 68% 54%;
     --primary-foreground: 220 20% 4%;
 
-    --secondary: 320 100% 60%;
+    --secondary: 24 97% 60%;
     --secondary-foreground: 220 20% 4%;
 
     --muted: 220 15% 12%;
     --muted-foreground: 220 10% 45%;
 
-    --accent: 45 100% 55%;
+    --accent: 144 95% 48%;
     --accent-foreground: 220 20% 4%;
 
     --destructive: 0 90% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 150 40% 15%;
+    --border: 265 68% 54%;
     --input: 220 20% 12%;
-    --ring: 150 100% 50%;
+    --ring: 144 95% 48%;
 
     --radius: 0.25rem;
 
     /* Custom tokens */
-    --neon-green: 150 100% 50%;
-    --neon-magenta: 320 100% 60%;
-    --neon-cyan: 185 100% 55%;
-    --neon-amber: 45 100% 55%;
+    --neon-green: 144 95% 48%;
+    --neon-magenta: 265 68% 54%;
+    --neon-cyan: 24 97% 60%;
+    --neon-amber: 240 100% 97%;
     --neon-red: 0 100% 55%;
     --terminal-bg: 220 25% 5%;
-    --terminal-border: 150 60% 20%;
+    --terminal-border: 144 95% 48%;
     --glass-bg: 220 25% 8%;
-    --scanline: 150 100% 50%;
+    --scanline: 144 95% 48%;
 
     --font-display: 'Orbitron', sans-serif;
     --font-mono: 'JetBrains Mono', monospace;
