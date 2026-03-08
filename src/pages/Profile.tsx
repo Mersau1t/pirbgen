@@ -230,11 +230,8 @@ export default function Profile() {
 
           {/* Trade History */}
           <div className="pixel-border-cyan flex flex-col min-h-0 flex-1 bg-background/90">
-            <div className="px-4 py-2 border-b-2 border-neon-cyan/20 bg-neon-cyan/5 shrink-0 flex items-center justify-between">
+            <div className="px-4 py-2 border-b-2 border-neon-cyan/20 bg-neon-cyan/5 shrink-0">
               <h3 className="font-display text-[10px] tracking-[0.2em] text-neon-cyan text-glow-cyan uppercase">📜 TRADE HISTORY</h3>
-              <Link to="/" className="text-[8px] font-display text-muted-foreground hover:text-neon-green tracking-wider transition-colors">
-                ← TERMINAL
-              </Link>
             </div>
 
             {loading ? (
@@ -255,12 +252,6 @@ export default function Profile() {
               <div className="py-12 text-center space-y-3">
                 <p className="text-3xl">🎲</p>
                 <p className="text-sm text-muted-foreground">No trades yet. Go roll some positions!</p>
-                <Link
-                  to="/"
-                  className="inline-block mt-2 px-6 py-2 bg-primary/10 border border-primary/40 text-foreground font-display text-xs tracking-wider hover:bg-primary/20 hover:box-glow-green transition-all"
-                >
-                  🎲 START TRADING
-                </Link>
               </div>
             ) : (
               <div className="divide-y divide-border/10 overflow-y-auto flex-1 min-h-0">
@@ -297,6 +288,12 @@ export default function Profile() {
                 ))}
               </div>
             )}
+          </div>
+
+          <div className="shrink-0 text-center py-2">
+            <Link to="/" className="arcade-btn arcade-btn-primary text-[10px] py-2.5 px-8 inline-block">
+              🎲 BACK TO TERMINAL
+            </Link>
           </div>
         </motion.div>
       </main>

@@ -274,7 +274,7 @@ export default function PirbTerminal() {
   const rarityStyle = activePos ? RARITY_STYLES[activePos.rarity] : RARITY_STYLES.common;
 
   return (
-    <div className="min-h-screen bg-background grid-bg scanlines crt-vignette relative overflow-hidden animate-flicker">
+    <div className="h-screen bg-background grid-bg scanlines crt-vignette relative overflow-hidden animate-flicker flex flex-col">
       {/* Pigeon poop particles */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
         {Array.from({ length: 25 }).map((_, i) => {
@@ -345,7 +345,7 @@ export default function PirbTerminal() {
       <TickerMarquee />
 
       {/* Main content */}
-      <main className="relative z-10 max-w-4xl mx-auto px-4 py-8">
+      <main className="relative z-10 max-w-4xl mx-auto px-4 py-4 flex-1 min-h-0 overflow-y-auto">
         <AnimatePresence mode="wait">
           {status === 'IDLE' && (
             <motion.div
