@@ -197,49 +197,50 @@ export default function PirbTerminal() {
     }
   }, [currentPrice, entryPrice, activePos, status]);
 
-  const generatePosition = useCallback(() => {
+  const generatePosition = useCallback(async () => {
     playGenerateClick();
     setStatus('GENERATING');
     setElapsedTime(0);
-    setTimeout(() => {
-      const pos = POSITIONS[Math.floor(Math.random() * POSITIONS.length)];
-      const price = Math.random() * 1000 + 100;
 
-      // Generate pre-history candles leading up to entry price
-      const historyCandles: Candle[] = [];
-      const histCount = 8;
-      // Work backwards from entry price
-      let histPrice = price;
-      const rawCandles: { open: number; high: number; low: number; close: number }[] = [];
-      for (let i = 0; i < histCount; i++) {
-        const vol = histPrice * 0.004;
-        const close = histPrice;
-        const ticks = [close];
-        for (let t = 0; t < 4; t++) {
-          histPrice += (Math.random() - 0.5) * vol;
-          ticks.push(histPrice);
-        }
-        const open = histPrice;
-        rawCandles.unshift({
-          open,
-          high: Math.max(...ticks),
-          low: Math.min(...ticks),
-          close,
-        });
+    const pos = POSITIONS[Math.floor(Math.random() * POSITIONS.length)];
+
+    // Fetch real price from Pyth
+    const realPrice = await fetchPythPrice(pos.ticker);
+    const price = realPrice ?? (Math.random() * 1000 + 100); // fallback if Pyth fails
+
+    // Generate pre-history candles around real entry price
+    const historyCandles: Candle[] = [];
+    const histCount = 8;
+    let histPrice = price;
+    const rawCandles: { open: number; high: number; low: number; close: number }[] = [];
+    for (let i = 0; i < histCount; i++) {
+      const vol = histPrice * 0.004;
+      const close = histPrice;
+      const ticks = [close];
+      for (let t = 0; t < 4; t++) {
+        histPrice += (Math.random() - 0.5) * vol;
+        ticks.push(histPrice);
       }
-      rawCandles.forEach((c, i) => {
-        historyCandles.push({ ...c, time: -(histCount - i) * 2 });
+      const open = histPrice;
+      rawCandles.unshift({
+        open,
+        high: Math.max(...ticks),
+        low: Math.min(...ticks),
+        close,
       });
+    }
+    rawCandles.forEach((c, i) => {
+      historyCandles.push({ ...c, time: -(histCount - i) * 2 });
+    });
 
-      setActivePos(pos);
-      setEntryPrice(price);
-      setCurrentPrice(price);
-      setPnl(0);
-      setPnlPercent(0);
-      setCandles(historyCandles);
-      candleRef.current = { ticks: [] };
-      setStatus('PLAYING');
-    }, 2000);
+    setActivePos(pos);
+    setEntryPrice(price);
+    setCurrentPrice(price);
+    setPnl(0);
+    setPnlPercent(0);
+    setCandles(historyCandles);
+    candleRef.current = { ticks: [] };
+    setStatus('PLAYING');
   }, []);
 
   const exitEarly = useCallback(() => {
