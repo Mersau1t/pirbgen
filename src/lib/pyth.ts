@@ -147,6 +147,73 @@ export async function pickVolatileFeed(): Promise<{ feed: PythFeed; price: numbe
   return { feed: pick.feed, price: pick.price };
 }
 
+const BENCHMARKS_URL = 'https://benchmarks.pyth.network';
+
+/**
+ * Fetch historical price candles from Pyth Benchmarks API.
+ * Returns ~count candles of ~intervalSec seconds each, ending at now.
+ */
+export async function fetchHistoricalCandles(
+  feedId: string,
+  count: number = 10,
+  intervalSec: number = 5
+): Promise<Array<{ open: number; high: number; low: number; close: number; time: number }>> {
+  const candles: Array<{ open: number; high: number; low: number; close: number; time: number }> = [];
+  const now = Math.floor(Date.now() / 1000);
+  
+  // Fetch price updates for each interval going back in time
+  // Use the interval endpoint: /v1/updates/price/{timestamp}/{interval}
+  const totalSpan = count * intervalSec;
+  const startTs = now - totalSpan;
+
+  try {
+    // Fetch in batches — each call covers up to 60s
+    const batchDuration = Math.min(intervalSec, 60);
+    const promises: Promise<{ ts: number; prices: number[] }>[] = [];
+
+    for (let i = 0; i < count; i++) {
+      const ts = startTs + i * intervalSec;
+      const cleanId = feedId.startsWith('0x') ? feedId.slice(2) : feedId;
+      const url = `${BENCHMARKS_URL}/v1/updates/price/${ts}/${batchDuration}?ids=${cleanId}&parsed=true`;
+      
+      promises.push(
+        fetch(url)
+          .then(async (res) => {
+            if (!res.ok) return { ts, prices: [] };
+            const data = await res.json();
+            const prices: number[] = [];
+            for (const update of data.parsed || []) {
+              if (update.price) {
+                prices.push(parsePythPrice(update.price));
+              }
+            }
+            return { ts, prices };
+          })
+          .catch(() => ({ ts, prices: [] }))
+      );
+    }
+
+    const results = await Promise.all(promises);
+    
+    for (let i = 0; i < results.length; i++) {
+      const { prices } = results[i];
+      if (prices.length === 0) continue;
+      
+      candles.push({
+        open: prices[0],
+        high: Math.max(...prices),
+        low: Math.min(...prices),
+        close: prices[prices.length - 1],
+        time: -(count - i) * 2,
+      });
+    }
+  } catch (err) {
+    console.error('Failed to fetch historical candles:', err);
+  }
+
+  return candles;
+}
+
 /**
  * Create a streaming connection to Pyth Hermes SSE by feed ID
  */
