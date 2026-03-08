@@ -116,6 +116,12 @@ export default function PirbTerminal() {
     }))
   );
 
+  // Fetch top volatile tokens for display
+  const [topVolatile, setTopVolatile] = useState<VolatileToken[]>([]);
+  useEffect(() => {
+    getTopVolatileTokens().then(tokens => setTopVolatile(tokens.slice(0, 6)));
+  }, []);
+
   // Restore session
   useEffect(() => {
     const saved = localStorage.getItem('pirbgenSession');
