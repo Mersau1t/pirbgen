@@ -124,35 +124,31 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
     const entryYZone = toY(entryPrice);
 
     // Green zone: from TP line fading toward entry
-    const greenGrad = ctx.createLinearGradient(0, Math.min(tpY, entryYZone), 0, Math.max(tpY, entryYZone));
+    const greenGrad = ctx.createLinearGradient(0, Math.min(tpYZone, entryYZone), 0, Math.max(tpYZone, entryYZone));
     if (direction === 'LONG') {
-      // TP is above entry
       greenGrad.addColorStop(0, 'rgba(7, 228, 110, 0.18)');
       greenGrad.addColorStop(1, 'rgba(7, 228, 110, 0.0)');
     } else {
-      // TP is below entry
       greenGrad.addColorStop(0, 'rgba(7, 228, 110, 0.0)');
       greenGrad.addColorStop(1, 'rgba(7, 228, 110, 0.18)');
     }
     ctx.fillStyle = greenGrad;
-    const greenTop = Math.min(tpY, entryYZone);
-    const greenBot = Math.max(tpY, entryYZone);
+    const greenTop = Math.min(tpYZone, entryYZone);
+    const greenBot = Math.max(tpYZone, entryYZone);
     ctx.fillRect(pad.left, greenTop, chartW, greenBot - greenTop);
 
     // Red zone: from SL line fading toward entry
-    const redGrad = ctx.createLinearGradient(0, Math.min(slY, entryYZone), 0, Math.max(slY, entryYZone));
+    const redGrad = ctx.createLinearGradient(0, Math.min(slYZone, entryYZone), 0, Math.max(slYZone, entryYZone));
     if (direction === 'LONG') {
-      // SL is below entry
       redGrad.addColorStop(0, 'rgba(239, 68, 68, 0.0)');
       redGrad.addColorStop(1, 'rgba(239, 68, 68, 0.18)');
     } else {
-      // SL is above entry
       redGrad.addColorStop(0, 'rgba(239, 68, 68, 0.18)');
       redGrad.addColorStop(1, 'rgba(239, 68, 68, 0.0)');
     }
     ctx.fillStyle = redGrad;
-    const redTop = Math.min(slY, entryYZone);
-    const redBot = Math.max(slY, entryYZone);
+    const redTop = Math.min(slYZone, entryYZone);
+    const redBot = Math.max(slYZone, entryYZone);
     ctx.fillRect(pad.left, redTop, chartW, redBot - redTop);
 
     const entryY = toY(entryPrice);
