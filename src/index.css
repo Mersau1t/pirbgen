@@ -185,7 +185,7 @@
 /* Grid background */
 .grid-bg {
   background-image:
-    linear-gradient(hsl(150 100% 50% / 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, hsl(150 100% 50% / 0.03) 1px, transparent 1px);
+    linear-gradient(hsl(144 95% 48% / 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(144 95% 48% / 0.03) 1px, transparent 1px);
   background-size: 40px 40px;
 }
