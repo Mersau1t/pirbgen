@@ -56,11 +56,22 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
     const chartW = w - pad.left - pad.right;
     const chartH = h - pad.top - pad.bottom;
 
-    // Price range
-    const allPrices = candles.flatMap(c => [c.high, c.low]).concat(entryPrice);
+    // Calculate SL/TP price levels
+    // PnL% = priceChange% * leverage (for LONG), so priceChange% = PnL% / leverage
+    const slPriceChange = stopLoss / leverage / 100; // e.g. -100/50/100 = -0.02
+    const tpPriceChange = takeProfit / leverage / 100;
+    const slPrice = direction === 'LONG'
+      ? entryPrice * (1 + slPriceChange)
+      : entryPrice * (1 - slPriceChange);
+    const tpPrice = direction === 'LONG'
+      ? entryPrice * (1 + tpPriceChange)
+      : entryPrice * (1 - tpPriceChange);
+
+    // Price range must include SL, TP, and all candle data
+    const allPrices = candles.flatMap(c => [c.high, c.low]).concat([entryPrice, slPrice, tpPrice]);
     const dataMin = Math.min(...allPrices);
     const dataMax = Math.max(...allPrices);
-    const pricePad = (dataMax - dataMin) * 0.25 || entryPrice * 0.004;
+    const pricePad = (dataMax - dataMin) * 0.08 || entryPrice * 0.002;
     const min = dataMin - pricePad;
     const max = dataMax + pricePad;
     const range = max - min || 1;
