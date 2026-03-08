@@ -154,8 +154,10 @@ export default function PirbTerminal() {
     const rarity = pickRarity();
     const direction: TradeDirection = Math.random() > 0.5 ? 'LONG' : 'SHORT';
     const leverage = randInt(rarity.leverageRange[0], rarity.leverageRange[1]);
-    const stopLoss = randInt(rarity.slRange[0], rarity.slRange[1]);
-    const takeProfit = randInt(rarity.tpRange[0], rarity.tpRange[1]);
+    const sl = randInt(rarity.slRange[0], rarity.slRange[1]);
+    const rr = randInt(rarity.rrRange[0], rarity.rrRange[1]);
+    const stopLoss = -sl;
+    const takeProfit = sl * rr;
 
     const pos: DegenPosition = {
       id: Date.now(),
