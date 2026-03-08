@@ -103,8 +103,8 @@
     0deg,
     transparent,
     transparent 2px,
-    hsl(150 100% 50% / 0.015) 2px,
-    hsl(150 100% 50% / 0.015) 4px
+    hsl(144 95% 48% / 0.015) 2px,
+    hsl(144 95% 48% / 0.015) 4px
   );
   pointer-events: none;
   z-index: 50;
