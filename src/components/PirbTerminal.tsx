@@ -149,25 +149,26 @@ export default function PirbTerminal() {
     if (calculatedPnl <= activePos.stopLoss) {
       setStatus('REKT');
       playRektSound();
-      // Save to leaderboard
       supabase.from('leaderboard').insert({
-        player_name: 'Anonymous',
+        player_name: profile?.display_name || 'Anonymous',
         ticker: activePos.ticker,
         direction: activePos.direction,
         leverage: activePos.leverage,
         pnl_percent: Number(calculatedPnl.toFixed(1)),
         rarity: activePos.rarity,
+        wallet_address: walletAddress || null,
       }).then(() => {});
     } else if (calculatedPnl >= activePos.takeProfit) {
       setStatus('WIN');
       playWinSound();
       supabase.from('leaderboard').insert({
-        player_name: 'Anonymous',
+        player_name: profile?.display_name || 'Anonymous',
         ticker: activePos.ticker,
         direction: activePos.direction,
         leverage: activePos.leverage,
         pnl_percent: Number(calculatedPnl.toFixed(1)),
         rarity: activePos.rarity,
+        wallet_address: walletAddress || null,
       }).then(() => {});
     }
   }, [currentPrice, entryPrice, activePos, status]);
