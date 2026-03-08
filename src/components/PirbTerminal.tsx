@@ -365,9 +365,9 @@ export default function PirbTerminal() {
               </div>
 
               <div className="flex items-center gap-2 text-[8px] font-display text-muted-foreground/40">
-                <span className="text-neon-green/40">●</span>
+                <span className="text-neon-purple/40">●</span>
                 <span>PYTH ENTROPY</span>
-                <span className="text-neon-magenta/40">●</span>
+                <span className="text-neon-orange/40">●</span>
                 <span>PYTH NETWORK</span>
                 <span className="text-neon-cyan/40">●</span>
                 <span>BASE L2</span>
