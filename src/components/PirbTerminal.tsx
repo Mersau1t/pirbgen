@@ -133,14 +133,23 @@ export default function PirbTerminal() {
     }
   }, [activePos, entryPrice, status]);
 
-  // Real-time Pyth price streaming
+  // Real-time Pyth price streaming — throttled to 1 update/sec
   useEffect(() => {
     if (status !== 'PLAYING' || !activePos) return;
 
-    const cleanup = streamPythPrice(activePos.ticker, (newPrice) => {
-      setCurrentPrice(newPrice);
+    let latestPrice: number | null = null;
 
+    const cleanup = streamPythPrice(activePos.ticker, (newPrice) => {
+      // Buffer ticks in ref, don't setState here
+      latestPrice = newPrice;
       candleRef.current.ticks.push(newPrice);
+    });
+
+    // Flush buffered price to state once per second
+    const tick = setInterval(() => {
+      if (latestPrice !== null) {
+        setCurrentPrice(latestPrice);
+      }
 
       if (candleRef.current.ticks.length >= 2) {
         const ticks = candleRef.current.ticks;
@@ -158,16 +167,17 @@ export default function PirbTerminal() {
         });
         candleRef.current.ticks = [];
       }
-    });
+    }, 1000);
 
-    // Elapsed time counter
-    const timer = setInterval(() => {
+    // Elapsed time counter (reuse same interval)
+    const elapsedTimer = setInterval(() => {
       setElapsedTime(t => t + 1);
     }, 1000);
 
     return () => {
       cleanup();
-      clearInterval(timer);
+      clearInterval(tick);
+      clearInterval(elapsedTimer);
     };
   }, [status, activePos]);
 
