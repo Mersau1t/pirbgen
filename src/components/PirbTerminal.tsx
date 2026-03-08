@@ -338,161 +338,46 @@ export default function PirbTerminal() {
             </motion.div>
           )}
 
-          {(status === 'PLAYING' || status === 'WIN' || status === 'REKT') && activePos && (
+          {(status === 'PLAYING' || status === 'WIN' || status === 'REKT') && activePos && entryPrice && (
             <motion.div
               key="playing"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0 }}
-              className="flex flex-col flex-1 min-h-0 gap-2"
+              className="flex flex-col flex-1 min-h-0"
             >
-              {/* Wide position info table */}
-              <div className="glass-panel rounded-sm px-4 py-2 shrink-0">
-                <div className="flex items-center justify-between gap-4">
-                  {/* Left: Ticker + Direction + Leverage */}
-                  <div className="flex items-center gap-3">
-                    <h2 className="font-display text-xl sm:text-2xl text-foreground text-glow-purple">{activePos.ticker}/USD</h2>
-                    <span className={`px-2 py-0.5 text-[10px] font-display tracking-wider ${
-                      activePos.direction === 'LONG'
-                        ? 'bg-neon-green/10 text-neon-green border border-neon-green/30'
-                        : 'bg-neon-red/10 text-neon-red border border-neon-red/30'
-                    }`}>
-                      {activePos.direction}
-                    </span>
-                    <span className={`text-sm font-display ${rarityStyle.text}`}>{activePos.leverage}x</span>
-                    <span className={`text-[9px] font-display tracking-[0.15em] px-2 py-0.5 border ${rarityStyle.border} ${rarityStyle.text} ${rarityStyle.bg}`}>{rarityStyle.label}</span>
-                  </div>
-
-                  {/* Center: Price + PnL */}
-                  <div className="flex items-center gap-6">
-                    <div className="text-center">
-                      <p className="text-[8px] text-muted-foreground/60 uppercase">Current</p>
-                      <p className={`font-mono text-xl sm:text-2xl font-bold ${pnl >= 0 ? 'text-neon-green text-glow-green' : 'text-neon-red text-glow-red'}`}>
-                        ${currentPrice?.toFixed(2)}
-                      </p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-[8px] text-muted-foreground/60 uppercase">Entry</p>
-                      <p className="font-mono text-sm text-neon-purple">${entryPrice?.toFixed(2)}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-[8px] text-muted-foreground/60 uppercase">PnL</p>
-                      <p className={`font-mono text-lg font-bold ${pnl >= 0 ? 'text-neon-green' : 'text-neon-red'}`}>
-                        {pnl >= 0 ? '+' : ''}{pnl.toFixed(2)}%
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Right: SL / TP / Timer */}
-                  <div className="flex items-center gap-4">
-                    <div className="text-center">
-                      <p className="text-[8px] text-muted-foreground/60 uppercase">SL</p>
-                      <p className="text-xs font-mono text-neon-red font-bold">{activePos.stopLoss}%</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-[8px] text-muted-foreground/60 uppercase">TP</p>
-                      <p className="text-xs font-mono text-neon-green font-bold">+{activePos.takeProfit}%</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-[8px] text-muted-foreground/60 uppercase">Time</p>
-                      <p className="text-xs font-mono text-muted-foreground">{formatTime(elapsedTime)}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* PnL Bar */}
-                <div className="mt-2">
-                  <div className="h-2 bg-muted/20 rounded-full overflow-hidden relative border border-border/20">
-                    <div className="absolute left-1/2 top-0 w-0.5 h-full bg-muted-foreground/40 z-10 -translate-x-1/2" />
-                    {pnl !== 0 && (
-                      <motion.div
-                        className={`absolute top-0 h-full ${pnl >= 0 ? 'bg-neon-green' : 'bg-neon-red'} rounded-full`}
-                        style={{
-                          width: `${Math.min(Math.abs(pnl) / (pnl >= 0 ? activePos.takeProfit : Math.abs(activePos.stopLoss)) * 50, 50)}%`,
-                          left: pnl >= 0 ? '50%' : undefined,
-                          right: pnl < 0 ? '50%' : undefined,
-                        }}
-                        animate={{ opacity: [0.6, 1, 0.6] }}
-                        transition={{ duration: 1, repeat: Infinity }}
-                      />
-                    )}
-                  </div>
-                  <div className="flex justify-between text-[8px] text-muted-foreground mt-0.5">
-                    <span className="text-neon-red">{activePos.stopLoss}%</span>
-                    <span className="text-neon-green">+{activePos.takeProfit}%</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Full-width Chart */}
-              {entryPrice && (
-                <div className="glass-panel rounded-sm overflow-hidden flex-1 min-h-0 border border-border/20">
-                  <PriceChart candles={candles} entryPrice={entryPrice} positive={pnl >= 0} direction={activePos.direction} stopLoss={activePos.stopLoss} takeProfit={activePos.takeProfit} leverage={activePos.leverage} />
-                </div>
-              )}
-
-              {/* Bottom actions */}
-              <div className="shrink-0">
-                {status === 'PLAYING' && (
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 flex-1">
-                      <span className="w-2 h-2 bg-neon-orange animate-blink" />
-                      <span className="font-display text-[10px] text-neon-orange text-glow-orange tracking-wider">AWAITING RESOLUTION...</span>
-                    </div>
-                    <button
-                      onClick={() => { playCoinSound(); exitEarly(); }}
-                      className="arcade-btn arcade-btn-primary text-[10px] py-2 px-6"
-                    >
-                      ⚡ CLOSE POSITION
-                    </button>
-                  </div>
-                )}
-
-                {status === 'WIN' && (
-                  <>
-                    <PixelConfetti active={true} />
-                    <motion.div
-                      initial={{ scale: 0.5, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      className="text-center py-1"
-                    >
-                      <p className="font-display text-lg text-neon-green text-glow-green animate-rainbow inline-block">🎯 TARGET HIT! +{pnl.toFixed(2)}%</p>
-                    </motion.div>
-                  </>
-                )}
-
-                {status === 'REKT' && (
-                  <>
-                    <PixelConfetti active={true} variant="rekt" />
-                    <motion.div
-                      initial={{ scale: 0.5, opacity: 0, x: 0 }}
-                      animate={{ scale: 1, opacity: 1, x: [0, -8, 8, -6, 6, -3, 3, 0] }}
-                      transition={{ x: { duration: 0.5, ease: 'easeOut' }, scale: { duration: 0.3 } }}
-                      className="text-center py-1"
-                    >
-                      <p className="font-display text-lg text-neon-red text-glow-red inline-block">💀 LIQUIDATED {pnl.toFixed(2)}%</p>
-                    </motion.div>
-                  </>
-                )}
-
-                {(status === 'WIN' || status === 'REKT') && (
+              {status === 'PLAYING' ? (
+                <LiveTradePanel
+                  position={activePos}
+                  entryPrice={entryPrice}
+                  initialCandles={initialCandles}
+                  onResult={handleTradeResult}
+                  onExitEarly={handleExitEarly}
+                  playerName={profile?.display_name || 'Anonymous'}
+                  walletAddress={walletAddress || null}
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center flex-1 gap-4">
+                  <p className={`font-display text-2xl ${status === 'WIN' ? 'text-neon-green text-glow-green animate-rainbow' : 'text-neon-red text-glow-red'}`}>
+                    {status === 'WIN' ? `🎯 TARGET HIT! +${finalPnl.toFixed(2)}%` : `💀 LIQUIDATED ${finalPnl.toFixed(2)}%`}
+                  </p>
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex gap-3 mt-2"
+                    className="flex gap-3"
                   >
-                    <button onClick={generatePosition} className="arcade-btn arcade-btn-primary flex-1 text-[10px] py-2.5">
+                    <button onClick={generatePosition} className="arcade-btn arcade-btn-primary text-[10px] py-2.5 px-6">
                       🎲 ROLL AGAIN
                     </button>
                     <button
                       onClick={() => { playCoinSound(); resetTerminal(); }}
-                      className="arcade-btn flex-1 text-[10px] py-2.5" style={{ borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(var(--neon-orange) / 0.1)', boxShadow: 'var(--glow-orange)' }}
+                      className="arcade-btn text-[10px] py-2.5 px-6" style={{ borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(var(--neon-orange) / 0.1)', boxShadow: 'var(--glow-orange)' }}
                     >
                       🏠 HOME
                     </button>
                   </motion.div>
-                )}
-              </div>
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
