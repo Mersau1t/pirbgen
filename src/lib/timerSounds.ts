@@ -1,3 +1,9 @@
+let audioCtx: AudioContext | null = null;
+function getCtx(): AudioContext {
+  if (!audioCtx) audioCtx = new AudioContext();
+  return audioCtx;
+}
+
 // Timer tick sound — subtle urgency
 export function playTimerTick() {
   const ctx = getCtx();
