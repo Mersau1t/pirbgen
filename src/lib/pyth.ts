@@ -305,16 +305,19 @@ export async function fetchHistoricalCandles(
     const results = await Promise.all(promises);
     results.sort((a, b) => a.idx - b.idx);
 
-    // Build candles from consecutive price points
+    // Build candles from consecutive price points using confidence for high/low
     for (let i = 0; i < results.length - 1; i++) {
       const open = results[i].price;
       const close = results[i + 1].price;
       if (open === null || close === null) continue;
       
+      const confA = results[i].confidence;
+      const confB = results[i + 1].confidence;
+      
       candles.push({
         open,
-        high: Math.max(open, close),
-        low: Math.min(open, close),
+        high: Math.max(open + confA, close + confB),
+        low: Math.min(open - confA, close - confB),
         close,
         time: -(count - i) * 2,
       });
