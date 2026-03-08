@@ -9,6 +9,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useWallet } from '@/contexts/WalletContext';
 import { getAvatarEmoji } from '@/pages/Profile';
 import LiveTradePanel from '@/components/LiveTradePanel';
+import StreakBadge from '@/components/StreakBadge';
+import ShareResult from '@/components/ShareResult';
+import { getStreak, recordWin, recordLoss, getStreakMultiplier, type StreakData } from '@/lib/streaks';
+import { hasDoneDaily, markDailyDone, getDailyParams } from '@/lib/dailyChallenge';
 
 // --- TYPES ---
 type TradeDirection = 'LONG' | 'SHORT';
@@ -26,8 +30,7 @@ interface DegenPosition {
   rarity: 'common' | 'rare' | 'legendary' | 'degen';
 }
 
-// --- RARITY CONFIG (determines leverage/risk) ---
-// Risk:Reward ratio from 1:2 to 1:20 (SL always smaller than TP)
+// --- RARITY CONFIG ---
 const RARITY_CONFIG = [
   { rarity: 'common' as const, weight: 40, leverageRange: [20, 50], slRange: [5, 10], rrRange: [2, 4] },
   { rarity: 'rare' as const, weight: 30, leverageRange: [50, 100], slRange: [5, 8], rrRange: [3, 8] },
@@ -88,6 +91,10 @@ export default function PirbTerminal() {
   const [status, setStatus] = useState<GameStatus>('IDLE');
   const [finalPnl, setFinalPnl] = useState(0);
   const [musicOn, setMusicOn] = useState(false);
+  const [streak, setStreak] = useState<StreakData>(getStreak());
+  const [dailyDone, setDailyDone] = useState(hasDoneDaily());
+  const [isDaily, setIsDaily] = useState(false);
+  const [timerSeconds, setTimerSeconds] = useState<number | undefined>(undefined);
 
   const toggleMusic = () => {
     if (isBgMusicPlaying()) {
@@ -99,7 +106,6 @@ export default function PirbTerminal() {
     }
   };
 
-  // Stop music when leaving IDLE
   useEffect(() => {
     if (status !== 'IDLE' && isBgMusicPlaying()) {
       stopBgMusic();
@@ -117,23 +123,18 @@ export default function PirbTerminal() {
     }))
   );
 
-  // Fetch top volatile tokens from DB, fallback to client-side
   interface DbVolatileToken { feed_id: string; ticker: string; pair: string; price: number; volatility: number }
   const [topVolatile, setTopVolatile] = useState<DbVolatileToken[]>([]);
   const [showAllTokens, setShowAllTokens] = useState(false);
   const [allVolatile, setAllVolatile] = useState<DbVolatileToken[]>([]);
   
   useEffect(() => {
-    // Try DB first
     (supabase as any).from('volatile_tokens').select('*').order('volatility', { ascending: false }).limit(50)
       .then(({ data, error }: { data: any[] | null; error: any }) => {
         if (data && data.length > 0) {
           setAllVolatile(data);
           setTopVolatile(data.slice(0, 8));
-          console.log(`Loaded ${data.length} volatile tokens from DB`);
         } else {
-          // Fallback: use client-side computation
-          console.log('DB empty, using client-side volatility', error);
           getTopVolatileTokens().then(tokens => {
             const mapped = tokens.slice(0, 50).map(t => ({
               feed_id: t.feed.id,
@@ -171,62 +172,13 @@ export default function PirbTerminal() {
     }
   }, [activePos, entryPrice, status]);
 
-  const generatePosition = useCallback(async (specificFeed?: { id: string; ticker: string; pair: string }) => {
-    playGenerateClick();
-    setStatus('GENERATING');
-
-    let feed: { id: string; ticker: string; pair: string };
-    let price: number;
-
-    if (specificFeed) {
-      // Fetch live price for the specific token
-      const livePrice = await fetchPythPriceById(specificFeed.id);
-      if (!livePrice) {
-        console.error('Could not fetch price for', specificFeed.ticker);
-        setStatus('IDLE');
-        return;
-      }
-      feed = specificFeed;
-      price = livePrice;
-    } else {
-      const picked = await pickVolatileFeed();
-      if (!picked) {
-        console.error('Could not pick a Pyth feed');
-        setStatus('IDLE');
-        return;
-      }
-      feed = picked.feed;
-      price = picked.price;
-    }
-    const rarity = pickRarity();
-    const direction: TradeDirection = Math.random() > 0.5 ? 'LONG' : 'SHORT';
-    const leverage = randInt(rarity.leverageRange[0], rarity.leverageRange[1]);
-    const sl = randInt(rarity.slRange[0], rarity.slRange[1]);
-    const rr = randInt(rarity.rrRange[0], rarity.rrRange[1]);
-    const stopLoss = -sl;
-    const takeProfit = sl * rr;
-
-    const pos: DegenPosition = {
-      id: Date.now(),
-      asset: feed.ticker,
-      ticker: feed.ticker,
-      feedId: feed.id,
-      direction,
-      leverage,
-      stopLoss,
-      takeProfit,
-      rarity: rarity.rarity,
-    };
-
-    // Fetch real historical candles from Pyth Benchmarks
+  const buildHistoricalCandles = async (feedId: string, price: number) => {
     let historyCandles: Candle[] = [];
     try {
-      historyCandles = await fetchHistoricalCandles(feed.id, 10, 5);
+      historyCandles = await fetchHistoricalCandles(feedId, 10, 5);
     } catch (err) {
-      console.error('Failed to load history, using fallback:', err);
+      console.error('Failed to load history:', err);
     }
-    
-    // Fallback to synthetic candles if API fails
     if (historyCandles.length < 3) {
       const histCount = 8;
       let histPrice = price;
@@ -244,7 +196,49 @@ export default function PirbTerminal() {
       }
       historyCandles = rawCandles.map((c, i) => ({ ...c, time: -(histCount - i) * 2 }));
     }
+    return historyCandles;
+  };
 
+  const generatePosition = useCallback(async (specificFeed?: { id: string; ticker: string; pair: string }) => {
+    playGenerateClick();
+    setStatus('GENERATING');
+    setIsDaily(false);
+    setTimerSeconds(undefined);
+
+    let feed: { id: string; ticker: string; pair: string };
+    let price: number;
+
+    if (specificFeed) {
+      const livePrice = await fetchPythPriceById(specificFeed.id);
+      if (!livePrice) { setStatus('IDLE'); return; }
+      feed = specificFeed;
+      price = livePrice;
+    } else {
+      const picked = await pickVolatileFeed();
+      if (!picked) { setStatus('IDLE'); return; }
+      feed = picked.feed;
+      price = picked.price;
+    }
+
+    const rarity = pickRarity();
+    const direction: TradeDirection = Math.random() > 0.5 ? 'LONG' : 'SHORT';
+    const leverage = randInt(rarity.leverageRange[0], rarity.leverageRange[1]);
+    const sl = randInt(rarity.slRange[0], rarity.slRange[1]);
+    const rr = randInt(rarity.rrRange[0], rarity.rrRange[1]);
+
+    const pos: DegenPosition = {
+      id: Date.now(),
+      asset: feed.ticker,
+      ticker: feed.ticker,
+      feedId: feed.id,
+      direction,
+      leverage,
+      stopLoss: -sl,
+      takeProfit: sl * rr,
+      rarity: rarity.rarity,
+    };
+
+    const historyCandles = await buildHistoricalCandles(feed.id, price);
     setActivePos(pos);
     setEntryPrice(price);
     setInitialCandles(historyCandles);
@@ -252,15 +246,57 @@ export default function PirbTerminal() {
     setStatus('PLAYING');
   }, []);
 
+  const generateDaily = useCallback(async () => {
+    if (allVolatile.length === 0) return;
+    playGenerateClick();
+    setStatus('GENERATING');
+    setIsDaily(true);
+
+    const { feedIndex, params } = getDailyParams(allVolatile.length);
+    const token = allVolatile[feedIndex % allVolatile.length];
+
+    const livePrice = await fetchPythPriceById(token.feed_id);
+    if (!livePrice) { setStatus('IDLE'); return; }
+
+    const pos: DegenPosition = {
+      id: Date.now(),
+      asset: token.ticker,
+      ticker: token.ticker,
+      feedId: token.feed_id,
+      direction: params.direction,
+      leverage: params.leverage,
+      stopLoss: params.stopLoss,
+      takeProfit: params.takeProfit,
+      rarity: params.rarity,
+    };
+
+    const historyCandles = await buildHistoricalCandles(token.feed_id, livePrice);
+    setActivePos(pos);
+    setEntryPrice(livePrice);
+    setInitialCandles(historyCandles);
+    setTimerSeconds(params.timerSeconds);
+    setFinalPnl(0);
+    setStatus('PLAYING');
+  }, [allVolatile]);
+
   const handleTradeResult = useCallback((result: 'WIN' | 'REKT', pnl: number) => {
     setFinalPnl(pnl);
     setStatus(result);
-  }, []);
+    if (result === 'WIN') setStreak(recordWin());
+    else setStreak(recordLoss());
+    if (isDaily) markDailyDone();
+    setDailyDone(hasDoneDaily());
+  }, [isDaily]);
 
   const handleExitEarly = useCallback((pnl: number) => {
     setFinalPnl(pnl);
-    setStatus(pnl >= 0 ? 'WIN' : 'REKT');
-  }, []);
+    const r = pnl >= 0 ? 'WIN' : 'REKT';
+    setStatus(r);
+    if (r === 'WIN') setStreak(recordWin());
+    else setStreak(recordLoss());
+    if (isDaily) markDailyDone();
+    setDailyDone(hasDoneDaily());
+  }, [isDaily]);
 
   const resetTerminal = () => {
     setStatus('IDLE');
@@ -268,47 +304,37 @@ export default function PirbTerminal() {
     setEntryPrice(null);
     setInitialCandles([]);
     setFinalPnl(0);
+    setIsDaily(false);
+    setTimerSeconds(undefined);
   };
 
   const rarityStyle = activePos ? RARITY_STYLES[activePos.rarity] : RARITY_STYLES.common;
 
   return (
     <div className="h-screen bg-background grid-bg scanlines crt-vignette relative overflow-hidden animate-flicker flex flex-col">
-      {/* Pigeon poop particles — only on IDLE */}
+      {/* Particles on IDLE */}
       {status === 'IDLE' && (
         <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
           {particles.map((p, i) => (
-            <div
-              key={i}
-              className="absolute animate-star-fall"
-              style={{
-                left: `${p.left}%`,
-                top: '-20px',
-                fontSize: `${p.size}px`,
-                opacity: p.opacity,
-                animationDuration: `${p.duration}s`,
-                animationDelay: `${p.delay}s`,
-                filter: `drop-shadow(0 0 4px hsl(var(--neon-purple) / 0.5))`,
-              }}
-            >
-              💩
-            </div>
+            <div key={i} className="absolute animate-star-fall" style={{
+              left: `${p.left}%`, top: '-20px', fontSize: `${p.size}px`, opacity: p.opacity,
+              animationDuration: `${p.duration}s`, animationDelay: `${p.delay}s`,
+              filter: `drop-shadow(0 0 4px hsl(var(--neon-purple) / 0.5))`,
+            }}>💩</div>
           ))}
         </div>
       )}
+
       {/* Top bar */}
       <header className="relative z-10 border-b-2 border-neon-purple/40 bg-background/90">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
             <span className="text-2xl">🕹️</span>
             <span className="font-display text-[10px] sm:text-xs tracking-[0.3em] text-neon-purple text-glow-purple">PIRBGEN</span>
-            <button
-              onClick={toggleMusic}
-              className="text-lg opacity-70 hover:opacity-100 transition-opacity"
-              title={musicOn ? 'Mute music' : 'Play music'}
-            >
+            <button onClick={toggleMusic} className="text-lg opacity-70 hover:opacity-100 transition-opacity" title={musicOn ? 'Mute music' : 'Play music'}>
               {musicOn ? '🔊' : '🔇'}
             </button>
+            <StreakBadge streak={streak} />
           </div>
           <div className="flex items-center gap-3">
             <div className="hidden sm:flex items-center gap-2 text-[10px] font-display text-neon-cyan">
@@ -368,12 +394,20 @@ export default function PirbTerminal() {
               </div>
 
               <div className="pixel-border p-4 sm:p-6 w-full max-w-md space-y-3 bg-background/90">
-                <button
-                  onClick={() => generatePosition()}
-                  className="arcade-btn arcade-btn-primary w-full text-sm sm:text-base py-3"
-                >
+                <button onClick={() => generatePosition()} className="arcade-btn arcade-btn-primary w-full text-sm sm:text-base py-3">
                   🎲 GENERATE
                 </button>
+                
+                {/* Daily Challenge */}
+                <button
+                  onClick={() => generateDaily()}
+                  disabled={dailyDone || allVolatile.length === 0}
+                  className={`arcade-btn w-full text-[10px] py-3 ${dailyDone ? 'opacity-40 cursor-not-allowed' : ''}`}
+                  style={{ borderColor: 'hsl(var(--neon-amber))', color: 'hsl(var(--neon-amber))', background: 'hsl(50 100% 55% / 0.1)' }}
+                >
+                  {dailyDone ? '✅ DAILY DONE' : '📅 DAILY CHALLENGE (90s)'}
+                </button>
+
                 <Link to="/leaderboard" onClick={() => playCoinSound()} className="arcade-btn arcade-btn-secondary w-full text-[10px] py-3 text-center block" style={{ borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(25 95% 53% / 0.1)' }}>
                   🏆 LEADERBOARD
                 </Link>
@@ -384,14 +418,9 @@ export default function PirbTerminal() {
                 )}
               </div>
 
-              {/* Top Volatile Tokens */}
+              {/* Volatile tokens */}
               {topVolatile.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                  className="w-full max-w-md"
-                >
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="w-full max-w-md">
                   <div className="pixel-border bg-background/80 p-3 max-h-[280px] overflow-y-auto">
                     <p className="font-display text-[9px] text-neon-orange tracking-wider mb-2 text-center">🔥 MOST VOLATILE · TAP TO TRADE</p>
                     <div className="grid grid-cols-2 gap-1.5">
@@ -414,10 +443,7 @@ export default function PirbTerminal() {
                       ))}
                     </div>
                     {allVolatile.length > 8 && (
-                      <button
-                        onClick={() => setShowAllTokens(!showAllTokens)}
-                        className="w-full mt-2 font-display text-[8px] text-neon-cyan/60 hover:text-neon-cyan tracking-wider transition-colors"
-                      >
+                      <button onClick={() => setShowAllTokens(!showAllTokens)} className="w-full mt-2 font-display text-[8px] text-neon-cyan/60 hover:text-neon-cyan tracking-wider transition-colors">
                         {showAllTokens ? '▲ SHOW LESS' : `▼ SHOW ALL ${allVolatile.length} TOKENS`}
                       </button>
                     )}
@@ -438,45 +464,25 @@ export default function PirbTerminal() {
           )}
 
           {status === 'GENERATING' && (
-            <motion.div
-              key="generating"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex flex-col items-center justify-center gap-6 flex-1"
-            >
-              <motion.img
-                src={pirbMascot}
-                alt="Pirb pecking"
-                className="w-32 h-32 object-contain drop-shadow-[0_0_30px_hsl(265,66%,55%,0.4)]"
-                animate={{ rotate: [-5, 5, -10, 8, -5], y: [0, 3, 0, 2, 0] }}
-                transition={{ duration: 0.6, repeat: Infinity }}
-              />
+            <motion.div key="generating" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center justify-center gap-6 flex-1">
+              <motion.img src={pirbMascot} alt="Pirb pecking" className="w-32 h-32 object-contain drop-shadow-[0_0_30px_hsl(265,66%,55%,0.4)]"
+                animate={{ rotate: [-5, 5, -10, 8, -5], y: [0, 3, 0, 2, 0] }} transition={{ duration: 0.6, repeat: Infinity }} />
               <div className="text-center space-y-3">
-                <p className="font-display text-sm sm:text-lg text-neon-purple text-glow-purple tracking-wider">PIRB IS PECKING...</p>
+                <p className="font-display text-sm sm:text-lg text-neon-purple text-glow-purple tracking-wider">
+                  {isDaily ? 'DAILY CHALLENGE LOADING...' : 'PIRB IS PECKING...'}
+                </p>
                 <p className="font-display text-[8px] text-neon-orange animate-blink tracking-widest">REQUESTING ENTROPY</p>
               </div>
               <div className="flex gap-1.5">
                 {[0, 1, 2, 3, 4].map(i => (
-                  <motion.div
-                    key={i}
-                    className="w-3 h-8 bg-neon-purple"
-                    animate={{ scaleY: [0.3, 1, 0.3] }}
-                    transition={{ duration: 0.5, repeat: Infinity, delay: i * 0.1 }}
-                  />
+                  <motion.div key={i} className="w-3 h-8 bg-neon-purple" animate={{ scaleY: [0.3, 1, 0.3] }} transition={{ duration: 0.5, repeat: Infinity, delay: i * 0.1 }} />
                 ))}
               </div>
             </motion.div>
           )}
 
           {(status === 'PLAYING' || status === 'WIN' || status === 'REKT') && activePos && entryPrice && (
-            <motion.div
-              key="playing"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex flex-col flex-1 min-h-0"
-            >
+            <motion.div key="playing" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="flex flex-col flex-1 min-h-0">
               {status === 'PLAYING' ? (
                 <LiveTradePanel
                   position={activePos}
@@ -486,19 +492,17 @@ export default function PirbTerminal() {
                   onExitEarly={handleExitEarly}
                   playerName={profile?.display_name || 'Anonymous'}
                   walletAddress={walletAddress || null}
+                  timerSeconds={timerSeconds}
                 />
               ) : (
                 <div className="flex flex-col items-center justify-center flex-1 gap-4 overflow-hidden">
-                  {/* Mascot flies in from side */}
                   <motion.div
                     initial={{ x: status === 'WIN' ? 300 : -300, opacity: 0, rotate: status === 'WIN' ? 15 : -15 }}
                     animate={{ x: 0, opacity: 1, rotate: 0 }}
                     transition={{ type: 'spring', stiffness: 120, damping: 12, delay: 0.2 }}
                     className="relative"
                   >
-                    <motion.img
-                      src={pirbMascot}
-                      alt="Pirb"
+                    <motion.img src={pirbMascot} alt="Pirb"
                       className="w-28 h-28 sm:w-36 sm:h-36 object-contain"
                       style={{
                         filter: status === 'WIN'
@@ -512,7 +516,6 @@ export default function PirbTerminal() {
                       }
                       transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
                     />
-                    {/* Speech bubble */}
                     <motion.div
                       initial={{ scale: 0, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
@@ -530,22 +533,43 @@ export default function PirbTerminal() {
                     </motion.div>
                   </motion.div>
 
+                  {/* Streak display on result */}
+                  {streak.current > 0 && status === 'WIN' && (
+                    <motion.div initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4 }}>
+                      <StreakBadge streak={streak} />
+                    </motion.div>
+                  )}
+
                   <p className={`font-display text-2xl ${status === 'WIN' ? 'text-neon-green text-glow-green animate-rainbow' : 'text-neon-red text-glow-red'}`}>
                     {status === 'WIN' ? `🎯 TARGET HIT! +${finalPnl.toFixed(2)}%` : `💀 LIQUIDATED ${finalPnl.toFixed(2)}%`}
                   </p>
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5 }}
-                    className="flex gap-3"
-                  >
+
+                  {/* Streak multiplier note */}
+                  {streak.current > 1 && status === 'WIN' && (
+                    <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="font-display text-[10px] text-neon-amber tracking-wider">
+                      🔥 STREAK BONUS: ×{getStreakMultiplier(streak.current).toFixed(1)}
+                    </motion.p>
+                  )}
+
+                  {/* Share buttons */}
+                  {activePos && (
+                    <ShareResult
+                      ticker={activePos.ticker}
+                      direction={activePos.direction}
+                      leverage={activePos.leverage}
+                      pnl={finalPnl}
+                      rarity={activePos.rarity}
+                      result={status as 'WIN' | 'REKT'}
+                      streak={streak.current}
+                    />
+                  )}
+
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="flex gap-3">
                     <button onClick={() => generatePosition()} className="arcade-btn arcade-btn-primary text-[10px] py-2.5 px-6">
                       🎲 ROLL AGAIN
                     </button>
-                    <button
-                      onClick={() => { playCoinSound(); resetTerminal(); }}
-                      className="arcade-btn text-[10px] py-2.5 px-6" style={{ borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(var(--neon-orange) / 0.1)', boxShadow: 'var(--glow-orange)' }}
-                    >
+                    <button onClick={() => { playCoinSound(); resetTerminal(); }}
+                      className="arcade-btn text-[10px] py-2.5 px-6" style={{ borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(var(--neon-orange) / 0.1)', boxShadow: 'var(--glow-orange)' }}>
                       🏠 HOME
                     </button>
                   </motion.div>
@@ -557,7 +581,6 @@ export default function PirbTerminal() {
         </div>
       </main>
 
-      {/* Bottom info */}
       <footer className="relative z-10 border-t-2 border-neon-purple/20 bg-background/90 py-2 px-4 shrink-0">
         <div className="max-w-6xl mx-auto flex items-center justify-between text-[8px] font-display text-muted-foreground/40 tracking-wider">
           <span>PIRBGEN v0.1</span>
