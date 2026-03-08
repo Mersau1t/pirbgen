@@ -458,11 +458,11 @@ export default function PirbTerminal() {
                 )}
               </div>
 
-              {/* Volatile tokens */}
+              {/* Top Volume tokens */}
               {topVolatile.length > 0 && (
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="w-full max-w-md">
                   <div className="pixel-border bg-background/80 p-3 max-h-[280px] overflow-y-auto">
-                    <p className="font-display text-[9px] text-neon-orange tracking-wider mb-2 text-center">🔥 MOST VOLATILE · TAP TO TRADE</p>
+                    <p className="font-display text-[9px] text-neon-cyan tracking-wider mb-2 text-center">📊 TOP VOLUME · TAP TO TRADE</p>
                     <div className="grid grid-cols-2 gap-1.5">
                       {(showAllTokens ? allVolatile : topVolatile).map((t, i) => (
                         <motion.button
@@ -474,10 +474,8 @@ export default function PirbTerminal() {
                           className="flex items-center justify-between px-2 py-1.5 rounded bg-neon-purple/5 border border-neon-purple/10 hover:bg-neon-purple/15 hover:border-neon-purple/30 transition-colors cursor-pointer text-left"
                         >
                           <span className="font-display text-[10px] text-foreground/80 tracking-wider">{t.ticker}</span>
-                          <span className={`font-display text-[9px] tracking-wider ${
-                            t.volatility > 2 ? 'text-neon-red' : t.volatility > 0.8 ? 'text-neon-orange' : 'text-neon-green'
-                          }`}>
-                            {(t.volatility * 100).toFixed(0)}%
+                          <span className="font-display text-[9px] tracking-wider text-neon-cyan/70">
+                            {t.volume_24h > 0 ? formatVolume(t.volume_24h) : '—'}
                           </span>
                         </motion.button>
                       ))}
@@ -487,7 +485,7 @@ export default function PirbTerminal() {
                         {showAllTokens ? '▲ SHOW LESS' : `▼ SHOW ALL ${allVolatile.length} TOKENS`}
                       </button>
                     )}
-                    <p className="font-display text-[7px] text-muted-foreground/30 text-center mt-1.5 tracking-wider">ANNUALIZED VOLATILITY · TAP ANY TOKEN</p>
+                    <p className="font-display text-[7px] text-muted-foreground/30 text-center mt-1.5 tracking-wider">24H VOLUME · TAP ANY TOKEN</p>
                   </div>
                 </motion.div>
               )}
