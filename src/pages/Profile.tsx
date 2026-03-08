@@ -146,17 +146,14 @@ export default function Profile() {
   };
 
   return (
-    <div className="min-h-screen bg-background grid-bg scanlines relative overflow-hidden animate-flicker">
-      <header className="relative z-10 border-b border-border/30 bg-muted/20 backdrop-blur-sm">
+    <div className="min-h-screen bg-background grid-bg scanlines crt-vignette relative overflow-hidden animate-flicker">
+      <header className="relative z-10 border-b-2 border-neon-green/40 bg-background/90">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">🐦</span>
-            <span className="font-display text-sm tracking-[0.3em] text-foreground text-glow-green">PIRBGEN</span>
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">🕹️</span>
+            <span className="font-display text-[10px] sm:text-xs tracking-[0.3em] text-neon-green text-glow-green">PIRBGEN</span>
           </div>
-          <Link
-            to="/"
-            className="glass-panel px-4 py-1.5 text-xs font-display tracking-wider text-foreground hover:box-glow-green transition-all duration-300"
-          >
+          <Link to="/" className="arcade-btn arcade-btn-primary text-[8px] sm:text-[10px] py-2 px-3">
             ← TERMINAL
           </Link>
         </div>
@@ -169,7 +166,7 @@ export default function Profile() {
           className="space-y-6"
         >
           {/* Profile Card */}
-          <div className="glass-panel rounded-sm border border-border/30 p-6 space-y-6">
+          <div className="pixel-border p-6 space-y-6 bg-background/90">
             <div className="flex items-center gap-4">
               {/* Clickable Avatar */}
               <div className="relative">
