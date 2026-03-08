@@ -255,6 +255,35 @@ export default function PirbTerminal() {
 
   return (
     <div className="min-h-screen bg-background grid-bg scanlines crt-vignette relative overflow-hidden animate-flicker">
+      {/* Pixel star particles */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
+        {Array.from({ length: 40 }).map((_, i) => {
+          const size = Math.random() > 0.7 ? 3 : Math.random() > 0.4 ? 2 : 1;
+          const left = Math.random() * 100;
+          const delay = Math.random() * 12;
+          const duration = 8 + Math.random() * 12;
+          const colors = ['hsl(var(--neon-green))', 'hsl(var(--neon-cyan))', 'hsl(var(--neon-magenta))', 'hsl(var(--neon-amber))'];
+          const color = colors[i % colors.length];
+          const opacity = 0.3 + Math.random() * 0.5;
+          return (
+            <div
+              key={i}
+              className="absolute animate-star-fall"
+              style={{
+                width: `${size * 2}px`,
+                height: `${size * 2}px`,
+                left: `${left}%`,
+                top: '-4px',
+                backgroundColor: color,
+                opacity,
+                animationDuration: `${duration}s`,
+                animationDelay: `${delay}s`,
+                boxShadow: `0 0 ${size * 3}px ${color}`,
+              }}
+            />
+          );
+        })}
+      </div>
       {/* Top bar */}
       <header className="relative z-10 border-b-2 border-neon-green/40 bg-background/90">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-4 py-3">
