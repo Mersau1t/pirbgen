@@ -58,8 +58,14 @@ const RARITY_STYLES: Record<string, { border: string; text: string; bg: string; 
   legendary: { border: 'border-neon-amber/50', text: 'text-neon-amber', bg: 'bg-neon-amber/10', label: 'LEGENDARY' },
   degen: { border: 'border-neon-magenta/50', text: 'text-neon-magenta', bg: 'bg-neon-magenta/10', label: '☠ DEGEN ☠' },
 };
+function formatVolume(v: number): string {
+  if (v >= 1e9) return '$' + (v / 1e9).toFixed(1) + 'B';
+  if (v >= 1e6) return '$' + (v / 1e6).toFixed(1) + 'M';
+  if (v >= 1e3) return '$' + (v / 1e3).toFixed(0) + 'K';
+  return '$' + v.toFixed(0);
+}
 
-const TickerMarquee = () => {
+
   const tickers = ['PYTH LIVE FEEDS 🔴', '500+ CRYPTO PAIRS', 'VOLATILITY WEIGHTED 📊', 'ANY TOKEN ANY TIME', 'POWERED BY PYTH NETWORK ⚡'];
   const doubled = [...tickers, ...tickers];
   return (
