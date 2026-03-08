@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import pirbMascot from '@/assets/pirb-mascot.png';
-import { playGenerateClick, playWinSound, playRektSound } from '@/lib/sounds';
+import { playGenerateClick, playWinSound, playRektSound, playCoinSound } from '@/lib/sounds';
 import PriceChart, { type Candle } from '@/components/PriceChart';
 import { useWallet, shortenAddress } from '@/contexts/WalletContext';
 import { getAvatarEmoji } from '@/pages/Profile';
@@ -296,7 +296,7 @@ export default function PirbTerminal() {
             </div>
             {walletAddress && profile ? (
               <button
-                onClick={() => navigate('/profile')}
+                onClick={() => { playCoinSound(); navigate('/profile'); }}
                 className="arcade-btn arcade-btn-cyan text-[8px] sm:text-[10px] py-2 px-3 flex items-center gap-2"
               >
                 <span>{getAvatarEmoji(profile.avatar)}</span>
@@ -304,7 +304,7 @@ export default function PirbTerminal() {
               </button>
             ) : (
               <button
-                onClick={connectWallet}
+                onClick={() => { playCoinSound(); connectWallet(); }}
                 disabled={isConnecting}
                 className="arcade-btn arcade-btn-primary text-[8px] sm:text-[10px] py-2 px-3 disabled:opacity-50"
               >
@@ -352,11 +352,11 @@ export default function PirbTerminal() {
                 >
                   🎲 GENERATE
                 </button>
-                <Link to="/leaderboard" className="arcade-btn arcade-btn-secondary w-full text-[10px] py-3 text-center block" style={{ borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(25 95% 53% / 0.1)' }}>
+                <Link to="/leaderboard" onClick={() => playCoinSound()} className="arcade-btn arcade-btn-secondary w-full text-[10px] py-3 text-center block" style={{ borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(25 95% 53% / 0.1)' }}>
                   🏆 LEADERBOARD
                 </Link>
                 {walletAddress && (
-                  <Link to="/profile" className="arcade-btn arcade-btn-cyan w-full text-[10px] py-3 text-center block">
+                  <Link to="/profile" onClick={() => playCoinSound()} className="arcade-btn arcade-btn-cyan w-full text-[10px] py-3 text-center block">
                     👤 PROFILE
                   </Link>
                 )}
@@ -519,7 +519,7 @@ export default function PirbTerminal() {
                       <span className="font-display text-[10px] text-neon-orange text-glow-orange tracking-wider">AWAITING RESOLUTION...</span>
                     </div>
                     <button
-                      onClick={exitEarly}
+                      onClick={() => { playCoinSound(); exitEarly(); }}
                       className="arcade-btn arcade-btn-secondary w-full text-[10px] py-3"
                     >
                       ⚡ CLOSE POSITION
@@ -562,7 +562,7 @@ export default function PirbTerminal() {
                       🎲 ROLL AGAIN
                     </button>
                     <button
-                      onClick={resetTerminal}
+                      onClick={() => { playCoinSound(); resetTerminal(); }}
                       className="arcade-btn arcade-btn-cyan flex-1 text-[10px] py-3"
                     >
                       🏠 HOME

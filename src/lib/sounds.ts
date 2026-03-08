@@ -7,33 +7,35 @@ function getCtx(): AudioContext {
   return audioCtx;
 }
 
-export function playGenerateClick() {
+/** 8-bit arcade coin sound — plays on every button press */
+export function playCoinSound() {
   const ctx = getCtx();
   const t = ctx.currentTime;
 
-  // Short neon zap click
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.type = 'square';
-  osc.frequency.setValueAtTime(880, t);
-  osc.frequency.exponentialRampToValueAtTime(220, t + 0.08);
-  gain.gain.setValueAtTime(0.15, t);
-  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
-  osc.connect(gain).connect(ctx.destination);
-  osc.start(t);
-  osc.stop(t + 0.1);
+  // Coin "ding" — two quick ascending square tones
+  const osc1 = ctx.createOscillator();
+  const g1 = ctx.createGain();
+  osc1.type = 'square';
+  osc1.frequency.setValueAtTime(988, t);           // B5
+  g1.gain.setValueAtTime(0.12, t);
+  g1.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+  osc1.connect(g1).connect(ctx.destination);
+  osc1.start(t);
+  osc1.stop(t + 0.08);
 
-  // Secondary click layer
   const osc2 = ctx.createOscillator();
-  const gain2 = ctx.createGain();
-  osc2.type = 'sawtooth';
-  osc2.frequency.setValueAtTime(1200, t);
-  osc2.frequency.exponentialRampToValueAtTime(400, t + 0.05);
-  gain2.gain.setValueAtTime(0.08, t);
-  gain2.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
-  osc2.connect(gain2).connect(ctx.destination);
-  osc2.start(t);
-  osc2.stop(t + 0.06);
+  const g2 = ctx.createGain();
+  osc2.type = 'square';
+  osc2.frequency.setValueAtTime(1319, t + 0.07);   // E6
+  g2.gain.setValueAtTime(0.14, t + 0.07);
+  g2.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+  osc2.connect(g2).connect(ctx.destination);
+  osc2.start(t + 0.07);
+  osc2.stop(t + 0.2);
+}
+
+export function playGenerateClick() {
+  playCoinSound();
 }
 
 export function playWinSound() {
