@@ -304,7 +304,7 @@ export default function PirbTerminal() {
               </button>
             ) : (
               <button
-                onClick={connectWallet}
+                onClick={() => { playCoinSound(); connectWallet(); }}
                 disabled={isConnecting}
                 className="arcade-btn arcade-btn-primary text-[8px] sm:text-[10px] py-2 px-3 disabled:opacity-50"
               >
