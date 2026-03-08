@@ -119,3 +119,122 @@ export function playRektSound() {
   noise.connect(noiseGain).connect(ctx.destination);
   noise.start(t);
 }
+
+// --- 8-bit Background Music Loop ---
+
+// Pentatonic melody in A minor, arpeggiated bass, looping
+let bgMusicPlaying = false;
+let bgMusicStop: (() => void) | null = null;
+
+const BPM = 130;
+const BEAT = 60 / BPM;
+
+// A minor pentatonic: A C D E G
+const MELODY_NOTES = [
+  440, 523, 587, 659, 784,   // A4 C5 D5 E5 G5
+  784, 659, 587, 523, 440,   // descending
+  523, 659, 784, 880, 784,   // ascending to A5
+  659, 587, 523, 440, 523,   // back down
+];
+
+const BASS_NOTES = [
+  110, 110, 131, 131,  // A2 A2 C3 C3
+  147, 147, 165, 165,  // D3 D3 E3 E3
+  110, 110, 196, 196,  // A2 A2 G3 G3
+  131, 131, 110, 110,  // C3 C3 A2 A2
+];
+
+function scheduleLoop(ctx: AudioContext, masterGain: GainNode, startTime: number): number {
+  const loopLen = MELODY_NOTES.length;
+
+  // Melody — square wave
+  for (let i = 0; i < loopLen; i++) {
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = 'square';
+    const noteTime = startTime + i * BEAT * 0.5;
+    osc.frequency.setValueAtTime(MELODY_NOTES[i], noteTime);
+    g.gain.setValueAtTime(0, noteTime);
+    g.gain.linearRampToValueAtTime(0.06, noteTime + 0.01);
+    g.gain.setValueAtTime(0.06, noteTime + BEAT * 0.35);
+    g.gain.linearRampToValueAtTime(0, noteTime + BEAT * 0.48);
+    osc.connect(g).connect(masterGain);
+    osc.start(noteTime);
+    osc.stop(noteTime + BEAT * 0.5);
+  }
+
+  // Bass — triangle wave, plays every 2 melody beats
+  for (let i = 0; i < BASS_NOTES.length; i++) {
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = 'triangle';
+    const noteTime = startTime + i * BEAT;
+    osc.frequency.setValueAtTime(BASS_NOTES[i % BASS_NOTES.length], noteTime);
+    g.gain.setValueAtTime(0, noteTime);
+    g.gain.linearRampToValueAtTime(0.08, noteTime + 0.01);
+    g.gain.setValueAtTime(0.08, noteTime + BEAT * 0.7);
+    g.gain.linearRampToValueAtTime(0, noteTime + BEAT * 0.95);
+    osc.connect(g).connect(masterGain);
+    osc.start(noteTime);
+    osc.stop(noteTime + BEAT);
+  }
+
+  // Hi-hat noise — every beat
+  for (let i = 0; i < loopLen; i++) {
+    const noteTime = startTime + i * BEAT * 0.5;
+    if (i % 2 === 0) {
+      const bufSize = Math.floor(ctx.sampleRate * 0.03);
+      const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let j = 0; j < bufSize; j++) d[j] = (Math.random() * 2 - 1) * (1 - j / bufSize);
+      const src = ctx.createBufferSource();
+      const g = ctx.createGain();
+      src.buffer = buf;
+      g.gain.setValueAtTime(0.025, noteTime);
+      g.gain.exponentialRampToValueAtTime(0.001, noteTime + 0.03);
+      src.connect(g).connect(masterGain);
+      src.start(noteTime);
+    }
+  }
+
+  return loopLen * BEAT * 0.5; // duration of one loop
+}
+
+export function startBgMusic() {
+  if (bgMusicPlaying) return;
+  bgMusicPlaying = true;
+
+  const ctx = getCtx();
+  const masterGain = ctx.createGain();
+  masterGain.gain.setValueAtTime(0.5, ctx.currentTime);
+  masterGain.connect(ctx.destination);
+
+  let cancelled = false;
+  let nextStart = ctx.currentTime + 0.05;
+
+  function loop() {
+    if (cancelled) return;
+    const duration = scheduleLoop(ctx, masterGain, nextStart);
+    nextStart += duration;
+    // Schedule next loop slightly before this one ends
+    const delay = (nextStart - ctx.currentTime - 0.5) * 1000;
+    setTimeout(loop, Math.max(delay, 100));
+  }
+
+  loop();
+
+  bgMusicStop = () => {
+    cancelled = true;
+    masterGain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.3);
+    bgMusicPlaying = false;
+    bgMusicStop = null;
+  };
+}
+
+export function stopBgMusic() {
+  bgMusicStop?.();
+}
+
+export function isBgMusicPlaying() {
+  return bgMusicPlaying;
+}

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import pirbMascot from '@/assets/pirb-mascot.png';
-import { playGenerateClick, playWinSound, playRektSound, playCoinSound } from '@/lib/sounds';
+import { playGenerateClick, playWinSound, playRektSound, playCoinSound, startBgMusic, stopBgMusic, isBgMusicPlaying } from '@/lib/sounds';
 import PriceChart, { type Candle } from '@/components/PriceChart';
 import PixelConfetti from '@/components/PixelConfetti';
 import { useWallet, shortenAddress } from '@/contexts/WalletContext';
@@ -76,6 +76,25 @@ export default function PirbTerminal() {
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
   const [status, setStatus] = useState<GameStatus>('IDLE');
   const [pnl, setPnl] = useState(0);
+  const [musicOn, setMusicOn] = useState(false);
+
+  const toggleMusic = () => {
+    if (isBgMusicPlaying()) {
+      stopBgMusic();
+      setMusicOn(false);
+    } else {
+      startBgMusic();
+      setMusicOn(true);
+    }
+  };
+
+  // Stop music when leaving IDLE
+  useEffect(() => {
+    if (status !== 'IDLE' && isBgMusicPlaying()) {
+      stopBgMusic();
+      setMusicOn(false);
+    }
+  }, [status]);
   const [pnlPercent, setPnlPercent] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [candles, setCandles] = useState<Candle[]>([]);
@@ -289,6 +308,13 @@ export default function PirbTerminal() {
           <div className="flex items-center gap-3">
             <span className="text-2xl">🕹️</span>
             <span className="font-display text-[10px] sm:text-xs tracking-[0.3em] text-neon-purple text-glow-purple">PIRBGEN</span>
+            <button
+              onClick={toggleMusic}
+              className="text-lg opacity-70 hover:opacity-100 transition-opacity"
+              title={musicOn ? 'Mute music' : 'Play music'}
+            >
+              {musicOn ? '🔊' : '🔇'}
+            </button>
           </div>
           <div className="flex items-center gap-3">
             <div className="hidden sm:flex items-center gap-2 text-[10px] font-display text-neon-cyan">
