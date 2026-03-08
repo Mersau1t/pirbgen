@@ -14,8 +14,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ['Orbitron', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
+        display: ['"Press Start 2P"', 'cursive'],
+        mono: ['"JetBrains Mono"', 'monospace'],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -57,6 +57,7 @@ export default {
           cyan: "hsl(var(--neon-cyan))",
           amber: "hsl(var(--neon-amber))",
           red: "hsl(var(--neon-red))",
+          blue: "hsl(var(--neon-blue))",
         },
         terminal: {
           bg: "hsl(var(--terminal-bg))",
