@@ -96,8 +96,13 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
     const max = dataMax + pricePad;
     const range = max - min || 1;
 
+    // Current candle always at center; older candles scroll left
+    const candleSpacing = chartW / Math.max(MAX_VISIBLE - 1, 1);
+    const centerIdx = candles.length - 1; // latest candle index
+    const centerX = pad.left + chartW / 2;
+
     const toY = (v: number) => pad.top + chartH - ((v - min) / range) * chartH;
-    const toX = (i: number) => pad.left + (chartW / Math.max(MAX_POINTS - 1, 1)) * i;
+    const toX = (i: number) => centerX + (i - centerIdx) * candleSpacing;
 
     ctx.clearRect(0, 0, w, h);
 
