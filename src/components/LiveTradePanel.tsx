@@ -77,30 +77,30 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
       rafId = 0;
     };
 
-    const cleanup = streamPythPriceById(position.feedId, (price) => {
+    const cleanup = streamPythPriceById(position.feedId, (tick) => {
       // Set entry price from the very first live tick
       if (!entrySetRef.current) {
         entrySetRef.current = true;
-        setEntryPrice(price);
-        setCurrentPrice(price);
+        setEntryPrice(tick.price);
+        setCurrentPrice(tick.price);
         return; // skip this tick for candle data
       }
-      candleRef.current.ticks.push(price);
-      pendingPrice = price;
+      candleRef.current.ticks.push(tick);
+      pendingPrice = tick.price;
       if (!rafId) {
         rafId = requestAnimationFrame(flushPrice);
       }
     });
 
-    // Candle formation every 1s
+    // Candle formation every 1s — use Pyth confidence for real high/low
     const candleTick = setInterval(() => {
       if (candleRef.current.ticks.length >= 2) {
         const ticks = candleRef.current.ticks;
         const candle: Candle = {
-          open: ticks[0],
-          high: Math.max(...ticks),
-          low: Math.min(...ticks),
-          close: ticks[ticks.length - 1],
+          open: ticks[0].price,
+          high: Math.max(...ticks.map(t => t.price + t.confidence)),
+          low: Math.min(...ticks.map(t => t.price - t.confidence)),
+          close: ticks[ticks.length - 1].price,
           time: 0,
         };
         setCandles(c => {
