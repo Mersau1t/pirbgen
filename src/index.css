@@ -307,15 +307,15 @@
 }
 
 .arcade-btn-primary {
-  border-color: hsl(var(--neon-green));
-  color: hsl(var(--neon-green));
-  background: hsl(var(--neon-green) / 0.1);
-  box-shadow: var(--glow-green);
+  border-color: hsl(var(--neon-purple));
+  color: hsl(var(--neon-purple));
+  background: hsl(var(--neon-purple) / 0.1);
+  box-shadow: var(--glow-purple);
 }
 
 .arcade-btn-primary:hover {
-  background: hsl(var(--neon-green) / 0.2);
-  box-shadow: 0 0 8px hsl(120 100% 50%), 0 0 20px hsl(120 100% 50% / 0.6), 0 0 40px hsl(120 100% 50% / 0.3);
+  background: hsl(var(--neon-purple) / 0.2);
+  box-shadow: 0 0 8px hsl(265 66% 55%), 0 0 20px hsl(265 66% 55% / 0.6), 0 0 40px hsl(265 66% 55% / 0.3);
 }
 
 .arcade-btn-secondary {
