@@ -123,31 +123,71 @@ export default function PirbTerminal() {
     }))
   );
 
-  interface DbVolatileToken { feed_id: string; ticker: string; pair: string; price: number; volatility: number }
-  const [topVolatile, setTopVolatile] = useState<DbVolatileToken[]>([]);
+  interface DisplayToken { feed_id: string; ticker: string; pair: string; price: number; volume_24h: number }
+  const [topVolatile, setTopVolatile] = useState<DisplayToken[]>([]);
   const [showAllTokens, setShowAllTokens] = useState(false);
-  const [allVolatile, setAllVolatile] = useState<DbVolatileToken[]>([]);
+  const [allVolatile, setAllVolatile] = useState<DisplayToken[]>([]);
   
   useEffect(() => {
-    (supabase as any).from('volatile_tokens').select('*').order('volatility', { ascending: false }).limit(50)
-      .then(({ data, error }: { data: any[] | null; error: any }) => {
-        if (data && data.length > 0) {
-          setAllVolatile(data);
-          setTopVolatile(data.slice(0, 8));
-        } else {
-          getTopVolatileTokens().then(tokens => {
-            const mapped = tokens.slice(0, 50).map(t => ({
-              feed_id: t.feed.id,
-              ticker: t.feed.ticker,
-              pair: t.feed.pair,
-              price: t.price,
-              volatility: t.volatility,
-            }));
-            setAllVolatile(mapped);
-            setTopVolatile(mapped.slice(0, 8));
-          });
+    // Fetch top coins by volume from CoinGecko, then match to Pyth feeds
+    const loadByVolume = async () => {
+      try {
+        // 1. Get Pyth feeds from DB
+        const { data: dbTokens } = await (supabase as any).from('volatile_tokens').select('*').limit(200);
+        const pythMap = new Map<string, { feed_id: string; ticker: string; pair: string; price: number }>();
+        if (dbTokens) {
+          for (const t of dbTokens) {
+            pythMap.set(t.ticker.toUpperCase(), { feed_id: t.feed_id, ticker: t.ticker, pair: t.pair, price: t.price });
+          }
         }
-      });
+
+        // 2. Fetch top coins by volume from CoinGecko (free, no key needed)
+        const cgRes = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=volume_desc&per_page=100&page=1&sparkline=false');
+        if (!cgRes.ok) throw new Error('CoinGecko fetch failed');
+        const cgData: Array<{ symbol: string; current_price: number; total_volume: number }> = await cgRes.json();
+
+        // 3. Match CoinGecko symbols to Pyth feeds
+        const matched: DisplayToken[] = [];
+        for (const coin of cgData) {
+          const sym = coin.symbol.toUpperCase();
+          const pyth = pythMap.get(sym);
+          if (pyth) {
+            matched.push({
+              feed_id: pyth.feed_id,
+              ticker: pyth.ticker,
+              pair: pyth.pair,
+              price: pyth.price,
+              volume_24h: coin.total_volume,
+            });
+          }
+        }
+
+        if (matched.length > 0) {
+          setAllVolatile(matched);
+          setTopVolatile(matched.slice(0, 8));
+          return;
+        }
+      } catch (e) {
+        console.warn('CoinGecko volume fetch failed, falling back to volatility:', e);
+      }
+
+      // Fallback: use volatile_tokens sorted by volatility
+      const { data } = await (supabase as any).from('volatile_tokens').select('*').order('volatility', { ascending: false }).limit(50);
+      if (data && data.length > 0) {
+        const mapped = data.map((t: any) => ({ feed_id: t.feed_id, ticker: t.ticker, pair: t.pair, price: t.price, volume_24h: 0 }));
+        setAllVolatile(mapped);
+        setTopVolatile(mapped.slice(0, 8));
+      } else {
+        getTopVolatileTokens().then(tokens => {
+          const mapped = tokens.slice(0, 50).map(t => ({
+            feed_id: t.feed.id, ticker: t.feed.ticker, pair: t.feed.pair, price: t.price, volume_24h: 0,
+          }));
+          setAllVolatile(mapped);
+          setTopVolatile(mapped.slice(0, 8));
+        });
+      }
+    };
+    loadByVolume();
   }, []);
 
   // Restore session
