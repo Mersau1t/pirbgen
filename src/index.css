@@ -79,6 +79,12 @@
   .font-mono {
     font-family: var(--font-mono);
   }
+  .text-glow-purple {
+    text-shadow: var(--glow-purple);
+  }
+  .text-glow-orange {
+    text-shadow: var(--glow-orange);
+  }
   .text-glow-green {
     text-shadow: var(--glow-green);
   }
@@ -93,6 +99,12 @@
   }
   .text-glow-cyan {
     text-shadow: var(--glow-cyan);
+  }
+  .box-glow-purple {
+    box-shadow: var(--glow-purple);
+  }
+  .box-glow-orange {
+    box-shadow: var(--glow-orange);
   }
   .box-glow-green {
     box-shadow: var(--glow-green);
