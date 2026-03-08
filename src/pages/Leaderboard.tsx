@@ -183,6 +183,7 @@ export default function Leaderboard() {
               🎲 BACK TO TERMINAL
             </Link>
           </div>
+        </motion.div>
       </main>
     </div>
   );
