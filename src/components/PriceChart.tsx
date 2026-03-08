@@ -119,8 +119,8 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
     ctx.fillRect(pad.left, pad.top, chartW, chartH);
 
     // --- TP/SL GRADIENT ZONES ---
-    const tpY = toY(tpPrice);
-    const slY = toY(slPrice);
+    const tpYZone = toY(tpPrice);
+    const slYZone = toY(slPrice);
     const entryYZone = toY(entryPrice);
 
     // Green zone: from TP line fading toward entry
