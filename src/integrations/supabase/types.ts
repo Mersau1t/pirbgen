@@ -77,6 +77,36 @@ export type Database = {
         }
         Relationships: []
       }
+      volatile_tokens: {
+        Row: {
+          feed_id: string
+          id: string
+          pair: string
+          price: number
+          ticker: string
+          updated_at: string
+          volatility: number
+        }
+        Insert: {
+          feed_id: string
+          id?: string
+          pair: string
+          price: number
+          ticker: string
+          updated_at?: string
+          volatility: number
+        }
+        Update: {
+          feed_id?: string
+          id?: string
+          pair?: string
+          price?: number
+          ticker?: string
+          updated_at?: string
+          volatility?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
