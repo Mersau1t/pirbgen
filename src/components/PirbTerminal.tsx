@@ -255,32 +255,30 @@ export default function PirbTerminal() {
 
   return (
     <div className="min-h-screen bg-background grid-bg scanlines crt-vignette relative overflow-hidden animate-flicker">
-      {/* Pixel star particles */}
+      {/* Pigeon poop particles */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
-        {Array.from({ length: 40 }).map((_, i) => {
-          const size = Math.random() > 0.7 ? 3 : Math.random() > 0.4 ? 2 : 1;
+        {Array.from({ length: 25 }).map((_, i) => {
           const left = Math.random() * 100;
-          const delay = Math.random() * 12;
-          const duration = 8 + Math.random() * 12;
-          const colors = ['hsl(var(--neon-purple))', 'hsl(var(--neon-orange))', 'hsl(var(--neon-cyan))', 'hsl(var(--neon-purple))'];
-          const color = colors[i % colors.length];
-          const opacity = 0.3 + Math.random() * 0.5;
+          const delay = Math.random() * 15;
+          const duration = 10 + Math.random() * 15;
+          const size = 12 + Math.random() * 14;
+          const opacity = 0.4 + Math.random() * 0.4;
           return (
             <div
               key={i}
               className="absolute animate-star-fall"
               style={{
-                width: `${size * 2}px`,
-                height: `${size * 2}px`,
                 left: `${left}%`,
-                top: '-4px',
-                backgroundColor: color,
+                top: '-20px',
+                fontSize: `${size}px`,
                 opacity,
                 animationDuration: `${duration}s`,
                 animationDelay: `${delay}s`,
-                boxShadow: `0 0 ${size * 3}px ${color}`,
+                filter: `drop-shadow(0 0 4px hsl(var(--neon-purple) / 0.5))`,
               }}
-            />
+            >
+              💩
+            </div>
           );
         })}
       </div>
