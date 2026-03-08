@@ -126,6 +126,7 @@ export default function PirbTerminal() {
   }, [currentPrice, entryPrice, activePos, status]);
 
   const generatePosition = useCallback(() => {
+    playGenerateClick();
     setStatus('GENERATING');
     setElapsedTime(0);
     setTimeout(() => {
