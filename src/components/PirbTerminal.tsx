@@ -11,7 +11,7 @@ import { useWallet } from '@/contexts/WalletContext';
 import { getAvatarEmoji } from '@/pages/Profile';
 import LiveTradePanel from '@/components/LiveTradePanel';
 import StreakBadge from '@/components/StreakBadge';
-import ShareResult from '@/components/ShareResult';
+
 import { getStreak, recordWin, recordLoss, getStreakMultiplier, type StreakData } from '@/lib/streaks';
 import { hasDoneDaily, markDailyDone, getDailyParams } from '@/lib/dailyChallenge';
 
