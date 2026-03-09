@@ -192,7 +192,7 @@ export default function DuelLobby({ onRoomReady }: DuelLobbyProps) {
             <button
               onClick={handleJoin}
               disabled={inputCode.length < 4}
-              className="arcade-btn w-full text-sm py-3 tracking-wider disabled:opacity-30"
+              className="arcade-btn w-full text-sm py-3 tracking-wider disabled:opacity-30" style={{ borderColor: 'hsl(var(--neon-green))', color: 'hsl(var(--neon-green))', background: 'hsl(var(--neon-green) / 0.1)' }}
             >
               ⚡ JOIN DUEL
             </button>

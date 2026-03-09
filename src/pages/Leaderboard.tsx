@@ -104,7 +104,7 @@ export default function Leaderboard() {
 
           <div className="pixel-border flex flex-col flex-1 min-h-0 bg-background/90">
             {/* Table header */}
-            <div className="grid grid-cols-[40px_1fr_70px_60px_70px_100px_80px] sm:grid-cols-[50px_1fr_80px_70px_80px_120px_90px] gap-1 px-4 py-2 bg-neon-green/5 border-b-2 border-neon-green/20 text-[8px] font-display tracking-wider text-neon-green/60 uppercase shrink-0">
+            <div className="grid grid-cols-[40px_1fr_70px_60px_70px_100px_80px] sm:grid-cols-[50px_1fr_80px_70px_80px_120px_90px] gap-1 px-4 py-2 bg-neon-purple/5 border-b-2 border-neon-purple/20 text-[8px] font-display tracking-wider text-neon-purple/60 uppercase shrink-0">
               <span>#</span>
               <span>Player</span>
               <span>Ticker</span>

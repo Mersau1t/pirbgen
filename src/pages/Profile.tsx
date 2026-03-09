@@ -198,7 +198,7 @@ export default function Profile() {
                   </div>
                 ) : (
                   <div className="flex items-center gap-2">
-                    <h2 className="font-display text-xl text-foreground text-glow-green">{profile.display_name}</h2>
+                    <h2 className="font-display text-xl text-foreground text-glow-purple">{profile.display_name}</h2>
                     <button onClick={() => setEditingName(true)} className="text-xs text-muted-foreground hover:text-foreground transition-colors">✏️</button>
                   </div>
                 )}
