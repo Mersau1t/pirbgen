@@ -170,64 +170,63 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       const slYZone = toY(slPrice);
       const entryYZone = toY(entryPrice);
 
-      // Pulsation based on proximity
-      const zonePulse = 0.5 + 0.5 * Math.sin(t / 400);
-      const greenPulseAlpha = 0.12 + tpProximity * 0.15 * zonePulse;
-      const redPulseAlpha = 0.12 + slProximity * 0.15 * zonePulse;
-
-      // Helper to draw zone with all effects
-      const drawZone = (yTop: number, yBot: number, color: string, alpha: number, proximity: number) => {
+      // Helper to draw zone with energy wave effect
+      const drawZone = (yTop: number, yBot: number, color: string, isTP: boolean, prox: number) => {
         const zoneH = Math.abs(yBot - yTop);
         const zoneY = Math.min(yTop, yBot);
         if (zoneH < 1) return;
 
-        // Base gradient fill with pulsation
+        // Base gradient fill (static, no pulsation)
+        const baseAlpha = 0.08 + prox * 0.12;
         const grad = ctx.createLinearGradient(0, zoneY, 0, zoneY + zoneH);
-        grad.addColorStop(0, `${color}${Math.round(alpha * 255).toString(16).padStart(2, '0')}`);
+        grad.addColorStop(0, `${color}${Math.round(baseAlpha * 255).toString(16).padStart(2, '0')}`);
         grad.addColorStop(1, `${color}00`);
         ctx.fillStyle = grad;
         ctx.fillRect(pad.left, zoneY, chartW, zoneH);
 
-        // Diagonal warning stripes (animated)
+        // Horizontal energy waves (smooth sine waves moving through zone)
         ctx.save();
         ctx.beginPath();
         ctx.rect(pad.left, zoneY, chartW, zoneH);
         ctx.clip();
-        const stripeOffset = (t / 30) % 20;
-        ctx.strokeStyle = `${color}${Math.round(0.08 * 255).toString(16).padStart(2, '0')}`;
-        ctx.lineWidth = 1;
-        for (let sx = pad.left - zoneH - 40 + stripeOffset; sx < pad.left + chartW + 40; sx += 20) {
+        const waveCount = 3;
+        for (let wi = 0; wi < waveCount; wi++) {
+          const waveY = zoneY + (zoneH / (waveCount + 1)) * (wi + 1);
+          const waveOffset = t / (600 + wi * 200);
+          const waveAlpha = 0.04 + prox * 0.08;
           ctx.beginPath();
-          ctx.moveTo(sx, zoneY + zoneH);
-          ctx.lineTo(sx + zoneH, zoneY);
+          ctx.moveTo(pad.left, waveY);
+          for (let wx = pad.left; wx <= pad.left + chartW; wx += 3) {
+            const normalizedX = (wx - pad.left) / chartW;
+            const dy = Math.sin(normalizedX * Math.PI * 4 + waveOffset + wi * 2) * (3 + prox * 8);
+            ctx.lineTo(wx, waveY + dy);
+          }
+          ctx.strokeStyle = `${color}${Math.round(waveAlpha * 255).toString(16).padStart(2, '0')}`;
+          ctx.lineWidth = 1.5;
           ctx.stroke();
         }
         ctx.restore();
 
-        // Noise/static texture
+        // Subtle horizontal scan lines (static, no flicker)
         ctx.save();
         ctx.beginPath();
         ctx.rect(pad.left, zoneY, chartW, zoneH);
         ctx.clip();
-        const noiseCount = Math.floor(chartW * zoneH / 300);
-        for (let ni = 0; ni < noiseCount; ni++) {
-          const nx = pad.left + Math.random() * chartW;
-          const ny = zoneY + Math.random() * zoneH;
-          const noiseAlpha = 0.03 + Math.random() * 0.06;
-          ctx.fillStyle = `${color}${Math.round(noiseAlpha * 255).toString(16).padStart(2, '0')}`;
-          ctx.fillRect(nx, ny, 1, 1);
+        for (let sy = zoneY; sy < zoneY + zoneH; sy += 6) {
+          ctx.fillStyle = `${color}05`;
+          ctx.fillRect(pad.left, sy, chartW, 1);
         }
         ctx.restore();
 
-        // Glowing edge at boundary
-        if (proximity > 0.3) {
-          const edgeGlow = proximity * zonePulse;
+        // Glowing edge at boundary (only when close, smooth not blinking)
+        if (prox > 0.4) {
+          const edgeIntensity = (prox - 0.4) / 0.6; // 0→1 as prox goes 0.4→1
           ctx.save();
           ctx.shadowColor = color;
-          ctx.shadowBlur = 8 + edgeGlow * 16;
-          ctx.strokeStyle = `${color}${Math.round((0.3 + edgeGlow * 0.5) * 255).toString(16).padStart(2, '0')}`;
-          ctx.lineWidth = 2;
-          const edgeY = yTop < yBot ? zoneY : zoneY + zoneH;
+          ctx.shadowBlur = 6 + edgeIntensity * 18;
+          ctx.strokeStyle = `${color}${Math.round(edgeIntensity * 0.6 * 255).toString(16).padStart(2, '0')}`;
+          ctx.lineWidth = 1.5 + edgeIntensity;
+          const edgeY = isTP ? zoneY : zoneY + zoneH;
           ctx.beginPath();
           ctx.moveTo(pad.left, edgeY);
           ctx.lineTo(pad.left + chartW, edgeY);
@@ -239,12 +238,12 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       // Green zone (TP)
       const greenTop = direction === 'LONG' ? tpYZone : entryYZone;
       const greenBot = direction === 'LONG' ? entryYZone : tpYZone;
-      drawZone(greenTop, greenBot, '#07e46e', greenPulseAlpha, tpProximity);
+      drawZone(greenTop, greenBot, '#07e46e', true, tpProximity);
 
       // Red zone (SL)
       const redTop = direction === 'LONG' ? entryYZone : slYZone;
       const redBot = direction === 'LONG' ? slYZone : entryYZone;
-      drawZone(redTop, redBot, '#ef4444', redPulseAlpha, slProximity);
+      drawZone(redTop, redBot, '#ef4444', false, slProximity);
 
       // --- GRID ---
       ctx.textAlign = 'left';
