@@ -256,8 +256,8 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
         ctx.strokeStyle = 'rgba(128, 70, 220, 0.08)';
         ctx.lineWidth = 1;
         ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + chartW, y); ctx.stroke();
-        ctx.fillStyle = 'rgba(200, 180, 255, 0.25)';
-        ctx.font = '9px monospace';
+        ctx.fillStyle = 'rgba(200, 180, 255, 0.3)';
+        ctx.font = 'bold 11px monospace';
         ctx.fillText(formatPrice(price), pad.left + chartW + 8, y);
       }
 
