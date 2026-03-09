@@ -383,10 +383,10 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
       <div className="shrink-0">
         {!result && !readOnly && (
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 flex-1">
-              <span className="w-2 h-2 bg-neon-orange animate-blink" />
-              <span className="font-display text-[10px] text-neon-orange text-glow-orange tracking-wider">
-                {duelMode ? 'PVP DUEL · LIVE' : hasTimer ? 'DAILY CHALLENGE · TIMED' : 'AWAITING RESOLUTION...'}
+            <div className="flex items-center gap-2 flex-1 overflow-hidden">
+              <span className="w-2 h-2 bg-neon-orange animate-blink shrink-0" />
+              <span className="font-display text-[10px] text-neon-orange text-glow-orange tracking-wider truncate">
+                {getPirbTrashTalkCycled(elapsedTime, duelMode ? 'duel' : hasTimer ? 'daily' : 'solo')}
               </span>
             </div>
             <button onClick={handleExit} className="arcade-btn arcade-btn-primary text-[10px] py-2 px-4">
