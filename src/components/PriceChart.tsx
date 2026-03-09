@@ -449,15 +449,14 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
         ctx.beginPath(); ctx.moveTo(pad.left, curY); ctx.lineTo(pad.left + chartW, curY); ctx.stroke();
         ctx.setLineDash([]);
         // Animated tag
-        const tagPulse = 0.5 + 0.5 * Math.sin(t / 400);
         ctx.save();
         ctx.shadowColor = curColor;
-        ctx.shadowBlur = 4 + tagPulse * 6;
+        ctx.shadowBlur = 6;
         ctx.fillStyle = curColor;
-        ctx.fillRect(pad.left + chartW + 4, curY - 10, priceAxisW - 8, 20);
+        ctx.fillRect(pad.left + chartW + 4, curY - 11, priceAxisW - 8, 22);
         ctx.restore();
         ctx.fillStyle = '#0a0a0a';
-        ctx.font = 'bold 12px monospace';
+        ctx.font = 'bold 14px monospace';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
         ctx.fillText(formatPrice(lastClose), pad.left + chartW + 7, curY);
