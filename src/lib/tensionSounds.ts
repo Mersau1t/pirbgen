@@ -30,34 +30,34 @@ export function startTensionAudio() {
   master.gain.setValueAtTime(0, t);
   master.connect(ctx.destination);
 
-  // Low drone — sawtooth filtered to sound ominous
+  // Low drone — softer sine wave for pleasant ambient sound
   const drone = ctx.createOscillator();
   const droneGain = ctx.createGain();
   const droneFilter = ctx.createBiquadFilter();
-  drone.type = 'sawtooth';
-  drone.frequency.setValueAtTime(55, t); // A1
+  drone.type = 'sine';
+  drone.frequency.setValueAtTime(40, t); // Lower, softer frequency
   droneFilter.type = 'lowpass';
-  droneFilter.frequency.setValueAtTime(200, t);
-  droneFilter.Q.setValueAtTime(5, t);
-  droneGain.gain.setValueAtTime(0.06, t);
+  droneFilter.frequency.setValueAtTime(120, t); // Warmer, less harsh
+  droneFilter.Q.setValueAtTime(2, t); // Gentler resonance
+  droneGain.gain.setValueAtTime(0.03, t); // Quieter
   drone.connect(droneFilter).connect(droneGain).connect(master);
   drone.start(t);
 
-  // Heartbeat pulse — sine with LFO amplitude modulation
+  // Heartbeat pulse — softer sine with gentle modulation
   const heartbeat = ctx.createOscillator();
   const hbGain = ctx.createGain();
   heartbeat.type = 'sine';
-  heartbeat.frequency.setValueAtTime(65, t); // low thump
+  heartbeat.frequency.setValueAtTime(45, t); // Even softer thump
   hbGain.gain.setValueAtTime(0, t);
   heartbeat.connect(hbGain).connect(master);
   heartbeat.start(t);
 
-  // LFO to modulate heartbeat gain (creates pulsing)
+  // LFO to modulate heartbeat gain (creates gentle pulsing)
   const lfo = ctx.createOscillator();
   const lfoGain = ctx.createGain();
   lfo.type = 'sine';
-  lfo.frequency.setValueAtTime(0.8, t); // ~48 BPM heartbeat
-  lfoGain.gain.setValueAtTime(0.08, t);
+  lfo.frequency.setValueAtTime(0.6, t); // Slower, more relaxed pulse
+  lfoGain.gain.setValueAtTime(0.04, t); // Gentler modulation
   lfo.connect(lfoGain).connect(hbGain.gain);
   lfo.start(t);
 
@@ -74,19 +74,19 @@ export function setTensionIntensity(intensity: number) {
   const t = ctx.currentTime;
   const clamped = Math.max(0, Math.min(1, intensity));
 
-  // Master volume: 0 when calm, up to 0.15 at max tension
+  // Master volume: 0 when calm, up to 0.08 at max tension (quieter)
   activeNodes.master.gain.cancelScheduledValues(t);
-  activeNodes.master.gain.setTargetAtTime(clamped * 0.15, t, 0.15);
+  activeNodes.master.gain.setTargetAtTime(clamped * 0.08, t, 0.2);
 
-  // Drone pitch rises with tension (55 → 110 Hz)
-  activeNodes.drone.frequency.setTargetAtTime(55 + clamped * 55, t, 0.2);
+  // Drone pitch rises gently with tension (40 → 65 Hz, softer range)
+  activeNodes.drone.frequency.setTargetAtTime(40 + clamped * 25, t, 0.3);
 
-  // Heartbeat LFO speed: 0.8 Hz (calm) → 3.5 Hz (panic)
-  activeNodes.lfo.frequency.setTargetAtTime(0.8 + clamped * 2.7, t, 0.2);
+  // Heartbeat LFO speed: 0.6 Hz (calm) → 2.2 Hz (moderate intensity)
+  activeNodes.lfo.frequency.setTargetAtTime(0.6 + clamped * 1.6, t, 0.3);
 
-  // Heartbeat volume increases
+  // Heartbeat volume increases gently
   activeNodes.hbGain.gain.cancelScheduledValues(t);
-  activeNodes.hbGain.gain.setTargetAtTime(clamped * 0.12, t, 0.15);
+  activeNodes.hbGain.gain.setTargetAtTime(clamped * 0.06, t, 0.2);
 }
 
 /**
