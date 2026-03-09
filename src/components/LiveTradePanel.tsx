@@ -338,7 +338,7 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
               )}
             </div>
             <div className="flex justify-between text-[8px] text-muted-foreground mt-0.5">
-              <span className="text-neon-red">{position.stopLoss}%</span>
+              <span className="text-neon-orange">{position.stopLoss}%</span>
               <span className="text-neon-green">+{position.takeProfit}%</span>
             </div>
           </div>
