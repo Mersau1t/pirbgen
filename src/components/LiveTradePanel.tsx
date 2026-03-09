@@ -294,7 +294,7 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
             <div className="text-center">
               <p className="text-[7px] text-muted-foreground/60 uppercase">PnL</p>
               <p className={`font-mono ${compact ? 'text-sm' : 'text-lg'} font-bold transition-colors duration-500 ease-in-out`}
-                 style={{ color: pnl >= 0 ? '#07e46e' : '#ef4444' }}>
+                 style={{ color: pnl >= 0 ? '#07e46e' : '#f97316' }}>
                 {pnl >= 0 ? '+' : ''}{pnl.toFixed(2)}%
               </p>
             </div>
