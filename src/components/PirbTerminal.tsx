@@ -85,7 +85,7 @@ const TickerMarquee = () => {
     <div className="overflow-hidden border-b-2 border-neon-purple/30 bg-background/80 py-1.5">
       <div className="animate-marquee flex whitespace-nowrap gap-10 text-[10px] font-display">
         {doubled.map((t, i) => (
-          <span key={i} className={i % 2 === 0 ? 'text-neon-orange text-glow-orange' : 'text-neon-magenta'}>
+          <span key={i} className={i % 2 === 0 ? 'text-neon-orange text-glow-orange' : 'text-neon-purple'}>
             {t}
           </span>
         ))}
