@@ -286,15 +286,13 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
               <p className={`font-mono text-2xl font-bold ${myPnl >= 0 ? 'text-neon-green' : 'text-neon-red'}`}>
                 {myPnl >= 0 ? '+' : ''}{myPnl.toFixed(2)}%
               </p>
-              {!opponentClosed && (
-                <motion.p
-                  animate={{ opacity: [0.4, 1, 0.4] }}
-                  transition={{ duration: 1.5, repeat: Infinity }}
-                  className="font-display text-xs text-neon-orange tracking-wider mt-2"
-                >
-                  ⏳ WAITING FOR OPPONENT...
-                </motion.p>
-              )}
+              <motion.p
+                animate={{ opacity: [0.4, 1, 0.4] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+                className="font-display text-xs text-neon-orange tracking-wider mt-2"
+              >
+                ⏳ DUEL IN PROGRESS...
+              </motion.p>
             </div>
           </motion.div>
         )}
