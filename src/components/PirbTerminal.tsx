@@ -213,10 +213,11 @@ export default function PirbTerminal() {
       feed = specificFeed;
       price = livePrice;
     } else {
-      const picked = await pickVolatileFeed();
-      if (!picked) { setStatus('IDLE'); return; }
-      feed = picked.feed;
-      price = picked.price;
+      const token = pickSoloToken();
+      const livePrice = await fetchPythPriceById(token.feedId);
+      if (!livePrice) { setStatus('IDLE'); return; }
+      feed = { id: token.feedId, ticker: token.ticker, pair: token.pair };
+      price = livePrice;
     }
 
     const rarity = pickRarity();
