@@ -439,7 +439,7 @@ export default function PirbTerminal() {
               {topVolatile.length > 0 && (
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="w-full max-w-md">
                   <div className="pixel-border bg-background/80 p-3 max-h-[280px] overflow-y-auto">
-                    <p className="font-display text-[9px] text-neon-cyan tracking-wider mb-2 text-center">📊 TOP VOLUME · TAP TO TRADE</p>
+                    <p className="font-display text-[9px] text-neon-green tracking-wider mb-2 text-center">📊 TOP VOLUME · TAP TO TRADE</p>
                     <div className="grid grid-cols-2 gap-1.5">
                       {(showAllTokens ? allVolatile : topVolatile).map((t, i) => (
                         <motion.button
