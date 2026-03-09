@@ -80,7 +80,8 @@ export default function Duel() {
                 opponentPnl={playerSlot === 'p1' ? result.p2_pnl : result.p1_pnl}
                 winner={(result.winner || 'draw') as 'p1' | 'p2' | 'draw'}
                 playerSlot={playerSlot}
-                ticker={result.ticker}
+                myTicker={playerSlot === 'p1' ? result.p1_ticker : result.p2_ticker}
+                opponentTicker={playerSlot === 'p1' ? result.p2_ticker : result.p1_ticker}
                 onPlayAgain={handleRematch}
                 onHome={() => window.location.href = '/'}
               />
