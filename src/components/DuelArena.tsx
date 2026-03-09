@@ -86,13 +86,28 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
     load();
   }, [roomId, playerSlot]);
 
-  // Countdown
+  // Server-synced countdown based on started_at
   useEffect(() => {
-    if (loading) return;
-    if (countdown <= 0) { setStarted(true); return; }
-    const t = setTimeout(() => setCountdown(c => c - 1), 1000);
-    return () => clearTimeout(t);
-  }, [loading, countdown]);
+    if (loading || !room?.started_at) return;
+
+    const startTime = new Date(room.started_at).getTime();
+
+    const tick = () => {
+      const now = Date.now();
+      const diff = startTime - now;
+      if (diff <= 0) {
+        setCountdown(0);
+        setStarted(true);
+        clearInterval(countdownRef.current);
+        return;
+      }
+      setCountdown(Math.ceil(diff / 1000));
+    };
+
+    tick(); // immediate check
+    countdownRef.current = window.setInterval(tick, 100);
+    return () => clearInterval(countdownRef.current);
+  }, [loading, room?.started_at]);
 
   // Realtime opponent updates
   useEffect(() => {
