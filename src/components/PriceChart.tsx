@@ -521,7 +521,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       running = false;
       cancelAnimationFrame(animFrameRef.current);
     };
-  }, [candles, entryPrice, positive, size, direction, stopLoss, takeProfit, leverage, result]);
+  }, [candles, entryPrice, positive, size, direction, stopLoss, takeProfit, leverage, result, duelMode]);
 
   return (
     <div ref={containerRef} className="w-full h-full relative">
