@@ -30,16 +30,16 @@ export function startTensionAudio() {
   master.gain.setValueAtTime(0, t);
   master.connect(ctx.destination);
 
-  // Low drone — sawtooth filtered to sound ominous
+  // Low drone — softer sine wave for pleasant ambient sound
   const drone = ctx.createOscillator();
   const droneGain = ctx.createGain();
   const droneFilter = ctx.createBiquadFilter();
-  drone.type = 'sawtooth';
-  drone.frequency.setValueAtTime(55, t); // A1
+  drone.type = 'sine';
+  drone.frequency.setValueAtTime(40, t); // Lower, softer frequency
   droneFilter.type = 'lowpass';
-  droneFilter.frequency.setValueAtTime(200, t);
-  droneFilter.Q.setValueAtTime(5, t);
-  droneGain.gain.setValueAtTime(0.06, t);
+  droneFilter.frequency.setValueAtTime(120, t); // Warmer, less harsh
+  droneFilter.Q.setValueAtTime(2, t); // Gentler resonance
+  droneGain.gain.setValueAtTime(0.03, t); // Quieter
   drone.connect(droneFilter).connect(droneGain).connect(master);
   drone.start(t);
 
