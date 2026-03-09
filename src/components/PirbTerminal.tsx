@@ -555,7 +555,7 @@ export default function PirbTerminal() {
                     </motion.div>
                   )}
 
-                  <p className={`font-display text-2xl ${status === 'WIN' ? 'text-neon-green text-glow-green animate-rainbow' : 'text-neon-red text-glow-red'}`}>
+                  <p className={`font-display text-2xl ${status === 'WIN' ? 'text-neon-green text-glow-green animate-rainbow' : 'text-neon-orange text-glow-orange'}`}>
                     {status === 'WIN' ? `🎯 TARGET HIT! +${finalPnl.toFixed(2)}%` : `💀 LIQUIDATED ${finalPnl.toFixed(2)}%`}
                   </p>
 
