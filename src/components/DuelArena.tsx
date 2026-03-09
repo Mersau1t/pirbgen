@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import LiveTradePanel, { type DegenPosition } from '@/components/LiveTradePanel';
+import SpectatorChart from '@/components/SpectatorChart';
 import { type Candle } from '@/components/PriceChart';
 import { fetchHistoricalCandles } from '@/lib/pyth';
 import { DUEL_TIMER_SECONDS } from '@/lib/duelConstants';
@@ -260,42 +261,56 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
         </div>
       </div>
 
-      {/* Full-width: only your chart */}
-      <div className="flex-1 min-h-0 flex flex-col relative">
-        <LiveTradePanel
-          position={myPosition}
-          entryPrice={myEntryPrice}
-          initialCandles={myCandles}
-          onResult={handleResult}
-          onExitEarly={handleExitEarly}
-          playerName={myName}
-          walletAddress={null}
-          timerSeconds={DUEL_TIMER_SECONDS}
-          duelMode
-          onPnlChange={handleMyPnlChange}
-          label="YOU"
-        />
-        {myClosed && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="absolute inset-0 bg-background/60 backdrop-blur-sm flex items-center justify-center z-10 rounded-sm"
-          >
-            <div className="text-center space-y-2">
-              <p className="font-display text-lg text-neon-purple text-glow-purple tracking-wider">✅ LOCKED IN</p>
-              <p className={`font-mono text-2xl font-bold ${myPnl >= 0 ? 'text-neon-green' : 'text-neon-red'}`}>
-                {myPnl >= 0 ? '+' : ''}{myPnl.toFixed(2)}%
-              </p>
-              <motion.p
-                animate={{ opacity: [0.4, 1, 0.4] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-                className="font-display text-xs text-neon-orange tracking-wider mt-2"
-              >
-                ⏳ DUEL IN PROGRESS...
-              </motion.p>
-            </div>
-          </motion.div>
-        )}
+      {/* Split screen */}
+      <div className="flex flex-1 min-h-0 gap-1">
+        {/* My panel — full trading UI */}
+        <div className="flex-1 min-h-0 min-w-0 flex flex-col relative">
+          <LiveTradePanel
+            position={myPosition}
+            entryPrice={myEntryPrice}
+            initialCandles={myCandles}
+            onResult={handleResult}
+            onExitEarly={handleExitEarly}
+            playerName={myName}
+            walletAddress={null}
+            timerSeconds={DUEL_TIMER_SECONDS}
+            duelMode
+            compact
+            onPnlChange={handleMyPnlChange}
+            label="YOU"
+          />
+          {myClosed && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="absolute inset-0 bg-background/60 backdrop-blur-sm flex items-center justify-center z-10 rounded-sm"
+            >
+              <div className="text-center space-y-2">
+                <p className="font-display text-lg text-neon-purple text-glow-purple tracking-wider">✅ LOCKED IN</p>
+                <p className={`font-mono text-2xl font-bold ${myPnl >= 0 ? 'text-neon-green' : 'text-neon-red'}`}>
+                  {myPnl >= 0 ? '+' : ''}{myPnl.toFixed(2)}%
+                </p>
+                <motion.p
+                  animate={{ opacity: [0.4, 1, 0.4] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                  className="font-display text-xs text-neon-orange tracking-wider mt-2"
+                >
+                  ⏳ DUEL IN PROGRESS...
+                </motion.p>
+              </div>
+            </motion.div>
+          )}
+        </div>
+
+        {/* Opponent panel — spectator only: chart + ticker + price, no PnL/direction/leverage */}
+        <div className="flex-1 min-h-0 min-w-0 flex flex-col">
+          <SpectatorChart
+            ticker={oppPosition.ticker}
+            feedId={oppPosition.feedId}
+            entryPrice={oppEntryPrice}
+            initialCandles={oppCandles}
+          />
+        </div>
       </div>
     </div>
   );
