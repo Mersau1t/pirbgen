@@ -8,7 +8,7 @@ export const SOLO_TOKENS = [
   { ticker: 'DOGE', pair: 'DOGE/USD', feedId: '0xdcef50dd0a4cd2dcc17e45df1676dcb336a11a61c69df7a0299b0150c672d25c' },
   { ticker: 'ADA', pair: 'ADA/USD', feedId: '0x2a01deaec9e51a579277b34b122399984d0bbf57e2458a7e42fecd2829867a0d' },
   { ticker: 'AVAX', pair: 'AVAX/USD', feedId: '0x93da3352f9f1d105fdfe4971cfa80e9dd777bfc5d0f683ebb6e1294b92137bb7' },
-  { ticker: 'LINK', pair: 'LINK/USD', feedId: '0x8ac0c70fff57e9aefdf5edf44b51d62c2d433653cbb2cf5cc06bb115af04d221' },
+  { ticker: 'DOT', pair: 'DOT/USD', feedId: '0xca3eed9b267293f6595901c734c7525ce8ef49adafe8284f97c24b80e198ff85' },
   { ticker: 'DOT', pair: 'DOT/USD', feedId: '0xca3eed9b267293f6595901c734c7525ce8ef49adafe8284f97c24b80e198ff85' },
   { ticker: 'MATIC', pair: 'MATIC/USD', feedId: '0x5de33440f6c8ee590c0735f10b47d91f64392cc0fbdbe8c35e50416b4651d60c' },
   { ticker: 'UNI', pair: 'UNI/USD', feedId: '0x78d185a741d07edb3d5ef0e2e899defed3a862abc9cd8da6c0776e41e1c8a318' },
