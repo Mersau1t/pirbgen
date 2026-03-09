@@ -416,9 +416,9 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       ctx.restore();
       ctx.setLineDash([]);
       ctx.fillStyle = '#07e46e';
-      ctx.fillRect(pad.left + chartW + 4, tpY - 8, priceAxisW - 8, 16);
+      ctx.fillRect(pad.left + chartW + 4, tpY - 10, priceAxisW - 8, 20);
       ctx.fillStyle = '#0a0a0a';
-      ctx.font = 'bold 8px monospace';
+      ctx.font = 'bold 11px monospace';
       ctx.fillText('TP ' + formatPriceShort(tpPrice), pad.left + chartW + 6, tpY);
 
       // --- STOP LOSS LINE ---
