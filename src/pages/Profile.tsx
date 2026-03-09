@@ -215,13 +215,13 @@ export default function Profile() {
             {/* Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {[
-                { label: 'Trades', value: totalTrades.toString(), color: 'text-foreground' },
-                { label: 'Win Rate', value: `${winRate}%`, color: Number(winRate) >= 50 ? 'text-neon-green' : 'text-neon-orange' },
-                { label: 'Best Trade', value: `${bestTrade >= 0 ? '+' : ''}${bestTrade.toFixed(1)}%`, color: bestTrade >= 0 ? 'text-neon-green' : 'text-neon-orange' },
-                { label: 'Total PnL', value: `${totalPnl >= 0 ? '+' : ''}${totalPnl.toFixed(1)}%`, color: totalPnl >= 0 ? 'text-neon-green' : 'text-neon-orange' },
+                { label: 'Trades', value: totalTrades.toString(), color: 'text-foreground', borderColor: 'border-neon-purple/20', bgColor: 'bg-neon-purple/5', labelColor: 'text-neon-purple/50' },
+                { label: 'Win Rate', value: `${winRate}%`, color: Number(winRate) >= 50 ? 'text-neon-green' : 'text-neon-orange', borderColor: 'border-neon-green/20', bgColor: 'bg-neon-green/5', labelColor: 'text-neon-green/50' },
+                { label: 'Best Trade', value: `${bestTrade >= 0 ? '+' : ''}${bestTrade.toFixed(1)}%`, color: bestTrade >= 0 ? 'text-neon-green' : 'text-neon-orange', borderColor: 'border-neon-orange/20', bgColor: 'bg-neon-orange/5', labelColor: 'text-neon-orange/50' },
+                { label: 'Total PnL', value: `${totalPnl >= 0 ? '+' : ''}${totalPnl.toFixed(1)}%`, color: totalPnl >= 0 ? 'text-neon-green' : 'text-neon-orange', borderColor: 'border-neon-purple/20', bgColor: 'bg-neon-purple/5', labelColor: 'text-neon-purple/50' },
               ].map(stat => (
-                <div key={stat.label} className="border-2 border-neon-green/20 p-2 text-center bg-neon-green/5">
-                  <p className="text-[8px] font-display text-neon-green/50 uppercase tracking-wider">{stat.label}</p>
+                <div key={stat.label} className={`border-2 ${stat.borderColor} p-2 text-center ${stat.bgColor}`}>
+                  <p className={`text-[8px] font-display ${stat.labelColor} uppercase tracking-wider`}>{stat.label}</p>
                   <p className={`text-base font-mono font-bold ${stat.color}`}>{stat.value}</p>
                 </div>
               ))}
