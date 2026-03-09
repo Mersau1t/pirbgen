@@ -13,7 +13,7 @@ export const SOLO_TOKENS = [
   { ticker: 'APT', pair: 'APT/USD', feedId: '0x03ae4db29ed4ae33d323568895aa00337e658e348b37509f5372ae51f0af00d5' },
   { ticker: 'ARB', pair: 'ARB/USD', feedId: '0x3fa4252848f9f0a1480be62745a4629d9eb1322aebab8a791e344b3b9c1adcf5' },
   { ticker: 'OP', pair: 'OP/USD', feedId: '0x385f64d993f7b77d8182ed5003d97c60aa3361f3cecfe711544d2d59165e9bdf' },
-  { ticker: 'SUI', pair: 'SUI/USD', feedId: '0x23d7315113f5b1d3ba7a83604c44b94d79f4fd69af077f4f22c6de5d7c286258' },
+  
   { ticker: 'TIA', pair: 'TIA/USD', feedId: '0x09f7c1d7dfbb7df2b8fe3d3d87ee94a2259d212da4f30c1f0540d066dfa44723' },
   { ticker: 'WIF', pair: 'WIF/USD', feedId: '0x4ca4beeca86f0d164160323817a4e42b10010a724c2217c6ee41b54cd4cc61fc' },
   { ticker: 'PEPE', pair: 'PEPE/USD', feedId: '0xd69731a2e74ac1ce884fc3890f7ee324b6deb66147055249568869ed700882e4' },
