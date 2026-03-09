@@ -264,7 +264,7 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
       {/* Split screen: identical panels */}
       <div className="flex flex-1 min-h-0 gap-1">
         {/* My panel */}
-        <div className="flex-1 min-h-0 min-w-0 flex flex-col">
+        <div className="flex-1 min-h-0 min-w-0 flex flex-col relative">
           <LiveTradePanel
             position={myPosition}
             entryPrice={myEntryPrice}
@@ -279,6 +279,20 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
             onPnlChange={handleMyPnlChange}
             label="YOU"
           />
+          {myClosed && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="absolute inset-0 bg-background/60 backdrop-blur-sm flex items-center justify-center z-10 rounded-sm"
+            >
+              <div className="text-center">
+                <p className="font-display text-lg text-neon-purple text-glow-purple tracking-wider">✅ LOCKED IN</p>
+                <p className={`font-mono text-2xl font-bold mt-1 ${myPnl >= 0 ? 'text-neon-green' : 'text-neon-red'}`}>
+                  {myPnl >= 0 ? '+' : ''}{myPnl.toFixed(2)}%
+                </p>
+              </div>
+            </motion.div>
+          )}
         </div>
 
         {/* Opponent panel - identical LiveTradePanel but read-only */}
