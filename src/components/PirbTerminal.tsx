@@ -416,7 +416,7 @@ export default function PirbTerminal() {
                   onClick={() => generateDaily()}
                   disabled={dailyDone || allVolatile.length === 0}
                   className={`arcade-btn w-full text-[10px] py-3 ${dailyDone ? 'opacity-40 cursor-not-allowed' : ''}`}
-                  style={{ borderColor: 'hsl(var(--neon-amber))', color: 'hsl(var(--neon-amber))', background: 'hsl(50 100% 55% / 0.1)' }}
+                  style={{ borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(var(--neon-orange) / 0.1)' }}
                 >
                   {dailyDone ? '✅ DAILY DONE' : '📅 DAILY CHALLENGE (90s)'}
                 </button>
