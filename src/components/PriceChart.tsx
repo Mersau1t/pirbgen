@@ -102,12 +102,21 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       : entryPrice * (1 - tpPriceChange);
 
     // Scale boundaries (static)
-    const focusedLower = Math.min(slPrice, tpPrice);
-    const focusedUpper = Math.max(slPrice, tpPrice);
+    let focusedLower: number, focusedUpper: number;
+    if (duelMode) {
+      // In duel mode, scale to actual price data
+      const allPrices = candles.flatMap(c => [c.high, c.low, c.close, c.open]);
+      allPrices.push(entryPrice);
+      focusedLower = Math.min(...allPrices);
+      focusedUpper = Math.max(...allPrices);
+    } else {
+      focusedLower = Math.min(slPrice, tpPrice);
+      focusedUpper = Math.max(slPrice, tpPrice);
+    }
     
     let expandedLower = focusedLower;
     let expandedUpper = focusedUpper;
-    if (result) {
+    if (result && !duelMode) {
       const last = candles[candles.length - 1];
       if (last) {
         expandedLower = Math.min(focusedLower, last.low, last.close);
