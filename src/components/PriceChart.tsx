@@ -407,6 +407,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       ctx.font = 'bold 14px monospace';
       ctx.fillText(formatPrice(entryPrice), pad.left + chartW + 7, entryY);
 
+      if (!duelMode) {
       // --- TAKE PROFIT LINE ---
       const tpY = toY(tpPrice);
       const tpPulse = tpProximity > 0.6 ? (0.5 + 0.5 * Math.sin(t / 250)) : 0;
@@ -446,6 +447,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       ctx.fillStyle = '#F5F5FF';
       ctx.font = 'bold 13px monospace';
       ctx.fillText('SL ' + formatPriceShort(slPrice), pad.left + chartW + 6, slY);
+      }
 
       // --- CURRENT PRICE TAG ---
       if (candles.length > 0) {
