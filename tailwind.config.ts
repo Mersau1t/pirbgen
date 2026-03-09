@@ -55,11 +55,6 @@ export default {
           green: "hsl(var(--neon-green))",
           purple: "hsl(var(--neon-purple))",
           orange: "hsl(var(--neon-orange))",
-          magenta: "hsl(var(--neon-magenta))",
-          cyan: "hsl(var(--neon-cyan))",
-          amber: "hsl(var(--neon-amber))",
-          red: "hsl(var(--neon-red))",
-          blue: "hsl(var(--neon-blue))",
         },
         terminal: {
           bg: "hsl(var(--terminal-bg))",

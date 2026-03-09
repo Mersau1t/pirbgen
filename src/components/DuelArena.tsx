@@ -48,7 +48,6 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
       const r = data as any;
       setRoom(r);
 
-      // My position
       setMyPosition({
         id: Date.now(),
         asset: getField(r, playerSlot, 'ticker'),
@@ -61,7 +60,6 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
         rarity: (getField(r, playerSlot, 'rarity') || 'common') as any,
       });
 
-      // Opponent position
       setOppPosition({
         id: Date.now() + 1,
         asset: getField(r, opponentSlot, 'ticker'),
@@ -87,12 +85,10 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
     load();
   }, [roomId, playerSlot]);
 
-  // Server-synced countdown based on started_at
+  // Server-synced countdown
   useEffect(() => {
     if (loading || !room?.started_at) return;
-
     const startTime = new Date(room.started_at).getTime();
-
     const tick = () => {
       const now = Date.now();
       const diff = startTime - now;
@@ -104,8 +100,7 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
       }
       setCountdown(Math.ceil(diff / 1000));
     };
-
-    tick(); // immediate check
+    tick();
     countdownRef.current = window.setInterval(tick, 100);
     return () => clearInterval(countdownRef.current);
   }, [loading, room?.started_at]);
@@ -119,13 +114,11 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
         event: 'UPDATE', schema: 'public', table: 'duel_rooms', filter: `id=eq.${roomId}`,
       }, (payload) => {
         const u = payload.new as any;
-        // Sync opponent closed status + final PnL
         if (u[`${opponentSlot}_closed`] && !opponentClosed) {
           setOpponentClosed(true);
           const finalOppPnl = u[`${opponentSlot}_pnl`];
           if (finalOppPnl != null) setOppPnl(finalOppPnl);
         }
-        // Sync my closed status (if closed from timer on other side)
         if (u[`${playerSlot}_closed`] && !myClosed) {
           setMyClosed(true);
         }
@@ -152,7 +145,6 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
     return () => clearInterval(pnlUpdateInterval.current);
   }, [started, myPnl, finished, myClosed, playerSlot, roomId]);
 
-  // Live PnL callbacks
   const handleMyPnlChange = useCallback((pnl: number) => setMyPnl(pnl), []);
   const handleOppPnlChange = useCallback((pnl: number) => setOppPnl(pnl), []);
 
@@ -245,7 +237,7 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
           <div className="flex items-center gap-4">
             <div className="text-center">
               <p className="text-[8px] text-muted-foreground/60 uppercase">YOU · {myPosition.ticker}</p>
-              <p className={`font-mono text-sm font-bold ${myPnl >= 0 ? 'text-neon-green' : 'text-neon-red'}`}>
+              <p className={`font-mono text-sm font-bold ${myPnl >= 0 ? 'text-neon-green' : 'text-neon-orange'}`}>
                 {myPnl >= 0 ? '+' : ''}{myPnl.toFixed(2)}%
                 {myClosed && <span className="text-[7px] ml-1 text-neon-purple">LOCKED</span>}
               </p>
@@ -263,7 +255,6 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
 
       {/* Split screen */}
       <div className="flex flex-1 min-h-0 gap-1.5">
-        {/* My panel — full trading UI */}
         <div className="basis-1/2 min-h-0 min-w-0 flex flex-col relative">
           <LiveTradePanel
             position={myPosition}
@@ -287,7 +278,7 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
             >
               <div className="text-center space-y-2">
                 <p className="font-display text-lg text-neon-purple text-glow-purple tracking-wider">✅ LOCKED IN</p>
-                <p className={`font-mono text-2xl font-bold ${myPnl >= 0 ? 'text-neon-green' : 'text-neon-red'}`}>
+                <p className={`font-mono text-2xl font-bold ${myPnl >= 0 ? 'text-neon-green' : 'text-neon-orange'}`}>
                   {myPnl >= 0 ? '+' : ''}{myPnl.toFixed(2)}%
                 </p>
                 <motion.p
@@ -302,7 +293,6 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
           )}
         </div>
 
-        {/* Opponent panel — spectator only */}
         <div className="basis-1/2 min-h-0 min-w-0 flex flex-col">
           <SpectatorChart
             ticker={oppPosition.ticker}

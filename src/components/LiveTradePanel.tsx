@@ -23,9 +23,9 @@ interface DegenPosition {
 
 const RARITY_STYLES: Record<string, { border: string; text: string; bg: string; label: string }> = {
   common: { border: 'border-muted-foreground/30', text: 'text-muted-foreground', bg: 'bg-muted/20', label: 'COMMON' },
-  rare: { border: 'border-neon-cyan/50', text: 'text-neon-cyan', bg: 'bg-neon-cyan/10', label: 'RARE' },
-  legendary: { border: 'border-neon-amber/50', text: 'text-neon-amber', bg: 'bg-neon-amber/10', label: 'LEGENDARY' },
-  degen: { border: 'border-neon-magenta/50', text: 'text-neon-magenta', bg: 'bg-neon-magenta/10', label: '☠ DEGEN ☠' },
+  rare: { border: 'border-neon-green/50', text: 'text-neon-green', bg: 'bg-neon-green/10', label: 'RARE' },
+  legendary: { border: 'border-neon-orange/50', text: 'text-neon-orange', bg: 'bg-neon-orange/10', label: 'LEGENDARY' },
+  degen: { border: 'border-neon-purple/50', text: 'text-neon-purple', bg: 'bg-neon-purple/10', label: '☠ DEGEN ☠' },
 };
 
 interface LiveTradePanelProps {
@@ -271,7 +271,7 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
             <span className={`px-1.5 py-0.5 text-[9px] font-display tracking-wider ${
               position.direction === 'LONG'
                 ? 'bg-neon-green/10 text-neon-green border border-neon-green/30'
-                : 'bg-neon-red/10 text-neon-red border border-neon-red/30'
+                : 'bg-neon-orange/10 text-neon-orange border border-neon-orange/30'
             }`}>
               {position.direction}
             </span>
@@ -283,7 +283,7 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
             <div className="text-center">
               <p className="text-[7px] text-muted-foreground/60 uppercase">Current</p>
               <p className={`font-mono ${compact ? 'text-sm' : 'text-xl sm:text-2xl'} font-bold transition-colors duration-500 ease-in-out`}
-                 style={{ color: pnl >= 0 ? '#07e46e' : '#ef4444', textShadow: pnl >= 0 ? '0 0 12px #07e46e88' : '0 0 12px #ef444488' }}>
+                 style={{ color: pnl >= 0 ? '#07e46e' : '#f97316', textShadow: pnl >= 0 ? '0 0 12px #07e46e88' : '0 0 12px #f9731688' }}>
                 {fmtPrice(currentPrice)}
               </p>
             </div>
@@ -294,7 +294,7 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
             <div className="text-center">
               <p className="text-[7px] text-muted-foreground/60 uppercase">PnL</p>
               <p className={`font-mono ${compact ? 'text-sm' : 'text-lg'} font-bold transition-colors duration-500 ease-in-out`}
-                 style={{ color: pnl >= 0 ? '#07e46e' : '#ef4444' }}>
+                 style={{ color: pnl >= 0 ? '#07e46e' : '#f97316' }}>
                 {pnl >= 0 ? '+' : ''}{pnl.toFixed(2)}%
               </p>
             </div>
@@ -305,7 +305,7 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
             <div className="flex items-center gap-4">
               <div className="text-center">
                 <p className="text-[7px] text-muted-foreground/60 uppercase">SL</p>
-                <p className="text-xs font-mono text-neon-red font-bold">{position.stopLoss}%</p>
+                <p className="text-xs font-mono text-neon-orange font-bold">{position.stopLoss}%</p>
               </div>
               <div className="text-center">
                 <p className="text-[7px] text-muted-foreground/60 uppercase">TP</p>
@@ -326,7 +326,7 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
               <div className="absolute left-1/2 top-0 w-0.5 h-full bg-muted-foreground/40 z-10 -translate-x-1/2" />
               {pnl !== 0 && (
                 <motion.div
-                  className={`absolute top-0 h-full ${pnl >= 0 ? 'bg-neon-green' : 'bg-neon-red'} rounded-full`}
+                  className={`absolute top-0 h-full ${pnl >= 0 ? 'bg-neon-green' : 'bg-neon-orange'} rounded-full`}
                   style={{
                     width: `${Math.min(Math.abs(pnl) / (pnl >= 0 ? position.takeProfit : Math.abs(position.stopLoss)) * 50, 50)}%`,
                     left: pnl >= 0 ? '50%' : undefined,
@@ -338,7 +338,7 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
               )}
             </div>
             <div className="flex justify-between text-[8px] text-muted-foreground mt-0.5">
-              <span className="text-neon-red">{position.stopLoss}%</span>
+              <span className="text-neon-orange">{position.stopLoss}%</span>
               <span className="text-neon-green">+{position.takeProfit}%</span>
             </div>
           </div>
@@ -348,12 +348,12 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
         {hasTimer && !result && (
           <div className="mt-1">
             <div className="flex items-center gap-2">
-              <span className={`text-[9px] font-display tracking-wider ${timerUrgent ? 'text-neon-red animate-pulse' : 'text-neon-orange'}`}>
+              <span className={`text-[9px] font-display tracking-wider ${timerUrgent ? 'text-neon-orange animate-pulse' : 'text-neon-orange'}`}>
                 ⏱ {formatTime(timeLeft)}
               </span>
               <div className="flex-1 h-1.5 bg-muted/20 rounded-full overflow-hidden border border-border/20">
                 <motion.div
-                  className={`h-full rounded-full ${timerUrgent ? 'bg-neon-red' : 'bg-neon-orange'}`}
+                  className={`h-full rounded-full bg-neon-orange`}
                   style={{ width: `${timerPct}%` }}
                   animate={timerUrgent ? { opacity: [0.5, 1, 0.5] } : {}}
                   transition={{ duration: 0.5, repeat: Infinity }}
@@ -397,8 +397,8 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
 
         {readOnly && !result && (
           <div className="flex items-center gap-2 py-1">
-            <span className="w-2 h-2 bg-neon-cyan animate-blink" />
-            <span className="font-display text-[10px] text-neon-cyan tracking-wider">OPPONENT · LIVE</span>
+            <span className="w-2 h-2 bg-neon-green animate-blink" />
+            <span className="font-display text-[10px] text-neon-green tracking-wider">OPPONENT · LIVE</span>
           </div>
         )}
 
@@ -408,7 +408,7 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
               initial={{ opacity: 0 }}
               animate={{ opacity: [0.4, 1, 0.4] }}
               transition={{ duration: 0.8, repeat: Infinity }}
-              className={`font-display text-sm tracking-wider ${result === 'WIN' ? 'text-neon-green' : 'text-neon-red'}`}
+              className={`font-display text-sm tracking-wider ${result === 'WIN' ? 'text-neon-green' : 'text-neon-orange'}`}
             >
               CLOSING...
             </motion.p>
@@ -433,7 +433,7 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
               transition={{ x: { duration: 0.5, ease: 'easeOut' }, scale: { duration: 0.3 } }}
               className="text-center py-1"
             >
-              <p className="font-display text-lg text-neon-red text-glow-red inline-block">💀 LIQUIDATED {pnl.toFixed(2)}%</p>
+              <p className="font-display text-lg text-neon-orange text-glow-orange inline-block">💀 LIQUIDATED {pnl.toFixed(2)}%</p>
             </motion.div>
           </>
         )}

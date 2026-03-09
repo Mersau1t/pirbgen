@@ -36,9 +36,9 @@ interface TradeEntry {
 
 const RARITY_COLORS: Record<string, string> = {
   common: 'text-muted-foreground',
-  rare: 'text-neon-cyan',
-  legendary: 'text-neon-amber',
-  degen: 'text-neon-magenta',
+  rare: 'text-neon-green',
+  legendary: 'text-neon-orange',
+  degen: 'text-neon-purple',
 };
 
 export default function Profile() {
@@ -206,7 +206,7 @@ export default function Profile() {
               </div>
               <button
                 onClick={() => { disconnectWallet(); navigate('/'); }}
-                className="text-xs text-neon-red font-display tracking-wider hover:text-glow-red transition-all"
+                className="text-xs text-neon-orange font-display tracking-wider hover:text-glow-orange transition-all"
               >
                 DISCONNECT
               </button>
@@ -216,9 +216,9 @@ export default function Profile() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {[
                 { label: 'Trades', value: totalTrades.toString(), color: 'text-foreground' },
-                { label: 'Win Rate', value: `${winRate}%`, color: Number(winRate) >= 50 ? 'text-neon-green' : 'text-neon-red' },
-                { label: 'Best Trade', value: `${bestTrade >= 0 ? '+' : ''}${bestTrade.toFixed(1)}%`, color: bestTrade >= 0 ? 'text-neon-green' : 'text-neon-red' },
-                { label: 'Total PnL', value: `${totalPnl >= 0 ? '+' : ''}${totalPnl.toFixed(1)}%`, color: totalPnl >= 0 ? 'text-neon-green' : 'text-neon-red' },
+                { label: 'Win Rate', value: `${winRate}%`, color: Number(winRate) >= 50 ? 'text-neon-green' : 'text-neon-orange' },
+                { label: 'Best Trade', value: `${bestTrade >= 0 ? '+' : ''}${bestTrade.toFixed(1)}%`, color: bestTrade >= 0 ? 'text-neon-green' : 'text-neon-orange' },
+                { label: 'Total PnL', value: `${totalPnl >= 0 ? '+' : ''}${totalPnl.toFixed(1)}%`, color: totalPnl >= 0 ? 'text-neon-green' : 'text-neon-orange' },
               ].map(stat => (
                 <div key={stat.label} className="border-2 border-neon-green/20 p-2 text-center bg-neon-green/5">
                   <p className="text-[8px] font-display text-neon-green/50 uppercase tracking-wider">{stat.label}</p>
@@ -229,9 +229,9 @@ export default function Profile() {
           </div>
 
           {/* Trade History */}
-          <div className="pixel-border-cyan flex flex-col min-h-0 flex-1 bg-background/90">
-            <div className="px-4 py-2 border-b-2 border-neon-cyan/20 bg-neon-cyan/5 shrink-0">
-              <h3 className="font-display text-[10px] tracking-[0.2em] text-neon-cyan text-glow-cyan uppercase">📜 TRADE HISTORY</h3>
+          <div className="pixel-border-green flex flex-col min-h-0 flex-1 bg-background/90">
+            <div className="px-4 py-2 border-b-2 border-neon-green/20 bg-neon-green/5 shrink-0">
+              <h3 className="font-display text-[10px] tracking-[0.2em] text-neon-green text-glow-green uppercase">📜 TRADE HISTORY</h3>
             </div>
 
             {loading ? (
@@ -265,7 +265,7 @@ export default function Profile() {
                   >
                     <div className="flex items-center gap-3">
                       <span className={`text-xs font-display tracking-wider ${
-                        trade.direction === 'LONG' ? 'text-neon-green' : 'text-neon-red'
+                        trade.direction === 'LONG' ? 'text-neon-green' : 'text-neon-orange'
                       }`}>
                         {trade.direction}
                       </span>
@@ -276,7 +276,7 @@ export default function Profile() {
                     </div>
                     <div className="flex items-center gap-4">
                       <span className={`text-sm font-mono font-bold ${
-                        trade.pnl_percent >= 0 ? 'text-neon-green' : 'text-neon-red'
+                        trade.pnl_percent >= 0 ? 'text-neon-green' : 'text-neon-orange'
                       }`}>
                         {trade.pnl_percent >= 0 ? '+' : ''}{Number(trade.pnl_percent).toFixed(1)}%
                       </span>
@@ -313,11 +313,11 @@ export default function Profile() {
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.92, opacity: 0 }}
                 onClick={e => e.stopPropagation()}
-                className="pixel-border-magenta p-8 w-full max-w-2xl space-y-6 bg-background/95"
+                className="pixel-border p-8 w-full max-w-2xl space-y-6 bg-background/95"
               >
                 <div className="flex items-center justify-between">
-                  <p className="font-display text-[10px] sm:text-xs tracking-[0.2em] text-neon-magenta text-glow-magenta uppercase">SELECT AVATAR</p>
-                  <button onClick={() => setAvatarPickerOpen(false)} className="text-neon-red hover:text-glow-red text-xl font-display">✕</button>
+                  <p className="font-display text-[10px] sm:text-xs tracking-[0.2em] text-neon-purple text-glow-purple uppercase">SELECT AVATAR</p>
+                  <button onClick={() => setAvatarPickerOpen(false)} className="text-neon-orange hover:text-glow-orange text-xl font-display">✕</button>
                 </div>
 
                 <div className="grid grid-cols-4 sm:grid-cols-6 gap-3">
@@ -330,7 +330,7 @@ export default function Profile() {
                       className={`flex flex-col items-center gap-2 p-4 border-2 transition-all cursor-pointer ${
                         profile.avatar === av.id && !profile.avatar_url
                           ? 'border-neon-green bg-neon-green/10 box-glow-green'
-                          : 'border-muted-foreground/20 bg-muted/10 hover:border-neon-magenta/40'
+                          : 'border-muted-foreground/20 bg-muted/10 hover:border-neon-purple/40'
                       }`}
                     >
                       <span className="text-3xl">{av.emoji}</span>
@@ -342,7 +342,7 @@ export default function Profile() {
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
-                  className="arcade-btn arcade-btn-cyan w-full text-[10px] py-3 disabled:opacity-50"
+                  className="arcade-btn arcade-btn-secondary w-full text-[10px] py-3 disabled:opacity-50"
                 >
                   {uploading ? '⏳ UPLOADING...' : '📷 UPLOAD PHOTO'}
                 </button>
@@ -356,7 +356,7 @@ export default function Profile() {
 
                 <button
                   onClick={() => setAvatarPickerOpen(false)}
-                  className="arcade-btn arcade-btn-secondary w-full text-[10px] py-2.5"
+                  className="arcade-btn arcade-btn-primary w-full text-[10px] py-2.5"
                 >
                   ← BACK
                 </button>

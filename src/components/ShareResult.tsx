@@ -43,7 +43,7 @@ export default function ShareResult({ ticker, direction, leverage, pnl, rarity, 
     }
 
     // Border
-    ctx.strokeStyle = result === 'WIN' ? '#07e46e' : '#ef4444';
+    ctx.strokeStyle = result === 'WIN' ? '#07e46e' : '#f97316';
     ctx.lineWidth = 3;
     ctx.strokeRect(2, 2, w - 4, h - 4);
 
@@ -55,7 +55,7 @@ export default function ShareResult({ ticker, direction, leverage, pnl, rarity, 
 
     // Result
     ctx.font = 'bold 42px monospace';
-    ctx.fillStyle = result === 'WIN' ? '#07e46e' : '#ef4444';
+    ctx.fillStyle = result === 'WIN' ? '#07e46e' : '#f97316';
     ctx.textAlign = 'center';
     ctx.fillText(result === 'WIN' ? '🎯 TARGET HIT' : '💀 LIQUIDATED', w / 2, 100);
 
@@ -71,7 +71,7 @@ export default function ShareResult({ ticker, direction, leverage, pnl, rarity, 
     // Streak
     if (streak > 1) {
       ctx.font = 'bold 18px monospace';
-      ctx.fillStyle = '#f59e0b';
+      ctx.fillStyle = '#f97316';
       ctx.fillText(`🔥 ${streak} WIN STREAK`, w / 2, 250);
     }
 
@@ -129,7 +129,7 @@ export default function ShareResult({ ticker, direction, leverage, pnl, rarity, 
       className="flex items-center gap-2"
     >
       <canvas ref={canvasRef} className="hidden" />
-      <button onClick={handleShare} className="arcade-btn text-[9px] py-2 px-4" style={{ borderColor: 'hsl(var(--neon-cyan))', color: 'hsl(var(--neon-cyan))', background: 'hsl(var(--neon-cyan) / 0.1)' }}>
+      <button onClick={handleShare} className="arcade-btn text-[9px] py-2 px-4" style={{ borderColor: 'hsl(var(--neon-green))', color: 'hsl(var(--neon-green))', background: 'hsl(var(--neon-green) / 0.1)' }}>
         📸 SHARE
       </button>
       <button onClick={handleCopyText} className="arcade-btn text-[9px] py-2 px-4" style={{ borderColor: 'hsl(var(--muted-foreground))', color: 'hsl(var(--muted-foreground))', background: 'hsl(var(--muted-foreground) / 0.1)' }}>

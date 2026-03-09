@@ -31,7 +31,7 @@ export default function DuelResult({ myName, opponentName, myPnl, opponentPnl, w
         ) : iWon ? (
           <h1 className="font-display text-3xl text-neon-green text-glow-green tracking-wider animate-rainbow">🏆 YOU WIN!</h1>
         ) : (
-          <h1 className="font-display text-3xl text-neon-red text-glow-red tracking-wider">💀 YOU LOSE!</h1>
+          <h1 className="font-display text-3xl text-neon-orange text-glow-orange tracking-wider">💀 YOU LOSE!</h1>
         )}
       </motion.div>
 
@@ -43,7 +43,7 @@ export default function DuelResult({ myName, opponentName, myPnl, opponentPnl, w
         animate={{ x: 0, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 120, damping: 12, delay: 0.2 }}
         style={{
-          filter: iWon ? 'drop-shadow(0 0 20px #07e46e)' : isDraw ? 'drop-shadow(0 0 20px #f97316)' : 'drop-shadow(0 0 20px #ef4444)',
+          filter: iWon ? 'drop-shadow(0 0 20px #07e46e)' : isDraw ? 'drop-shadow(0 0 20px #f97316)' : 'drop-shadow(0 0 20px #f97316)',
           transform: !iWon && !isDraw ? 'scaleX(-1)' : undefined,
         }}
       />
@@ -60,7 +60,7 @@ export default function DuelResult({ myName, opponentName, myPnl, opponentPnl, w
           }`}>
             <p className="text-[10px] text-muted-foreground font-display tracking-wider mb-1">YOU · {myTicker}</p>
             <p className="font-display text-sm text-foreground mb-2">{myName}</p>
-            <p className={`font-mono text-2xl font-bold ${myPnl >= 0 ? 'text-neon-green' : 'text-neon-red'}`}>
+            <p className={`font-mono text-2xl font-bold ${myPnl >= 0 ? 'text-neon-green' : 'text-neon-orange'}`}>
               {myPnl >= 0 ? '+' : ''}{myPnl.toFixed(2)}%
             </p>
           </div>
@@ -72,7 +72,7 @@ export default function DuelResult({ myName, opponentName, myPnl, opponentPnl, w
           }`}>
             <p className="text-[10px] text-muted-foreground font-display tracking-wider mb-1">OPP · {opponentTicker}</p>
             <p className="font-display text-sm text-foreground mb-2">{opponentName}</p>
-            <p className={`font-mono text-2xl font-bold ${opponentPnl >= 0 ? 'text-neon-green' : 'text-neon-red'}`}>
+            <p className={`font-mono text-2xl font-bold ${opponentPnl >= 0 ? 'text-neon-green' : 'text-neon-orange'}`}>
               {opponentPnl >= 0 ? '+' : ''}{opponentPnl.toFixed(2)}%
             </p>
           </div>

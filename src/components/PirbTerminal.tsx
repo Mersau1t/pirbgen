@@ -55,9 +55,9 @@ function randInt(min: number, max: number) {
 
 const RARITY_STYLES: Record<string, { border: string; text: string; bg: string; label: string }> = {
   common: { border: 'border-muted-foreground/30', text: 'text-muted-foreground', bg: 'bg-muted/20', label: 'COMMON' },
-  rare: { border: 'border-neon-cyan/50', text: 'text-neon-cyan', bg: 'bg-neon-cyan/10', label: 'RARE' },
-  legendary: { border: 'border-neon-amber/50', text: 'text-neon-amber', bg: 'bg-neon-amber/10', label: 'LEGENDARY' },
-  degen: { border: 'border-neon-magenta/50', text: 'text-neon-magenta', bg: 'bg-neon-magenta/10', label: '☠ DEGEN ☠' },
+  rare: { border: 'border-neon-green/50', text: 'text-neon-green', bg: 'bg-neon-green/10', label: 'RARE' },
+  legendary: { border: 'border-neon-orange/50', text: 'text-neon-orange', bg: 'bg-neon-orange/10', label: 'LEGENDARY' },
+  degen: { border: 'border-neon-purple/50', text: 'text-neon-purple', bg: 'bg-neon-purple/10', label: '☠ DEGEN ☠' },
 };
 function formatVolume(v: number): string {
   if (v >= 1e9) return '$' + (v / 1e9).toFixed(1) + 'B';
@@ -85,7 +85,7 @@ const TickerMarquee = () => {
     <div className="overflow-hidden border-b-2 border-neon-purple/30 bg-background/80 py-1.5">
       <div className="animate-marquee flex whitespace-nowrap gap-10 text-[10px] font-display">
         {doubled.map((t, i) => (
-          <span key={i} className={i % 2 === 0 ? 'text-neon-orange text-glow-orange' : 'text-neon-magenta'}>
+          <span key={i} className={i % 2 === 0 ? 'text-neon-orange text-glow-orange' : 'text-neon-purple'}>
             {t}
           </span>
         ))}
@@ -97,7 +97,7 @@ const TickerMarquee = () => {
 const GlitchText = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
   <span className={`relative inline-block ${className}`}>
     <span className="relative z-10">{children}</span>
-    <span className="absolute inset-0 text-neon-magenta/50 animate-glitch z-0" aria-hidden>{children}</span>
+    <span className="absolute inset-0 text-neon-purple/50 animate-glitch z-0" aria-hidden>{children}</span>
   </span>
 );
 
@@ -350,7 +350,7 @@ export default function PirbTerminal() {
             <StreakBadge streak={streak} />
           </div>
           <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-2 text-[10px] font-display text-neon-cyan">
+            <div className="hidden sm:flex items-center gap-2 text-[10px] font-display text-neon-green">
               <span className="w-2 h-2 bg-neon-purple animate-blink" />
               <span>BASE</span>
             </div>
@@ -416,12 +416,12 @@ export default function PirbTerminal() {
                   onClick={() => generateDaily()}
                   disabled={dailyDone || allVolatile.length === 0}
                   className={`arcade-btn w-full text-[10px] py-3 ${dailyDone ? 'opacity-40 cursor-not-allowed' : ''}`}
-                  style={{ borderColor: 'hsl(var(--neon-amber))', color: 'hsl(var(--neon-amber))', background: 'hsl(50 100% 55% / 0.1)' }}
+                  style={{ borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(var(--neon-orange) / 0.1)' }}
                 >
                   {dailyDone ? '✅ DAILY DONE' : '📅 DAILY CHALLENGE (90s)'}
                 </button>
 
-                <Link to="/duel" onClick={() => playCoinSound()} className="arcade-btn w-full text-[10px] py-3 text-center block" style={{ borderColor: 'hsl(var(--neon-magenta))', color: 'hsl(var(--neon-magenta))', background: 'hsl(var(--neon-magenta) / 0.1)' }}>
+                <Link to="/duel" onClick={() => playCoinSound()} className="arcade-btn w-full text-[10px] py-3 text-center block" style={{ borderColor: 'hsl(var(--neon-purple))', color: 'hsl(var(--neon-purple))', background: 'hsl(var(--neon-purple) / 0.1)' }}>
                   ⚔️ PVP DUEL (1v1)
                 </Link>
 
@@ -439,7 +439,7 @@ export default function PirbTerminal() {
               {topVolatile.length > 0 && (
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="w-full max-w-md">
                   <div className="pixel-border bg-background/80 p-3 max-h-[280px] overflow-y-auto">
-                    <p className="font-display text-[9px] text-neon-cyan tracking-wider mb-2 text-center">📊 TOP VOLUME · TAP TO TRADE</p>
+                    <p className="font-display text-[9px] text-neon-green tracking-wider mb-2 text-center">📊 TOP VOLUME · TAP TO TRADE</p>
                     <div className="grid grid-cols-2 gap-1.5">
                       {(showAllTokens ? allVolatile : topVolatile).map((t, i) => (
                         <motion.button
@@ -451,14 +451,14 @@ export default function PirbTerminal() {
                           className="flex items-center justify-between px-2 py-1.5 rounded bg-neon-purple/5 border border-neon-purple/10 hover:bg-neon-purple/15 hover:border-neon-purple/30 transition-colors cursor-pointer text-left"
                         >
                           <span className="font-display text-[10px] text-foreground/80 tracking-wider">{t.ticker}</span>
-                          <span className="font-display text-[9px] tracking-wider text-neon-cyan/70">
+                          <span className="font-display text-[9px] tracking-wider text-neon-green/70">
                             {t.volume_24h > 0 ? formatVolume(t.volume_24h) : '—'}
                           </span>
                         </motion.button>
                       ))}
                     </div>
                     {allVolatile.length > 8 && (
-                      <button onClick={() => setShowAllTokens(!showAllTokens)} className="w-full mt-2 font-display text-[8px] text-neon-cyan/60 hover:text-neon-cyan tracking-wider transition-colors">
+                      <button onClick={() => setShowAllTokens(!showAllTokens)} className="w-full mt-2 font-display text-[8px] text-neon-green/60 hover:text-neon-green tracking-wider transition-colors">
                         {showAllTokens ? '▲ SHOW LESS' : `▼ SHOW ALL ${allVolatile.length} TOKENS`}
                       </button>
                     )}
@@ -472,7 +472,7 @@ export default function PirbTerminal() {
                 <span>PYTH ENTROPY</span>
                 <span className="text-neon-orange/40">●</span>
                 <span>PYTH NETWORK</span>
-                <span className="text-neon-cyan/40">●</span>
+                <span className="text-neon-green/40">●</span>
                 <span>BASE L2</span>
               </div>
             </motion.div>
@@ -522,7 +522,7 @@ export default function PirbTerminal() {
                       style={{
                         filter: status === 'WIN'
                           ? 'drop-shadow(0 0 20px #07e46e) drop-shadow(0 0 40px #07e46eaa)'
-                          : 'drop-shadow(0 0 20px #ef4444) drop-shadow(0 0 40px #ef4444aa)',
+                          : 'drop-shadow(0 0 20px #f97316) drop-shadow(0 0 40px #f9731688)',
                         transform: status === 'REKT' ? 'scaleX(-1)' : undefined,
                       }}
                       animate={status === 'WIN'
@@ -538,7 +538,7 @@ export default function PirbTerminal() {
                       className={`absolute -top-2 ${status === 'WIN' ? '-right-4' : '-left-4'} pixel-border px-3 py-1.5 text-[9px] sm:text-[11px] font-display tracking-wider whitespace-nowrap ${
                         status === 'WIN'
                           ? 'bg-neon-green/10 border-neon-green/40 text-neon-green'
-                          : 'bg-neon-red/10 border-neon-red/40 text-neon-red'
+                          : 'bg-neon-orange/10 border-neon-orange/40 text-neon-orange'
                       }`}
                     >
                       {status === 'WIN'
@@ -555,13 +555,13 @@ export default function PirbTerminal() {
                     </motion.div>
                   )}
 
-                  <p className={`font-display text-2xl ${status === 'WIN' ? 'text-neon-green text-glow-green animate-rainbow' : 'text-neon-red text-glow-red'}`}>
+                  <p className={`font-display text-2xl ${status === 'WIN' ? 'text-neon-green text-glow-green animate-rainbow' : 'text-neon-orange text-glow-orange'}`}>
                     {status === 'WIN' ? `🎯 TARGET HIT! +${finalPnl.toFixed(2)}%` : `💀 LIQUIDATED ${finalPnl.toFixed(2)}%`}
                   </p>
 
                   {/* Streak multiplier note */}
                   {streak.current > 1 && status === 'WIN' && (
-                    <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="font-display text-[10px] text-neon-amber tracking-wider">
+                    <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="font-display text-[10px] text-neon-orange tracking-wider">
                       🔥 STREAK BONUS: ×{getStreakMultiplier(streak.current).toFixed(1)}
                     </motion.p>
                   )}
