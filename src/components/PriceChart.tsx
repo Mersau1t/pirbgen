@@ -197,6 +197,18 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
         ctx.fillText(formatPrice(price), pad.left + chartW + 8, y);
       }
 
+      // --- CRT SCANLINES ---
+      ctx.save();
+      for (let sy = pad.top; sy < pad.top + chartH; sy += 3) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.06)';
+        ctx.fillRect(pad.left, sy, chartW, 1);
+      }
+      // CRT flicker
+      const flicker = 0.02 + 0.015 * Math.sin(t / 80);
+      ctx.fillStyle = `rgba(200, 180, 255, ${flicker})`;
+      ctx.fillRect(pad.left, pad.top, chartW, chartH);
+      ctx.restore();
+
       // --- SMOOTH PRICE LINE ---
       if (pts.length > 1) {
         // Animated glow intensity based on proximity to TP/SL
@@ -205,6 +217,27 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
         const glowAnim = glowBase + pulse * proximity * 10;
         const glowColor = positive ? '#07e46e' : '#ef4444';
         const lineGlowColor = proximity > 0.6 ? glowColor : '#8046dc';
+
+        // --- GRADIENT FILL UNDER LINE ---
+        ctx.save();
+        ctx.beginPath();
+        sharpLinePath(ctx, pts);
+        ctx.lineTo(pts[pts.length - 1].x, pad.top + chartH);
+        ctx.lineTo(pts[0].x, pad.top + chartH);
+        ctx.closePath();
+        const fillGrad = ctx.createLinearGradient(0, pad.top, 0, pad.top + chartH);
+        if (positive) {
+          fillGrad.addColorStop(0, 'rgba(7, 228, 110, 0.20)');
+          fillGrad.addColorStop(0.5, 'rgba(7, 228, 110, 0.06)');
+          fillGrad.addColorStop(1, 'rgba(7, 228, 110, 0.0)');
+        } else {
+          fillGrad.addColorStop(0, 'rgba(239, 68, 68, 0.20)');
+          fillGrad.addColorStop(0.5, 'rgba(239, 68, 68, 0.06)');
+          fillGrad.addColorStop(1, 'rgba(239, 68, 68, 0.0)');
+        }
+        ctx.fillStyle = fillGrad;
+        ctx.fill();
+        ctx.restore();
 
         // Outer glow (intensifies near TP/SL)
         ctx.save();
@@ -267,6 +300,25 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
         ctx.arc(lastPt.x, lastPt.y, 1.5, 0, Math.PI * 2);
         ctx.fillStyle = '#F5F5FF';
         ctx.fill();
+
+        // --- SPARK PARTICLES ---
+        const sparkCount = Math.floor(3 + proximity * 8);
+        ctx.save();
+        for (let sp = 0; sp < sparkCount; sp++) {
+          const angle = (t / 400 + sp * (Math.PI * 2 / sparkCount)) % (Math.PI * 2);
+          const dist = 8 + Math.sin(t / 200 + sp * 1.3) * (6 + proximity * 12);
+          const sx = lastPt.x + Math.cos(angle) * dist;
+          const sy = lastPt.y + Math.sin(angle) * dist;
+          const sparkAlpha = 0.3 + proximity * 0.5 + Math.sin(t / 150 + sp) * 0.2;
+          const sparkSize = 1 + proximity * 1.5 + Math.sin(t / 120 + sp * 2) * 0.5;
+          ctx.beginPath();
+          ctx.arc(sx, sy, Math.max(sparkSize, 0.5), 0, Math.PI * 2);
+          ctx.fillStyle = dotColor + Math.round(Math.min(sparkAlpha * 255, 255)).toString(16).padStart(2, '0');
+          ctx.shadowColor = dotColor;
+          ctx.shadowBlur = 4 + proximity * 6;
+          ctx.fill();
+        }
+        ctx.restore();
       }
 
       // --- ENTRY LINE ---
