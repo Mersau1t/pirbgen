@@ -245,16 +245,16 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
   };
 
   const handleExit = useCallback(() => {
-    if (result) return;
+    if (result || readOnly) return;
     playCoinSound();
     resultFiredRef.current = true;
     const finalResult = pnl >= 0 ? 'WIN' : 'REKT';
     setResult(finalResult);
     if (finalResult === 'WIN') playWinSound(); else playRektSound();
-    saveToLeaderboard(pnl);
+    if (!readOnly) saveToLeaderboard(pnl);
     onExitEarly(pnl);
     setTimeout(() => setShowResultAnim(true), 1500);
-  }, [pnl, result]);
+  }, [pnl, result, readOnly]);
 
   const timerPct = hasTimer ? (timeLeft / timerSeconds!) * 100 : 0;
   const timerUrgent = hasTimer && timeLeft <= 15;
