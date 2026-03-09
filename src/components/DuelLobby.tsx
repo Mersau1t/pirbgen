@@ -156,7 +156,7 @@ export default function DuelLobby({ onRoomReady }: DuelLobbyProps) {
         animate={{ opacity: 1, y: 0 }}
         className="text-center"
       >
-        <h1 className="font-display text-3xl sm:text-4xl text-neon-purple text-glow-purple tracking-wider">
+        <h1 className="font-display text-3xl sm:text-4xl text-neon-green text-glow-green tracking-wider">
           ⚔️ PVP DUEL
         </h1>
         <p className="text-muted-foreground text-sm mt-2 font-mono">
