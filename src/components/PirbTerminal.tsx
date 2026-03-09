@@ -350,7 +350,7 @@ export default function PirbTerminal() {
             <StreakBadge streak={streak} />
           </div>
           <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-2 text-[10px] font-display text-neon-cyan">
+            <div className="hidden sm:flex items-center gap-2 text-[10px] font-display text-neon-green">
               <span className="w-2 h-2 bg-neon-purple animate-blink" />
               <span>BASE</span>
             </div>
