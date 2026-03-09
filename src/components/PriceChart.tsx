@@ -267,7 +267,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
         ctx.fillRect(pad.left, sy, chartW, 1);
       }
       // CRT flicker
-      const flicker = 0.02 + 0.015 * Math.sin(t / 80);
+      const flicker = 0.015 + 0.008 * Math.sin(t / 120); // very subtle
       ctx.fillStyle = `rgba(200, 180, 255, ${flicker})`;
       ctx.fillRect(pad.left, pad.top, chartW, chartH);
       ctx.restore();
