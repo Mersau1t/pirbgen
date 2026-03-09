@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
-import { generateRoomCode, pickDuelToken, pickDuelRarity, randomInRange, DUEL_TIMER_SECONDS } from '@/lib/duelConstants';
+import { generateRoomCode, pickTwoDifferentTokens, pickDuelRarity, randomInRange, DUEL_TIMER_SECONDS } from '@/lib/duelConstants';
 import { fetchPythPriceById } from '@/lib/pyth';
 import { useWallet } from '@/contexts/WalletContext';
 
@@ -19,42 +19,70 @@ export default function DuelLobby({ onRoomReady }: DuelLobbyProps) {
 
   const playerName = profile?.display_name || 'Anonymous';
 
+  // Generate position params for a player
+  const generatePositionParams = () => {
+    const rarity = pickDuelRarity();
+    const leverage = randomInRange(rarity.leverageRange[0], rarity.leverageRange[1]);
+    const sl = -randomInRange(rarity.slRange[0], rarity.slRange[1]);
+    const rr = randomInRange(rarity.rrRange[0], rarity.rrRange[1]);
+    const tp = Math.abs(sl) * rr;
+    const direction = Math.random() > 0.5 ? 'LONG' : 'SHORT';
+    return { rarity: rarity.rarity, leverage, sl, tp, direction };
+  };
+
   // Create room
   const handleCreate = async () => {
     setMode('creating');
     setError('');
-    
-    try {
-      // Pick random token and generate position
-      const token = pickDuelToken();
-      const price = await fetchPythPriceById(token.feedId);
-      if (!price) throw new Error('Failed to fetch price');
 
-      const rarity = pickDuelRarity();
-      const leverage = randomInRange(rarity.leverageRange[0], rarity.leverageRange[1]);
-      const sl = -randomInRange(rarity.slRange[0], rarity.slRange[1]);
-      const rr = randomInRange(rarity.rrRange[0], rarity.rrRange[1]);
-      const tp = Math.abs(sl) * rr;
-      const direction = Math.random() > 0.5 ? 'LONG' : 'SHORT';
+    try {
+      const { p1Token, p2Token } = pickTwoDifferentTokens();
+      const p1Price = await fetchPythPriceById(p1Token.feedId);
+      if (!p1Price) throw new Error('Failed to fetch price');
+      
+      const p2Price = await fetchPythPriceById(p2Token.feedId);
+      if (!p2Price) throw new Error('Failed to fetch P2 price');
+
+      const p1Params = generatePositionParams();
+      const p2Params = generatePositionParams();
       const code = generateRoomCode();
 
       const { data, error: dbErr } = await supabase.from('duel_rooms').insert({
         room_code: code,
-        ticker: token.ticker,
-        feed_id: token.feedId,
-        direction,
-        leverage,
-        stop_loss: sl,
-        take_profit: tp,
-        rarity: rarity.rarity,
-        entry_price: price,
+        // Legacy shared fields (keep for compat)
+        ticker: p1Token.ticker,
+        feed_id: p1Token.feedId,
+        direction: p1Params.direction,
+        leverage: p1Params.leverage,
+        stop_loss: p1Params.sl,
+        take_profit: p1Params.tp,
+        rarity: p1Params.rarity,
+        entry_price: p1Price,
+        // P1 specific
+        p1_ticker: p1Token.ticker,
+        p1_feed_id: p1Token.feedId,
+        p1_direction: p1Params.direction,
+        p1_leverage: p1Params.leverage,
+        p1_stop_loss: p1Params.sl,
+        p1_take_profit: p1Params.tp,
+        p1_rarity: p1Params.rarity,
+        p1_entry_price: p1Price,
         p1_name: playerName,
         p1_wallet: walletAddress || null,
+        // P2 specific
+        p2_ticker: p2Token.ticker,
+        p2_feed_id: p2Token.feedId,
+        p2_direction: p2Params.direction,
+        p2_leverage: p2Params.leverage,
+        p2_stop_loss: p2Params.sl,
+        p2_take_profit: p2Params.tp,
+        p2_rarity: p2Params.rarity,
+        p2_entry_price: p2Price,
         timer_seconds: DUEL_TIMER_SECONDS,
-      }).select('id').single();
+      } as any).select('id').single();
 
       if (dbErr) throw dbErr;
-      
+
       setRoomCode(code);
       setRoomId(data.id);
       setMode('waiting');
@@ -88,7 +116,7 @@ export default function DuelLobby({ onRoomReady }: DuelLobbyProps) {
           p2_wallet: walletAddress || null,
           status: 'playing',
           started_at: new Date().toISOString(),
-        })
+        } as any)
         .eq('id', room.id);
 
       if (joinErr) throw joinErr;

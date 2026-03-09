@@ -8,18 +8,18 @@ interface DuelResultProps {
   opponentPnl: number;
   winner: 'p1' | 'p2' | 'draw';
   playerSlot: 'p1' | 'p2';
-  ticker: string;
+  myTicker: string;
+  opponentTicker: string;
   onPlayAgain: () => void;
   onHome: () => void;
 }
 
-export default function DuelResult({ myName, opponentName, myPnl, opponentPnl, winner, playerSlot, ticker, onPlayAgain, onHome }: DuelResultProps) {
+export default function DuelResult({ myName, opponentName, myPnl, opponentPnl, winner, playerSlot, myTicker, opponentTicker, onPlayAgain, onHome }: DuelResultProps) {
   const iWon = winner === playerSlot;
   const isDraw = winner === 'draw';
 
   return (
     <div className="flex flex-col items-center justify-center flex-1 gap-6 p-4">
-      {/* Result title */}
       <motion.div
         initial={{ scale: 0.5, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -27,21 +27,14 @@ export default function DuelResult({ myName, opponentName, myPnl, opponentPnl, w
         className="text-center"
       >
         {isDraw ? (
-          <h1 className="font-display text-3xl text-neon-orange text-glow-orange tracking-wider">
-            🤝 DRAW!
-          </h1>
+          <h1 className="font-display text-3xl text-neon-orange text-glow-orange tracking-wider">🤝 DRAW!</h1>
         ) : iWon ? (
-          <h1 className="font-display text-3xl text-neon-green text-glow-green tracking-wider animate-rainbow">
-            🏆 YOU WIN!
-          </h1>
+          <h1 className="font-display text-3xl text-neon-green text-glow-green tracking-wider animate-rainbow">🏆 YOU WIN!</h1>
         ) : (
-          <h1 className="font-display text-3xl text-neon-red text-glow-red tracking-wider">
-            💀 YOU LOSE!
-          </h1>
+          <h1 className="font-display text-3xl text-neon-red text-glow-red tracking-wider">💀 YOU LOSE!</h1>
         )}
       </motion.div>
 
-      {/* Mascot */}
       <motion.img
         src={pirbMascot}
         alt="Pirb"
@@ -50,16 +43,11 @@ export default function DuelResult({ myName, opponentName, myPnl, opponentPnl, w
         animate={{ x: 0, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 120, damping: 12, delay: 0.2 }}
         style={{
-          filter: iWon
-            ? 'drop-shadow(0 0 20px #07e46e)'
-            : isDraw
-              ? 'drop-shadow(0 0 20px #f97316)'
-              : 'drop-shadow(0 0 20px #ef4444)',
+          filter: iWon ? 'drop-shadow(0 0 20px #07e46e)' : isDraw ? 'drop-shadow(0 0 20px #f97316)' : 'drop-shadow(0 0 20px #ef4444)',
           transform: !iWon && !isDraw ? 'scaleX(-1)' : undefined,
         }}
       />
 
-      {/* Score comparison */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -67,28 +55,22 @@ export default function DuelResult({ myName, opponentName, myPnl, opponentPnl, w
         className="glass-panel rounded-sm p-6 w-full max-w-md"
       >
         <div className="flex items-center justify-between gap-4">
-          {/* Player 1 (me) */}
           <div className={`flex-1 text-center p-4 rounded-sm border ${
             iWon ? 'border-neon-green/40 bg-neon-green/5' : isDraw ? 'border-neon-orange/40 bg-neon-orange/5' : 'border-border/20'
           }`}>
-            <p className="text-[10px] text-muted-foreground font-display tracking-wider mb-1">YOU</p>
+            <p className="text-[10px] text-muted-foreground font-display tracking-wider mb-1">YOU · {myTicker}</p>
             <p className="font-display text-sm text-foreground mb-2">{myName}</p>
             <p className={`font-mono text-2xl font-bold ${myPnl >= 0 ? 'text-neon-green' : 'text-neon-red'}`}>
               {myPnl >= 0 ? '+' : ''}{myPnl.toFixed(2)}%
             </p>
           </div>
 
-          {/* VS */}
-          <div className="flex flex-col items-center gap-1">
-            <span className="font-display text-lg text-muted-foreground">VS</span>
-            <span className="text-[9px] font-mono text-muted-foreground/50">{ticker}</span>
-          </div>
+          <span className="font-display text-lg text-muted-foreground">VS</span>
 
-          {/* Player 2 (opponent) */}
           <div className={`flex-1 text-center p-4 rounded-sm border ${
             !iWon && !isDraw ? 'border-neon-green/40 bg-neon-green/5' : isDraw ? 'border-neon-orange/40 bg-neon-orange/5' : 'border-border/20'
           }`}>
-            <p className="text-[10px] text-muted-foreground font-display tracking-wider mb-1">OPPONENT</p>
+            <p className="text-[10px] text-muted-foreground font-display tracking-wider mb-1">OPP · {opponentTicker}</p>
             <p className="font-display text-sm text-foreground mb-2">{opponentName}</p>
             <p className={`font-mono text-2xl font-bold ${opponentPnl >= 0 ? 'text-neon-green' : 'text-neon-red'}`}>
               {opponentPnl >= 0 ? '+' : ''}{opponentPnl.toFixed(2)}%
@@ -97,19 +79,14 @@ export default function DuelResult({ myName, opponentName, myPnl, opponentPnl, w
         </div>
       </motion.div>
 
-      {/* Actions */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.8 }}
         className="flex gap-4"
       >
-        <button onClick={onPlayAgain} className="arcade-btn arcade-btn-primary text-[10px] py-3 px-6">
-          ⚔️ REMATCH
-        </button>
-        <button onClick={onHome} className="arcade-btn text-[10px] py-3 px-6">
-          🏠 HOME
-        </button>
+        <button onClick={onPlayAgain} className="arcade-btn arcade-btn-primary text-[10px] py-3 px-6">⚔️ REMATCH</button>
+        <button onClick={onHome} className="arcade-btn text-[10px] py-3 px-6">🏠 HOME</button>
       </motion.div>
     </div>
   );

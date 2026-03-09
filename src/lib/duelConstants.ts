@@ -25,6 +25,12 @@ export function pickDuelToken() {
   return DUEL_TOKENS[Math.floor(Math.random() * DUEL_TOKENS.length)];
 }
 
+/** Pick two DIFFERENT random tokens for PvP */
+export function pickTwoDifferentTokens() {
+  const shuffled = [...DUEL_TOKENS].sort(() => Math.random() - 0.5);
+  return { p1Token: shuffled[0], p2Token: shuffled[1] };
+}
+
 /** Generate a 6-character room code */
 export function generateRoomCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no confusing chars

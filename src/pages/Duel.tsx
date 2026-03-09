@@ -13,7 +13,8 @@ interface DuelRoomResult {
   p1_pnl: number;
   p2_pnl: number;
   winner: string | null;
-  ticker: string;
+  p1_ticker: string;
+  p2_ticker: string;
 }
 
 export default function Duel() {
@@ -35,7 +36,8 @@ export default function Duel() {
       p1_pnl: room.p1_pnl,
       p2_pnl: room.p2_pnl,
       winner: room.winner,
-      ticker: room.ticker,
+      p1_ticker: room.p1_ticker || room.ticker || '',
+      p2_ticker: room.p2_ticker || room.ticker || '',
     });
     setState('result');
   };
@@ -47,7 +49,7 @@ export default function Duel() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col overflow-hidden">
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
       {/* Header */}
       <header className="shrink-0 border-b border-border/20 px-4 py-2 flex items-center justify-between">
         <Link to="/" className="font-display text-sm text-muted-foreground hover:text-neon-purple transition-colors">
@@ -80,7 +82,8 @@ export default function Duel() {
                 opponentPnl={playerSlot === 'p1' ? result.p2_pnl : result.p1_pnl}
                 winner={(result.winner || 'draw') as 'p1' | 'p2' | 'draw'}
                 playerSlot={playerSlot}
-                ticker={result.ticker}
+                myTicker={playerSlot === 'p1' ? result.p1_ticker : result.p2_ticker}
+                opponentTicker={playerSlot === 'p1' ? result.p2_ticker : result.p1_ticker}
                 onPlayAgain={handleRematch}
                 onHome={() => window.location.href = '/'}
               />

@@ -6,36 +6,14 @@ import { type Candle } from '@/components/PriceChart';
 import { fetchHistoricalCandles } from '@/lib/pyth';
 import { DUEL_TIMER_SECONDS } from '@/lib/duelConstants';
 
-interface DuelRoom {
-  id: string;
-  room_code: string;
-  ticker: string;
-  feed_id: string;
-  direction: string;
-  leverage: number;
-  stop_loss: number;
-  take_profit: number;
-  rarity: string;
-  entry_price: number;
-  p1_name: string;
-  p2_name: string;
-  p1_pnl: number;
-  p2_pnl: number;
-  p1_closed: boolean;
-  p2_closed: boolean;
-  status: string;
-  winner: string | null;
-  started_at: string;
-}
-
 interface DuelArenaProps {
   roomId: string;
   playerSlot: 'p1' | 'p2';
-  onFinished: (room: DuelRoom) => void;
+  onFinished: (room: any) => void;
 }
 
 export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaProps) {
-  const [room, setRoom] = useState<DuelRoom | null>(null);
+  const [room, setRoom] = useState<any>(null);
   const [position, setPosition] = useState<DegenPosition | null>(null);
   const [initialCandles, setInitialCandles] = useState<Candle[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,8 +24,10 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
   const lastSyncedPnl = useRef(0);
 
   const opponentSlot = playerSlot === 'p1' ? 'p2' : 'p1';
-  const myName = playerSlot === 'p1' ? room?.p1_name : room?.p2_name;
-  const opponentName = playerSlot === 'p1' ? room?.p2_name : room?.p1_name;
+  const myName = room ? room[`${playerSlot}_name`] : '';
+  const opponentName = room ? room[`${opponentSlot}_name`] : '???';
+  const myTicker = room ? (room[`${playerSlot}_ticker`] || room.ticker) : '';
+  const opponentTicker = room ? (room[`${opponentSlot}_ticker`] || room.ticker) : '';
 
   // Load room data
   useEffect(() => {
@@ -59,34 +39,42 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
         .single();
 
       if (!data) return;
-      const r = data as unknown as DuelRoom;
+      const r = data as any;
       setRoom(r);
+
+      // Use per-player fields
+      const ticker = r[`${playerSlot}_ticker`] || r.ticker;
+      const feedId = r[`${playerSlot}_feed_id`] || r.feed_id;
+      const direction = r[`${playerSlot}_direction`] || r.direction;
+      const leverage = r[`${playerSlot}_leverage`] || r.leverage;
+      const stopLoss = r[`${playerSlot}_stop_loss`] || r.stop_loss;
+      const takeProfit = r[`${playerSlot}_take_profit`] || r.take_profit;
+      const rarity = r[`${playerSlot}_rarity`] || r.rarity;
 
       const pos: DegenPosition = {
         id: Date.now(),
-        asset: r.ticker,
-        ticker: r.ticker,
-        feedId: r.feed_id,
-        direction: r.direction as 'LONG' | 'SHORT',
-        leverage: r.leverage,
-        stopLoss: r.stop_loss,
-        takeProfit: r.take_profit,
-        rarity: r.rarity as any,
+        asset: ticker,
+        ticker,
+        feedId,
+        direction: direction as 'LONG' | 'SHORT',
+        leverage,
+        stopLoss,
+        takeProfit,
+        rarity: rarity as any,
       };
       setPosition(pos);
 
-      // Load historical candles
       let candles: Candle[] = [];
       try {
-        candles = await fetchHistoricalCandles(r.feed_id, 10, 5);
+        candles = await fetchHistoricalCandles(feedId, 10, 5);
       } catch {}
       setInitialCandles(candles);
       setLoading(false);
     };
     load();
-  }, [roomId]);
+  }, [roomId, playerSlot]);
 
-  // Subscribe to opponent PnL updates via Realtime
+  // Subscribe to opponent PnL updates
   useEffect(() => {
     if (!room) return;
 
@@ -104,12 +92,12 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
         setOpponentPnl(oppPnl || 0);
 
         if (updated.status === 'finished') {
-          setRoom(prev => prev ? { ...prev, ...updated } : prev);
+          setRoom((prev: any) => prev ? { ...prev, ...updated } : prev);
           setFinished(true);
         }
 
         if (oppClosed) {
-          setRoom(prev => prev ? { ...prev, [`${opponentSlot}_closed`]: true, [`${opponentSlot}_pnl`]: oppPnl } : prev);
+          setRoom((prev: any) => prev ? { ...prev, [`${opponentSlot}_closed`]: true, [`${opponentSlot}_pnl`]: oppPnl } : prev);
         }
       })
       .subscribe();
@@ -126,7 +114,7 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
         lastSyncedPnl.current = myPnl;
         await supabase
           .from('duel_rooms')
-          .update({ [`${playerSlot}_pnl`]: Number(myPnl.toFixed(2)) })
+          .update({ [`${playerSlot}_pnl`]: Number(myPnl.toFixed(2)) } as any)
           .eq('id', roomId);
       }
     }, 2000);
@@ -143,11 +131,11 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
         [`${playerSlot}_pnl`]: Number(pnl.toFixed(2)),
         [`${playerSlot}_closed`]: true,
         [`${playerSlot}_closed_at`]: new Date().toISOString(),
-      })
+      } as any)
       .eq('id', roomId);
   }, [playerSlot, roomId]);
 
-  // Handle early exit (close button or timer)
+  // Handle early exit
   const handleExitEarly = useCallback(async (pnl: number) => {
     setMyPnl(pnl);
     await supabase
@@ -156,25 +144,26 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
         [`${playerSlot}_pnl`]: Number(pnl.toFixed(2)),
         [`${playerSlot}_closed`]: true,
         [`${playerSlot}_closed_at`]: new Date().toISOString(),
-      })
+      } as any)
       .eq('id', roomId);
 
-    // Check if both closed → finish
     const { data: latest } = await supabase.from('duel_rooms').select('*').eq('id', roomId).single();
     if (latest) {
       const r = latest as any;
       if (r.p1_closed && r.p2_closed) {
         const winner = r.p1_pnl > r.p2_pnl ? 'p1' : r.p2_pnl > r.p1_pnl ? 'p2' : 'draw';
-        await supabase.from('duel_rooms').update({ status: 'finished', winner }).eq('id', roomId);
+        await supabase.from('duel_rooms').update({ status: 'finished', winner } as any).eq('id', roomId);
       }
     }
   }, [playerSlot, roomId]);
 
-  // When timer expires and both are done, determine winner
+  // When finished, notify parent
   useEffect(() => {
     if (!finished || !room) return;
     onFinished(room);
   }, [finished, room]);
+
+  const entryPrice = room ? (room[`${playerSlot}_entry_price`] || room.entry_price) : 0;
 
   if (loading || !position || !room) {
     return (
@@ -192,27 +181,26 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
 
   return (
     <div className="flex flex-col flex-1 min-h-0 gap-1">
-      {/* Duel header */}
-      <div className="glass-panel rounded-sm px-4 py-2 shrink-0">
+      {/* Duel header with PnL scoreboard */}
+      <div className="glass-panel rounded-sm px-3 py-1.5 shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="font-display text-lg text-neon-purple text-glow-purple">⚔️ DUEL</span>
+            <span className="font-display text-base text-neon-purple text-glow-purple">⚔️ DUEL</span>
             <span className="text-[10px] font-mono text-muted-foreground">{room.room_code}</span>
           </div>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4">
             {/* My PnL */}
             <div className="text-center">
-              <p className="text-[8px] text-muted-foreground/60 uppercase">YOU ({myName})</p>
-              <p className={`font-mono text-lg font-bold ${myPnl >= 0 ? 'text-neon-green' : 'text-neon-red'}`}>
+              <p className="text-[8px] text-muted-foreground/60 uppercase">YOU · {myTicker}</p>
+              <p className={`font-mono text-base font-bold ${myPnl >= 0 ? 'text-neon-green' : 'text-neon-red'}`}>
                 {myPnl >= 0 ? '+' : ''}{myPnl.toFixed(2)}%
               </p>
             </div>
-            {/* VS */}
-            <span className="font-display text-xl text-neon-orange text-glow-orange">VS</span>
+            <span className="font-display text-lg text-neon-orange text-glow-orange">VS</span>
             {/* Opponent PnL */}
             <div className="text-center">
-              <p className="text-[8px] text-muted-foreground/60 uppercase">{opponentName || '???'}</p>
-              <p className={`font-mono text-lg font-bold ${opponentPnl >= 0 ? 'text-neon-green' : 'text-neon-red'}`}>
+              <p className="text-[8px] text-muted-foreground/60 uppercase">{opponentName} · {opponentTicker}</p>
+              <p className={`font-mono text-base font-bold ${opponentPnl >= 0 ? 'text-neon-green' : 'text-neon-red'}`}>
                 {opponentPnl >= 0 ? '+' : ''}{opponentPnl.toFixed(2)}%
               </p>
             </div>
@@ -224,7 +212,7 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
       <div className="flex-1 min-h-0">
         <LiveTradePanel
           position={position}
-          entryPrice={room.entry_price}
+          entryPrice={entryPrice}
           initialCandles={initialCandles}
           onResult={handleResult}
           onExitEarly={handleExitEarly}
