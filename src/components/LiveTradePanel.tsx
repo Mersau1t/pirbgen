@@ -271,7 +271,7 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
             <span className={`px-1.5 py-0.5 text-[9px] font-display tracking-wider ${
               position.direction === 'LONG'
                 ? 'bg-neon-green/10 text-neon-green border border-neon-green/30'
-                : 'bg-neon-red/10 text-neon-red border border-neon-red/30'
+                : 'bg-neon-orange/10 text-neon-orange border border-neon-orange/30'
             }`}>
               {position.direction}
             </span>
