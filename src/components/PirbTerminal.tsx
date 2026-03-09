@@ -97,7 +97,7 @@ const TickerMarquee = () => {
 const GlitchText = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
   <span className={`relative inline-block ${className}`}>
     <span className="relative z-10">{children}</span>
-    <span className="absolute inset-0 text-neon-magenta/50 animate-glitch z-0" aria-hidden>{children}</span>
+    <span className="absolute inset-0 text-neon-purple/50 animate-glitch z-0" aria-hidden>{children}</span>
   </span>
 );
 
