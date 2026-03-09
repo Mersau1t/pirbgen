@@ -27,11 +27,11 @@ export default function DuelResult({ myName, opponentName, myPnl, opponentPnl, w
         className="text-center"
       >
         {isDraw ? (
-          <h1 className="font-display text-3xl text-neon-orange text-glow-orange tracking-wider">🤝 DRAW!</h1>
+          <h1 className="font-display text-5xl sm:text-6xl text-neon-orange text-glow-orange tracking-wider">🤝 DRAW!</h1>
         ) : iWon ? (
-          <h1 className="font-display text-3xl text-neon-green text-glow-green tracking-wider animate-rainbow">🏆 YOU WIN!</h1>
+          <h1 className="font-display text-5xl sm:text-6xl text-neon-green text-glow-green tracking-wider animate-rainbow">🏆 YOU WIN!</h1>
         ) : (
-          <h1 className="font-display text-3xl text-neon-orange text-glow-orange tracking-wider">💀 YOU LOSE!</h1>
+          <h1 className="font-display text-5xl sm:text-6xl text-neon-orange text-glow-orange tracking-wider">💀 PIRBED!</h1>
         )}
       </motion.div>
 
