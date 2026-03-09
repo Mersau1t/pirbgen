@@ -246,87 +246,61 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
               <p className="text-[8px] text-muted-foreground/60 uppercase">YOU · {myPosition.ticker}</p>
               <p className={`font-mono text-sm font-bold ${myPnl >= 0 ? 'text-neon-green' : 'text-neon-red'}`}>
                 {myPnl >= 0 ? '+' : ''}{myPnl.toFixed(2)}%
-                {myClosed && <span className="text-[7px] ml-1 text-neon-red">CLOSED</span>}
+                {myClosed && <span className="text-[7px] ml-1 text-neon-purple">LOCKED</span>}
               </p>
             </div>
             <span className="font-display text-base text-neon-orange text-glow-orange">VS</span>
             <div className="text-center">
               <p className="text-[8px] text-muted-foreground/60 uppercase">{opponentName} · {oppPosition.ticker}</p>
-              <p className={`font-mono text-sm font-bold ${oppPnl >= 0 ? 'text-neon-green' : 'text-neon-red'}`}>
-                {oppPnl >= 0 ? '+' : ''}{oppPnl.toFixed(2)}%
-                {opponentClosed && <span className="text-[7px] ml-1 text-neon-red">CLOSED</span>}
+              <p className="font-mono text-sm font-bold text-muted-foreground">
+                {opponentClosed
+                  ? <span className="text-neon-red">⛔ CLOSED</span>
+                  : <span className="animate-pulse">🎲 ???</span>
+                }
               </p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Split screen: identical panels */}
-      <div className="flex flex-1 min-h-0 gap-1">
-        {/* My panel */}
-        <div className="flex-1 min-h-0 min-w-0 flex flex-col relative">
-          <LiveTradePanel
-            position={myPosition}
-            entryPrice={myEntryPrice}
-            initialCandles={myCandles}
-            onResult={handleResult}
-            onExitEarly={handleExitEarly}
-            playerName={myName}
-            walletAddress={null}
-            timerSeconds={DUEL_TIMER_SECONDS}
-            duelMode
-            compact
-            onPnlChange={handleMyPnlChange}
-            label="YOU"
-          />
-          {myClosed && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="absolute inset-0 bg-background/60 backdrop-blur-sm flex items-center justify-center z-10 rounded-sm"
-            >
-              <div className="text-center">
-                <p className="font-display text-lg text-neon-purple text-glow-purple tracking-wider">✅ LOCKED IN</p>
-                <p className={`font-mono text-2xl font-bold mt-1 ${myPnl >= 0 ? 'text-neon-green' : 'text-neon-red'}`}>
-                  {myPnl >= 0 ? '+' : ''}{myPnl.toFixed(2)}%
-                </p>
-              </div>
-            </motion.div>
-          )}
-        </div>
-
-        {/* Opponent panel - identical LiveTradePanel but read-only */}
-        <div className="flex-1 min-h-0 min-w-0 flex flex-col relative">
-          <LiveTradePanel
-            position={oppPosition}
-            entryPrice={oppEntryPrice}
-            initialCandles={oppCandles}
-            onResult={() => {}}
-            onExitEarly={() => {}}
-            playerName={opponentName}
-            walletAddress={null}
-            timerSeconds={DUEL_TIMER_SECONDS}
-            duelMode
-            compact
-            readOnly
-            onPnlChange={handleOppPnlChange}
-            label={opponentName}
-          />
-          {opponentClosed && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="absolute inset-0 bg-background/60 backdrop-blur-sm flex items-center justify-center z-10 rounded-sm"
-            >
-              <div className="text-center">
-                <p className="font-display text-lg text-neon-red text-glow-red tracking-wider">⛔ POSITION CLOSED</p>
-                <p className={`font-mono text-2xl font-bold mt-1 ${oppPnl >= 0 ? 'text-neon-green' : 'text-neon-red'}`}>
-                  {oppPnl >= 0 ? '+' : ''}{oppPnl.toFixed(2)}%
-                </p>
-              </div>
-            </motion.div>
-          )}
-        </div>
+      {/* Full-width: only your chart */}
+      <div className="flex-1 min-h-0 flex flex-col relative">
+        <LiveTradePanel
+          position={myPosition}
+          entryPrice={myEntryPrice}
+          initialCandles={myCandles}
+          onResult={handleResult}
+          onExitEarly={handleExitEarly}
+          playerName={myName}
+          walletAddress={null}
+          timerSeconds={DUEL_TIMER_SECONDS}
+          duelMode
+          onPnlChange={handleMyPnlChange}
+          label="YOU"
+        />
+        {myClosed && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="absolute inset-0 bg-background/60 backdrop-blur-sm flex items-center justify-center z-10 rounded-sm"
+          >
+            <div className="text-center space-y-2">
+              <p className="font-display text-lg text-neon-purple text-glow-purple tracking-wider">✅ LOCKED IN</p>
+              <p className={`font-mono text-2xl font-bold ${myPnl >= 0 ? 'text-neon-green' : 'text-neon-red'}`}>
+                {myPnl >= 0 ? '+' : ''}{myPnl.toFixed(2)}%
+              </p>
+              {!opponentClosed && (
+                <motion.p
+                  animate={{ opacity: [0.4, 1, 0.4] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                  className="font-display text-xs text-neon-orange tracking-wider mt-2"
+                >
+                  ⏳ WAITING FOR OPPONENT...
+                </motion.p>
+              )}
+            </div>
+          </motion.div>
+        )}
       </div>
     </div>
   );
