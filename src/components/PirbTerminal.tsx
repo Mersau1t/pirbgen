@@ -5,6 +5,7 @@ import pirbMascot from '@/assets/pirb-mascot.png';
 import { playGenerateClick, playCoinSound, startBgMusic, stopBgMusic, isBgMusicPlaying } from '@/lib/sounds';
 import { type Candle } from '@/components/PriceChart';
 import { pickVolatileFeed, fetchHistoricalCandles, fetchPythPriceById, getTopVolatileTokens, fetchAllPythFeeds } from '@/lib/pyth';
+import { SOLO_TOKENS, pickSoloToken } from '@/lib/soloTokens';
 import { supabase } from '@/integrations/supabase/client';
 import { useWallet } from '@/contexts/WalletContext';
 import { getAvatarEmoji } from '@/pages/Profile';
