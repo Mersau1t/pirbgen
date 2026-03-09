@@ -522,9 +522,10 @@ export default function PirbTerminal() {
                 <p className="font-display text-[8px] text-neon-orange animate-blink tracking-widest">REQUESTING ENTROPY</p>
               </div>
               <div className="flex gap-1.5">
-                {[0, 1, 2, 3, 4].map(i => (
-                  <motion.div key={i} className="w-3 h-8 bg-neon-purple" animate={{ scaleY: [0.3, 1, 0.3] }} transition={{ duration: 0.5, repeat: Infinity, delay: i * 0.1 }} />
-                ))}
+                {[0, 1, 2, 3, 4].map(i => {
+                  const barColor = i % 3 === 0 ? 'bg-neon-purple' : i % 3 === 1 ? 'bg-neon-orange' : 'bg-neon-green';
+                  return <motion.div key={i} className={`w-3 h-8 ${barColor}`} animate={{ scaleY: [0.3, 1, 0.3] }} transition={{ duration: 0.5, repeat: Infinity, delay: i * 0.1 }} />;
+                })}
               </div>
             </motion.div>
           )}
