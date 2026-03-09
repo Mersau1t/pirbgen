@@ -97,8 +97,14 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       ? entryPrice * (1 + tpPriceChange)
       : entryPrice * (1 - tpPriceChange);
 
-    const lowerPrice = Math.min(slPrice, tpPrice);
-    const upperPrice = Math.max(slPrice, tpPrice);
+    // Include the latest tick/candle extremes in the visible range so SL/TP crossings don't clip
+    const last = candles[candles.length - 1];
+    const lastClose = last?.close ?? entryPrice;
+    const lastLow = last?.low ?? lastClose;
+    const lastHigh = last?.high ?? lastClose;
+
+    const lowerPrice = Math.min(slPrice, tpPrice, lastLow, lastClose);
+    const upperPrice = Math.max(slPrice, tpPrice, lastHigh, lastClose);
     const boundaryRange = upperPrice - lowerPrice;
     const pricePad = boundaryRange * 0.08;
     const min = lowerPrice - pricePad;

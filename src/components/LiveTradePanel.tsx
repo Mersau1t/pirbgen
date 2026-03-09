@@ -74,8 +74,25 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
   const [showResultAnim, setShowResultAnim] = useState(false);
   const candleRef = useRef<{ ticks: PythPriceTick[] }>({ ticks: [] });
   const resultFiredRef = useRef(false);
+  const terminalTickAddedRef = useRef(false);
 
-  const hasTimer = !!timerSeconds && timerSeconds > 0;
+  const appendTerminalCandle = useCallback((price: number) => {
+    if (terminalTickAddedRef.current) return;
+    terminalTickAddedRef.current = true;
+
+    setCandles(prev => {
+      const lastLiveTime = [...prev].reverse().find(c => c.time >= 0)?.time ?? 0;
+      const terminal: Candle = {
+        open: price,
+        high: price,
+        low: price,
+        close: price,
+        time: lastLiveTime + 1,
+      };
+      return [...prev.slice(-27), terminal];
+    });
+  }, []);
+
   const rarityStyle = RARITY_STYLES[position.rarity];
 
   // Pyth streaming
