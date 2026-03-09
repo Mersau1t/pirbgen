@@ -97,7 +97,7 @@ export default function Leaderboard() {
             <h1 className="font-display text-2xl sm:text-3xl tracking-wider text-neon-orange text-glow-orange">
               🏆 HIGH SCORES
             </h1>
-            <p className="font-display text-[8px] text-neon-green text-glow-green tracking-[0.2em]">
+            <p className="font-display text-[8px] text-neon-purple text-glow-purple tracking-[0.2em]">
               TOP DEGENS RANKED BY PNL
             </p>
           </div>

@@ -229,9 +229,9 @@ export default function Profile() {
           </div>
 
           {/* Trade History */}
-          <div className="pixel-border-green flex flex-col min-h-0 flex-1 bg-background/90">
-            <div className="px-4 py-2 border-b-2 border-neon-green/20 bg-neon-green/5 shrink-0">
-              <h3 className="font-display text-[10px] tracking-[0.2em] text-neon-green text-glow-green uppercase">📜 TRADE HISTORY</h3>
+          <div className="pixel-border flex flex-col min-h-0 flex-1 bg-background/90">
+            <div className="px-4 py-2 border-b-2 border-neon-purple/20 bg-neon-purple/5 shrink-0">
+              <h3 className="font-display text-[10px] tracking-[0.2em] text-neon-purple text-glow-purple uppercase">📜 TRADE HISTORY</h3>
             </div>
 
             {loading ? (
