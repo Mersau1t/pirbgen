@@ -120,16 +120,25 @@ const MARQUEE_LINES = [
   "PIRB: *PIRB documents ur demise for the archives* 📂",
 ];
 
+const MarqueeStrip = ({ ariaHidden }: { ariaHidden?: boolean }) => (
+  <div
+    className="flex whitespace-nowrap gap-10 pr-10 text-[10px] font-display"
+    aria-hidden={ariaHidden}
+  >
+    {MARQUEE_LINES.map((t, i) => (
+      <span key={i} className={i % 2 === 0 ? 'text-neon-orange text-glow-orange' : 'text-neon-purple'}>
+        {t}
+      </span>
+    ))}
+  </div>
+);
+
 const TickerMarquee = () => {
-  const doubled = [...MARQUEE_LINES, ...MARQUEE_LINES];
   return (
     <div className="overflow-hidden border-b-2 border-neon-purple/30 bg-background/80 py-1.5">
-      <div className="animate-marquee flex whitespace-nowrap gap-10 text-[10px] font-display">
-        {doubled.map((t, i) => (
-          <span key={i} className={i % 2 === 0 ? 'text-neon-orange text-glow-orange' : 'text-neon-purple'}>
-            {t}
-          </span>
-        ))}
+      <div className="animate-marquee flex w-max">
+        <MarqueeStrip />
+        <MarqueeStrip ariaHidden />
       </div>
     </div>
   );
@@ -365,7 +374,7 @@ export default function PirbTerminal() {
   const rarityStyle = activePos ? RARITY_STYLES[activePos.rarity] : RARITY_STYLES.common;
 
   return (
-    <div className="h-screen bg-background grid-bg scanlines crt-vignette relative overflow-hidden animate-flicker flex flex-col">
+    <div className="h-screen bg-background grid-bg scanlines crt-vignette relative overflow-hidden flex flex-col">
       {/* Particles on IDLE */}
       {status === 'IDLE' && (
         <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
@@ -421,7 +430,7 @@ export default function PirbTerminal() {
       {/* Main content */}
       <main className={`relative z-10 mx-auto px-4 py-2 flex-1 min-h-0 overflow-hidden flex flex-col ${(status === 'PLAYING' || status === 'WIN' || status === 'REKT') ? 'max-w-7xl' : 'max-w-4xl'}`}>
         <div className="flex-1 min-h-0 flex flex-col">
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="sync">
           {status === 'IDLE' && (
             <motion.div
               key="idle"
