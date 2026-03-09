@@ -71,14 +71,16 @@ const TickerMarquee = () => {
   const lines = [
     "PIRB: ur gonna get rekt so hard 💀",
     "PIRB: *aggressively poops on ur portfolio* 💩",
-    "PIRB: imagine losing money to a pigeon lmao 🐦",
-    "PIRB: ngmi energy detected 📡",
-    "PIRB: this is called getting PIRBED",
-    "PIRB: ur the exit liquidity, anon",
-    "PIRB: wen lambo? never for u 😂",
-    "PIRB: my grandma trades better",
+    "PIRB: ngmi energy detected fr fr 📡",
+    "PIRB: this is called getting PIRBED bestie",
+    "PIRB: ur the exit liquidity no cap",
+    "PIRB: wen lambo? never for u kek 😂",
+    "PIRB: cope harder anon",
     "PIRB: skill issue tbh",
-    "PIRB: *pecks your liquidation button*",
+    "PIRB: *PIRB pecks ur liquidation button*",
+    "PIRB: ratio + L + PIRBED",
+    "PIRB: touch grass after this L",
+    "PIRB: sheeeesh that entry was mid",
   ];
   const doubled = [...lines, ...lines];
   return (
