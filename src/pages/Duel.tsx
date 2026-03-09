@@ -13,7 +13,8 @@ interface DuelRoomResult {
   p1_pnl: number;
   p2_pnl: number;
   winner: string | null;
-  ticker: string;
+  p1_ticker: string;
+  p2_ticker: string;
 }
 
 export default function Duel() {
