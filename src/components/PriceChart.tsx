@@ -337,9 +337,9 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
         // --- PULSATING DOT ---
         const lastPt = pts[pts.length - 1];
         const dotColor = positive ? '#07e46e' : '#ef4444';
-        const dotPulse = 0.5 + 0.5 * Math.sin(t / 200);
-        const dotR = 3 + dotPulse * 2.5;
-        const ringR = dotR + 3 + dotPulse * 4;
+        const dotPulse = 0.7 + 0.3 * Math.sin(t / 500); // slower, subtler
+        const dotR = 3.5 + dotPulse * 1.2;
+        const ringR = dotR + 2 + dotPulse * 2;
 
         // Outer ring glow
         ctx.save();
