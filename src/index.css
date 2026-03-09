@@ -27,7 +27,7 @@
     --accent: 25 95% 53%;
     --accent-foreground: 240 20% 3%;
 
-    --destructive: 0 100% 50%;
+    --destructive: 25 95% 53%;
     --destructive-foreground: 240 100% 98%;
 
     --border: 265 66% 55%;
@@ -36,15 +36,10 @@
 
     --radius: 0px;
 
-    /* Arcade neon tokens */
+    /* Arcade neon tokens — 4 colors only */
     --neon-green: 150 95% 46%;
     --neon-purple: 265 66% 55%;
     --neon-orange: 25 95% 53%;
-    --neon-magenta: 330 100% 55%;
-    --neon-cyan: 180 100% 55%;
-    --neon-amber: 50 100% 55%;
-    --neon-red: 0 100% 50%;
-    --neon-blue: 220 100% 60%;
     --terminal-bg: 240 20% 4%;
     --terminal-border: 265 66% 55%;
 
@@ -54,10 +49,6 @@
     --glow-purple: 0 0 4px hsl(265 66% 55%), 0 0 12px hsl(265 66% 55% / 0.6), 0 0 30px hsl(265 66% 55% / 0.3);
     --glow-orange: 0 0 4px hsl(25 95% 53%), 0 0 12px hsl(25 95% 53% / 0.6), 0 0 30px hsl(25 95% 53% / 0.3);
     --glow-green: 0 0 4px hsl(150 95% 46%), 0 0 12px hsl(150 95% 46% / 0.6), 0 0 30px hsl(150 95% 46% / 0.3);
-    --glow-magenta: 0 0 4px hsl(330 100% 55%), 0 0 12px hsl(330 100% 55% / 0.6), 0 0 30px hsl(330 100% 55% / 0.3);
-    --glow-red: 0 0 4px hsl(0 100% 50%), 0 0 12px hsl(0 100% 50% / 0.5);
-    --glow-amber: 0 0 4px hsl(50 100% 55%), 0 0 12px hsl(50 100% 55% / 0.5);
-    --glow-cyan: 0 0 4px hsl(180 100% 55%), 0 0 12px hsl(180 100% 55% / 0.5);
   }
 }
 
@@ -88,18 +79,6 @@
   .text-glow-green {
     text-shadow: var(--glow-green);
   }
-  .text-glow-magenta {
-    text-shadow: var(--glow-magenta);
-  }
-  .text-glow-red {
-    text-shadow: var(--glow-red);
-  }
-  .text-glow-amber {
-    text-shadow: var(--glow-amber);
-  }
-  .text-glow-cyan {
-    text-shadow: var(--glow-cyan);
-  }
   .box-glow-purple {
     box-shadow: var(--glow-purple);
   }
@@ -108,15 +87,6 @@
   }
   .box-glow-green {
     box-shadow: var(--glow-green);
-  }
-  .box-glow-magenta {
-    box-shadow: var(--glow-magenta);
-  }
-  .box-glow-cyan {
-    box-shadow: var(--glow-cyan);
-  }
-  .box-glow-amber {
-    box-shadow: var(--glow-amber);
   }
 }
 
@@ -143,30 +113,6 @@
     inset 0 0 0 1px hsl(var(--background)),
     0 0 0 1px hsl(var(--neon-green)),
     var(--glow-green);
-}
-
-.pixel-border-magenta {
-  border: 3px solid hsl(var(--neon-magenta));
-  box-shadow:
-    inset 0 0 0 1px hsl(var(--background)),
-    0 0 0 1px hsl(var(--neon-magenta)),
-    var(--glow-magenta);
-}
-
-.pixel-border-cyan {
-  border: 3px solid hsl(var(--neon-cyan));
-  box-shadow:
-    inset 0 0 0 1px hsl(var(--background)),
-    0 0 0 1px hsl(var(--neon-cyan)),
-    var(--glow-cyan);
-}
-
-.pixel-border-amber {
-  border: 3px solid hsl(var(--neon-amber));
-  box-shadow:
-    inset 0 0 0 1px hsl(var(--background)),
-    0 0 0 1px hsl(var(--neon-amber)),
-    var(--glow-amber);
 }
 
 /* Scanline overlay — purple tint */
@@ -244,13 +190,10 @@
 }
 
 @keyframes rainbow {
-  0% { color: hsl(0 100% 50%); }
-  16% { color: hsl(50 100% 55%); }
-  33% { color: hsl(120 100% 50%); }
-  50% { color: hsl(180 100% 55%); }
-  66% { color: hsl(220 100% 60%); }
-  83% { color: hsl(330 100% 55%); }
-  100% { color: hsl(0 100% 50%); }
+  0% { color: hsl(150 95% 46%); }
+  33% { color: hsl(265 66% 55%); }
+  66% { color: hsl(25 95% 53%); }
+  100% { color: hsl(150 95% 46%); }
 }
 
 .animate-flicker { animation: flicker 3s infinite; }
@@ -319,36 +262,14 @@
 }
 
 .arcade-btn-secondary {
-  border-color: hsl(var(--neon-magenta));
-  color: hsl(var(--neon-magenta));
-  background: hsl(var(--neon-magenta) / 0.1);
-  box-shadow: var(--glow-magenta);
+  border-color: hsl(var(--neon-orange));
+  color: hsl(var(--neon-orange));
+  background: hsl(var(--neon-orange) / 0.1);
+  box-shadow: var(--glow-orange);
 }
 
 .arcade-btn-secondary:hover {
-  background: hsl(var(--neon-magenta) / 0.2);
-}
-
-.arcade-btn-cyan {
-  border-color: hsl(var(--neon-cyan));
-  color: hsl(var(--neon-cyan));
-  background: hsl(var(--neon-cyan) / 0.1);
-  box-shadow: var(--glow-cyan);
-}
-
-.arcade-btn-cyan:hover {
-  background: hsl(var(--neon-cyan) / 0.2);
-}
-
-.arcade-btn-amber {
-  border-color: hsl(var(--neon-amber));
-  color: hsl(var(--neon-amber));
-  background: hsl(var(--neon-amber) / 0.1);
-  box-shadow: var(--glow-amber);
-}
-
-.arcade-btn-amber:hover {
-  background: hsl(var(--neon-amber) / 0.2);
+  background: hsl(var(--neon-orange) / 0.2);
 }
 
 /* CRT screen edge vignette */

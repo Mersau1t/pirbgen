@@ -17,14 +17,12 @@ const COLORS = [
   'hsl(var(--neon-green))',
   'hsl(var(--neon-purple))',
   'hsl(var(--neon-orange))',
-  'hsl(var(--neon-amber))',
 ];
 
 const REKT_COLORS = [
-  'hsl(var(--neon-red))',
-  'hsl(0 80% 40%)',
   'hsl(var(--neon-orange))',
-  'hsl(0 100% 30%)',
+  'hsl(25 80% 40%)',
+  'hsl(var(--neon-purple))',
 ];
 
 function createParticles(colors: string[], count: number, spread: number, yBase: number): Particle[] {
@@ -61,13 +59,13 @@ export default function PixelConfetti({ active, variant = 'win' }: { active: boo
     <AnimatePresence>
       {active && (
         <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
-          {/* Red flash overlay for REKT */}
+          {/* Orange flash overlay for REKT */}
           {variant === 'rekt' && (
             <motion.div
               initial={{ opacity: 0.6 }}
               animate={{ opacity: 0 }}
               transition={{ duration: 0.6 }}
-              className="absolute inset-0 bg-neon-red/20"
+              className="absolute inset-0 bg-neon-orange/20"
             />
           )}
           {particles.map((p) => (

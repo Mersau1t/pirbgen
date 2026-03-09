@@ -16,9 +16,9 @@ interface LeaderboardEntry {
 
 const RARITY_COLORS: Record<string, string> = {
   common: 'text-muted-foreground',
-  rare: 'text-neon-cyan',
-  legendary: 'text-neon-amber',
-  degen: 'text-neon-magenta',
+  rare: 'text-neon-green',
+  legendary: 'text-neon-orange',
+  degen: 'text-neon-purple',
 };
 
 export default function Leaderboard() {
@@ -94,15 +94,15 @@ export default function Leaderboard() {
           className="flex flex-col flex-1 min-h-0 gap-3"
         >
           <div className="text-center space-y-1 shrink-0">
-            <h1 className="font-display text-2xl sm:text-3xl tracking-wider text-neon-amber text-glow-amber">
+            <h1 className="font-display text-2xl sm:text-3xl tracking-wider text-neon-orange text-glow-orange">
               🏆 HIGH SCORES
             </h1>
-            <p className="font-display text-[8px] text-neon-cyan text-glow-cyan tracking-[0.2em]">
+            <p className="font-display text-[8px] text-neon-green text-glow-green tracking-[0.2em]">
               TOP DEGENS RANKED BY PNL
             </p>
           </div>
 
-          <div className="pixel-border-amber flex flex-col flex-1 min-h-0 bg-background/90">
+          <div className="pixel-border-orange flex flex-col flex-1 min-h-0 bg-background/90">
             {/* Table header */}
             <div className="grid grid-cols-[40px_1fr_70px_60px_70px_100px_80px] sm:grid-cols-[50px_1fr_80px_70px_80px_120px_90px] gap-1 px-4 py-2 bg-neon-green/5 border-b-2 border-neon-green/20 text-[8px] font-display tracking-wider text-neon-green/60 uppercase shrink-0">
               <span>#</span>
@@ -159,13 +159,13 @@ export default function Leaderboard() {
                     </span>
                     <span className="text-xs font-display text-foreground">{entry.ticker}</span>
                     <span className={`text-[10px] font-display tracking-wider ${
-                      entry.direction === 'LONG' ? 'text-neon-green' : 'text-neon-red'
+                      entry.direction === 'LONG' ? 'text-neon-green' : 'text-neon-orange'
                     }`}>
                       {entry.direction}
                     </span>
                     <span className="text-xs font-mono text-muted-foreground">{entry.leverage}x</span>
                     <span className={`text-sm font-mono text-right font-bold ${
-                      entry.pnl_percent >= 0 ? 'text-neon-green text-glow-green' : 'text-neon-red'
+                      entry.pnl_percent >= 0 ? 'text-neon-green text-glow-green' : 'text-neon-orange'
                     }`}>
                       {entry.pnl_percent >= 0 ? '+' : ''}{Number(entry.pnl_percent).toFixed(1)}%
                     </span>

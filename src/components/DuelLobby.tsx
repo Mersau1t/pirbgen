@@ -49,7 +49,6 @@ export default function DuelLobby({ onRoomReady }: DuelLobbyProps) {
 
       const { data, error: dbErr } = await supabase.from('duel_rooms').insert({
         room_code: code,
-        // Legacy shared fields (keep for compat)
         ticker: p1Token.ticker,
         feed_id: p1Token.feedId,
         direction: p1Params.direction,
@@ -58,7 +57,6 @@ export default function DuelLobby({ onRoomReady }: DuelLobbyProps) {
         take_profit: p1Params.tp,
         rarity: p1Params.rarity,
         entry_price: p1Price,
-        // P1 specific
         p1_ticker: p1Token.ticker,
         p1_feed_id: p1Token.feedId,
         p1_direction: p1Params.direction,
@@ -69,7 +67,6 @@ export default function DuelLobby({ onRoomReady }: DuelLobbyProps) {
         p1_entry_price: p1Price,
         p1_name: playerName,
         p1_wallet: walletAddress || null,
-        // P2 specific
         p2_ticker: p2Token.ticker,
         p2_feed_id: p2Token.feedId,
         p2_direction: p2Params.direction,
@@ -109,7 +106,6 @@ export default function DuelLobby({ onRoomReady }: DuelLobbyProps) {
 
       if (findErr || !room) throw new Error('Room not found or already started');
 
-      // Set started_at to 5 seconds in the future so both players sync
       const startTime = new Date(Date.now() + 5000).toISOString();
       const { error: joinErr } = await supabase
         .from('duel_rooms')
@@ -203,7 +199,7 @@ export default function DuelLobby({ onRoomReady }: DuelLobbyProps) {
           </div>
 
           {error && (
-            <p className="text-neon-red text-xs font-mono text-center">{error}</p>
+            <p className="text-neon-orange text-xs font-mono text-center">{error}</p>
           )}
         </motion.div>
       )}
@@ -260,7 +256,7 @@ export default function DuelLobby({ onRoomReady }: DuelLobbyProps) {
 
           <button
             onClick={() => setMode('menu')}
-            className="text-[10px] text-muted-foreground hover:text-neon-red transition-colors font-mono"
+            className="text-[10px] text-muted-foreground hover:text-neon-orange transition-colors font-mono"
           >
             ✕ CANCEL
           </button>
