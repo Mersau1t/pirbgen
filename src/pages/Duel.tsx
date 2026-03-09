@@ -47,7 +47,7 @@ export default function Duel() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col overflow-hidden">
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
       {/* Header */}
       <header className="shrink-0 border-b border-border/20 px-4 py-2 flex items-center justify-between">
         <Link to="/" className="font-display text-sm text-muted-foreground hover:text-neon-purple transition-colors">
