@@ -201,35 +201,36 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
     const diff = ((currentPrice - entryPrice) / entryPrice) * 100;
     const calculatedPnl = position.direction === 'LONG' ? diff * position.leverage : -diff * position.leverage;
     setPnl(calculatedPnl);
+    onPnlChange?.(calculatedPnl);
+
+    if (duelMode) return; // No SL/TP logic in duel mode
 
     // Tension intensity: how close are we to SL or TP (0..1)
-    const slProximity = Math.abs(calculatedPnl / position.stopLoss);   // 0→1 as we approach SL
-    const tpProximity = Math.abs(calculatedPnl / position.takeProfit); // 0→1 as we approach TP
+    const slProximity = Math.abs(calculatedPnl / position.stopLoss);
+    const tpProximity = Math.abs(calculatedPnl / position.takeProfit);
     const intensity = Math.max(slProximity, tpProximity);
     setTensionIntensity(intensity);
 
     if (!resultFiredRef.current) {
       if (calculatedPnl <= position.stopLoss) {
         resultFiredRef.current = true;
-        // Ensure the chart shows the exact tick that crossed into SL
         appendTerminalCandle(currentPrice);
         setResult('REKT');
         playRektSound();
         onResult('REKT', calculatedPnl);
-        saveToLeaderboard(calculatedPnl);
+        if (!readOnly) saveToLeaderboard(calculatedPnl);
         setTimeout(() => setShowResultAnim(true), 1500);
       } else if (calculatedPnl >= position.takeProfit) {
         resultFiredRef.current = true;
-        // Ensure the chart shows the exact tick that crossed into TP
         appendTerminalCandle(currentPrice);
         setResult('WIN');
         playWinSound();
         onResult('WIN', calculatedPnl);
-        saveToLeaderboard(calculatedPnl);
+        if (!readOnly) saveToLeaderboard(calculatedPnl);
         setTimeout(() => setShowResultAnim(true), 1500);
       }
     }
-  }, [currentPrice, entryPrice, position, result]);
+  }, [currentPrice, entryPrice, position, result, duelMode]);
 
   const saveToLeaderboard = (finalPnl: number) => {
     supabase.from('leaderboard').insert({
