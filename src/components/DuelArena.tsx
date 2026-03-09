@@ -253,10 +253,7 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
             <div className="text-center">
               <p className="text-[8px] text-muted-foreground/60 uppercase">{opponentName} · {oppPosition.ticker}</p>
               <p className="font-mono text-sm font-bold text-muted-foreground">
-                {opponentClosed
-                  ? <span className="text-neon-red">⛔ CLOSED</span>
-                  : <span className="animate-pulse">🎲 ???</span>
-                }
+                <span className="animate-pulse">🎲 ???</span>
               </p>
             </div>
           </div>
