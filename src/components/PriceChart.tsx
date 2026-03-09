@@ -16,6 +16,7 @@ interface PriceChartProps {
   stopLoss: number;
   takeProfit: number;
   leverage: number;
+  result?: 'WIN' | 'REKT' | null; // Додаємо результат для керування масштабом
 }
 
 const MAX_VISIBLE = 28;
