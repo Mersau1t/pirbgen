@@ -451,7 +451,7 @@ export default function PirbTerminal() {
                           className="flex items-center justify-between px-2 py-1.5 rounded bg-neon-purple/5 border border-neon-purple/10 hover:bg-neon-purple/15 hover:border-neon-purple/30 transition-colors cursor-pointer text-left"
                         >
                           <span className="font-display text-[10px] text-foreground/80 tracking-wider">{t.ticker}</span>
-                          <span className="font-display text-[9px] tracking-wider text-neon-cyan/70">
+                          <span className="font-display text-[9px] tracking-wider text-neon-green/70">
                             {t.volume_24h > 0 ? formatVolume(t.volume_24h) : '—'}
                           </span>
                         </motion.button>
