@@ -522,7 +522,7 @@ export default function PirbTerminal() {
                       style={{
                         filter: status === 'WIN'
                           ? 'drop-shadow(0 0 20px #07e46e) drop-shadow(0 0 40px #07e46eaa)'
-                          : 'drop-shadow(0 0 20px #ef4444) drop-shadow(0 0 40px #ef4444aa)',
+                          : 'drop-shadow(0 0 20px #f97316) drop-shadow(0 0 40px #f9731688)',
                         transform: status === 'REKT' ? 'scaleX(-1)' : undefined,
                       }}
                       animate={status === 'WIN'
