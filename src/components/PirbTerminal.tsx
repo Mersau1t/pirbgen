@@ -557,28 +557,20 @@ export default function PirbTerminal() {
                     </motion.div>
                   )}
 
-                  <p className={`font-display text-2xl ${status === 'WIN' ? 'text-neon-green text-glow-green animate-rainbow' : 'text-neon-orange text-glow-orange'}`}>
-                    {status === 'WIN' ? `🎯 TARGET HIT! +${finalPnl.toFixed(2)}%` : `💀 LIQUIDATED ${finalPnl.toFixed(2)}%`}
-                  </p>
+                  <div className="text-center">
+                    <p className={`font-display text-3xl sm:text-4xl ${status === 'WIN' ? 'text-neon-green text-glow-green animate-rainbow' : 'text-neon-orange text-glow-orange'}`}>
+                      {status === 'WIN' ? '🎯 TARGET HIT!' : '💀 PIRBED!'}
+                    </p>
+                    <p className={`font-mono text-4xl sm:text-5xl font-bold mt-1 ${status === 'WIN' ? 'text-neon-green' : 'text-neon-orange'}`}>
+                      {finalPnl >= 0 ? '+' : ''}{finalPnl.toFixed(2)}%
+                    </p>
+                  </div>
 
                   {/* Streak multiplier note */}
                   {streak.current > 1 && status === 'WIN' && (
                     <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="font-display text-[10px] text-neon-orange tracking-wider">
                       🔥 STREAK BONUS: ×{getStreakMultiplier(streak.current).toFixed(1)}
                     </motion.p>
-                  )}
-
-                  {/* Share buttons */}
-                  {activePos && (
-                    <ShareResult
-                      ticker={activePos.ticker}
-                      direction={activePos.direction}
-                      leverage={activePos.leverage}
-                      pnl={finalPnl}
-                      rarity={activePos.rarity}
-                      result={status as 'WIN' | 'REKT'}
-                      streak={streak.current}
-                    />
                   )}
 
                   <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="flex gap-3">
