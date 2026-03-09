@@ -262,9 +262,9 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
       </div>
 
       {/* Split screen */}
-      <div className="flex flex-1 min-h-0 gap-1">
+      <div className="flex flex-1 min-h-0 gap-1.5">
         {/* My panel — full trading UI */}
-        <div className="flex-1 min-h-0 min-w-0 flex flex-col relative">
+        <div className="basis-1/2 min-h-0 min-w-0 flex flex-col relative">
           <LiveTradePanel
             position={myPosition}
             entryPrice={myEntryPrice}
