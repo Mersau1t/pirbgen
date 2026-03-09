@@ -93,6 +93,7 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
     });
   }, []);
 
+  const hasTimer = !!timerSeconds && timerSeconds > 0;
   const rarityStyle = RARITY_STYLES[position.rarity];
 
   // Pyth streaming
