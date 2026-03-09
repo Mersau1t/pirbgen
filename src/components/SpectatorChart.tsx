@@ -108,6 +108,7 @@ export default function SpectatorChart({ ticker, feedId, entryPrice, initialCand
           takeProfit={9999}
           leverage={1}
           duelMode
+          spectator
         />
       </div>
     </div>

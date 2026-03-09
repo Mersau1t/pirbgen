@@ -17,7 +17,8 @@ interface PriceChartProps {
   takeProfit: number;
   leverage: number;
   result?: 'WIN' | 'REKT' | null;
-  duelMode?: boolean; // clean chart without SL/TP zones/lines
+  duelMode?: boolean;
+  spectator?: boolean; // neutral colors, no position info leaked
 }
 
 const MAX_VISIBLE = 28;
@@ -52,7 +53,7 @@ function sharpLinePath(ctx: CanvasRenderingContext2D, pts: { x: number; y: numbe
   }
 }
 
-export default function PriceChart({ candles, entryPrice, positive, direction, stopLoss, takeProfit, leverage, result, duelMode }: PriceChartProps) {
+export default function PriceChart({ candles, entryPrice, positive, direction, stopLoss, takeProfit, leverage, result, duelMode, spectator }: PriceChartProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
@@ -282,11 +283,15 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
 
       // --- SMOOTH PRICE LINE ---
       if (pts.length > 1) {
-        // Animated glow intensity based on proximity to TP/SL
-        const glowBase = 6 + proximity * 12;
-        const glowAnim = glowBase + proximity * 4; // no pulsation on glow
-        const glowColor = positive ? '#07e46e' : '#ef4444';
-        const lineGlowColor = proximity > 0.7 ? glowColor : '#8046dc';
+        // In spectator mode, use neutral white/purple colors only
+        const neutralLine = '#c8b4ff';
+        const neutralDot = '#e0d4ff';
+        const neutralGlow = '#8046dc';
+
+        const glowBase = spectator ? 6 : 6 + proximity * 12;
+        const glowAnim = spectator ? 8 : glowBase + proximity * 4;
+        const glowColor = spectator ? neutralGlow : (positive ? '#07e46e' : '#ef4444');
+        const lineGlowColor = spectator ? neutralGlow : (proximity > 0.7 ? glowColor : '#8046dc');
 
         // --- GRADIENT FILL UNDER LINE ---
         ctx.save();
@@ -296,7 +301,11 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
         ctx.lineTo(pts[0].x, pad.top + chartH);
         ctx.closePath();
         const fillGrad = ctx.createLinearGradient(0, pad.top, 0, pad.top + chartH);
-        if (positive) {
+        if (spectator) {
+          fillGrad.addColorStop(0, 'rgba(200, 180, 255, 0.12)');
+          fillGrad.addColorStop(0.5, 'rgba(200, 180, 255, 0.04)');
+          fillGrad.addColorStop(1, 'rgba(200, 180, 255, 0.0)');
+        } else if (positive) {
           fillGrad.addColorStop(0, 'rgba(7, 228, 110, 0.20)');
           fillGrad.addColorStop(0.5, 'rgba(7, 228, 110, 0.06)');
           fillGrad.addColorStop(1, 'rgba(7, 228, 110, 0.0)');
@@ -309,13 +318,13 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
         ctx.fill();
         ctx.restore();
 
-        // Outer glow (intensifies near TP/SL)
+        // Outer glow
         ctx.save();
         ctx.beginPath();
         sharpLinePath(ctx, pts);
-        ctx.strokeStyle = proximity > 0.7
+        ctx.strokeStyle = spectator ? 'rgba(200, 180, 255, 0.15)' : (proximity > 0.7
           ? (positive ? 'rgba(7, 228, 110, 0.2)' : 'rgba(239, 68, 68, 0.2)')
-          : 'rgba(200, 180, 255, 0.15)';
+          : 'rgba(200, 180, 255, 0.15)');
         ctx.lineWidth = 6;
         ctx.shadowColor = lineGlowColor;
         ctx.shadowBlur = glowAnim;
@@ -326,9 +335,9 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
         ctx.save();
         ctx.beginPath();
         sharpLinePath(ctx, pts);
-        ctx.strokeStyle = proximity > 0.7
+        ctx.strokeStyle = spectator ? 'rgba(200, 180, 255, 0.3)' : (proximity > 0.7
           ? (positive ? 'rgba(7, 228, 110, 0.3)' : 'rgba(239, 68, 68, 0.3)')
-          : 'rgba(200, 180, 255, 0.3)';
+          : 'rgba(200, 180, 255, 0.3)');
         ctx.lineWidth = 3;
         ctx.shadowColor = lineGlowColor;
         ctx.shadowBlur = glowAnim * 0.5;
@@ -344,8 +353,8 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
 
         // --- PULSATING DOT ---
         const lastPt = pts[pts.length - 1];
-        const dotColor = positive ? '#07e46e' : '#ef4444';
-        const dotPulse = 0.7 + 0.3 * Math.sin(t / 500); // slower, subtler
+        const dotColor = spectator ? neutralDot : (positive ? '#07e46e' : '#ef4444');
+        const dotPulse = 0.7 + 0.3 * Math.sin(t / 500);
         const dotR = 3.5 + dotPulse * 1.2;
         const ringR = dotR + 2 + dotPulse * 2;
 
@@ -372,20 +381,20 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
         ctx.fill();
 
         // --- SPARK PARTICLES ---
-        const sparkCount = Math.floor(3 + proximity * 8);
+        const sparkCount = spectator ? 3 : Math.floor(3 + proximity * 8);
         ctx.save();
         for (let sp = 0; sp < sparkCount; sp++) {
           const angle = (t / 400 + sp * (Math.PI * 2 / sparkCount)) % (Math.PI * 2);
-          const dist = 8 + Math.sin(t / 200 + sp * 1.3) * (6 + proximity * 12);
+          const dist = 8 + Math.sin(t / 200 + sp * 1.3) * (spectator ? 6 : (6 + proximity * 12));
           const sx = lastPt.x + Math.cos(angle) * dist;
           const sy = lastPt.y + Math.sin(angle) * dist;
-          const sparkAlpha = 0.3 + proximity * 0.5 + Math.sin(t / 150 + sp) * 0.2;
-          const sparkSize = 1 + proximity * 1.5 + Math.sin(t / 120 + sp * 2) * 0.5;
+          const sparkAlpha = spectator ? 0.3 : (0.3 + proximity * 0.5 + Math.sin(t / 150 + sp) * 0.2);
+          const sparkSize = spectator ? 1 : (1 + proximity * 1.5 + Math.sin(t / 120 + sp * 2) * 0.5);
           ctx.beginPath();
           ctx.arc(sx, sy, Math.max(sparkSize, 0.5), 0, Math.PI * 2);
           ctx.fillStyle = dotColor + Math.round(Math.min(sparkAlpha * 255, 255)).toString(16).padStart(2, '0');
           ctx.shadowColor = dotColor;
-          ctx.shadowBlur = 4 + proximity * 6;
+          ctx.shadowBlur = 4 + (spectator ? 2 : proximity * 6);
           ctx.fill();
         }
         ctx.restore();
@@ -452,7 +461,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       // --- CURRENT PRICE TAG ---
       if (candles.length > 0) {
         const curY = toY(lastClose);
-        const curColor = positive ? '#07e46e' : '#ef4444';
+        const curColor = spectator ? '#c8b4ff' : (positive ? '#07e46e' : '#ef4444');
         ctx.strokeStyle = curColor + '40';
         ctx.setLineDash([2, 2]);
         ctx.lineWidth = 1;
@@ -521,7 +530,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       running = false;
       cancelAnimationFrame(animFrameRef.current);
     };
-  }, [candles, entryPrice, positive, size, direction, stopLoss, takeProfit, leverage, result, duelMode]);
+  }, [candles, entryPrice, positive, size, direction, stopLoss, takeProfit, leverage, result, duelMode, spectator]);
 
   return (
     <div ref={containerRef} className="w-full h-full relative">
