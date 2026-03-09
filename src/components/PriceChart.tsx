@@ -57,6 +57,8 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
   const [size, setSize] = useState({ w: 0, h: 0 });
   const animFrameRef = useRef(0);
   const timeRef = useRef(0);
+  const zoomProgressRef = useRef(0); // 0 = focused, 1 = zoomed out
+  const prevResultRef = useRef<string | null>(null);
 
   useEffect(() => {
     const container = containerRef.current;
