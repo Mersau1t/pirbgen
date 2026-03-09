@@ -60,7 +60,7 @@ export default function DuelResult({ myName, opponentName, myPnl, opponentPnl, w
           }`}>
             <p className="text-[10px] text-muted-foreground font-display tracking-wider mb-1">YOU · {myTicker}</p>
             <p className="font-display text-sm text-foreground mb-2">{myName}</p>
-            <p className={`font-mono text-2xl font-bold ${myPnl >= 0 ? 'text-neon-green' : 'text-neon-orange'}`}>
+            <p className={`font-mono text-3xl sm:text-4xl font-bold ${myPnl >= 0 ? 'text-neon-green' : 'text-neon-orange'}`}>
               {myPnl >= 0 ? '+' : ''}{myPnl.toFixed(2)}%
             </p>
           </div>
