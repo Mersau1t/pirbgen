@@ -17,7 +17,8 @@ interface PriceChartProps {
   takeProfit: number;
   leverage: number;
   result?: 'WIN' | 'REKT' | null;
-  duelMode?: boolean; // clean chart without SL/TP zones/lines
+  duelMode?: boolean;
+  spectator?: boolean; // neutral colors, no position info leaked
 }
 
 const MAX_VISIBLE = 28;
