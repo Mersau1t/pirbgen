@@ -175,6 +175,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       ctx.fillStyle = 'rgba(10, 6, 20, 0.6)';
       ctx.fillRect(pad.left, pad.top, chartW, chartH);
 
+      if (!duelMode) {
       // --- TP/SL GRADIENT ZONES WITH EFFECTS ---
       const tpYZone = toY(tpPrice);
       const slYZone = toY(slPrice);
@@ -186,7 +187,6 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
         const zoneY = Math.min(yTop, yBot);
         if (zoneH < 1) return;
 
-        // Base gradient fill (static, no pulsation)
         const baseAlpha = 0.08 + prox * 0.12;
         const grad = ctx.createLinearGradient(0, zoneY, 0, zoneY + zoneH);
         grad.addColorStop(0, `${color}${Math.round(baseAlpha * 255).toString(16).padStart(2, '0')}`);
@@ -194,7 +194,6 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
         ctx.fillStyle = grad;
         ctx.fillRect(pad.left, zoneY, chartW, zoneH);
 
-        // Horizontal energy waves (smooth sine waves moving through zone)
         ctx.save();
         ctx.beginPath();
         ctx.rect(pad.left, zoneY, chartW, zoneH);
@@ -217,7 +216,6 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
         }
         ctx.restore();
 
-        // Subtle horizontal scan lines (static, no flicker)
         ctx.save();
         ctx.beginPath();
         ctx.rect(pad.left, zoneY, chartW, zoneH);
@@ -228,9 +226,8 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
         }
         ctx.restore();
 
-        // Glowing edge at boundary (only when close, smooth not blinking)
         if (prox > 0.4) {
-          const edgeIntensity = (prox - 0.4) / 0.6; // 0→1 as prox goes 0.4→1
+          const edgeIntensity = (prox - 0.4) / 0.6;
           ctx.save();
           ctx.shadowColor = color;
           ctx.shadowBlur = 6 + edgeIntensity * 18;
@@ -254,6 +251,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       const redTop = direction === 'LONG' ? entryYZone : slYZone;
       const redBot = direction === 'LONG' ? slYZone : entryYZone;
       drawZone(redTop, redBot, '#ef4444', false, slProximity);
+      }
 
       // --- GRID ---
       ctx.textAlign = 'left';
