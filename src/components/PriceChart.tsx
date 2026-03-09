@@ -461,7 +461,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       // --- CURRENT PRICE TAG ---
       if (candles.length > 0) {
         const curY = toY(lastClose);
-        const curColor = positive ? '#07e46e' : '#ef4444';
+        const curColor = spectator ? '#c8b4ff' : (positive ? '#07e46e' : '#ef4444');
         ctx.strokeStyle = curColor + '40';
         ctx.setLineDash([2, 2]);
         ctx.lineWidth = 1;
