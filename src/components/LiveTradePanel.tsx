@@ -418,8 +418,9 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
         {showResultAnim && result === 'WIN' && !duelMode && (
           <>
             <PixelConfetti active={true} />
-            <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center py-1">
-              <p className="font-display text-lg text-neon-green text-glow-green animate-rainbow inline-block">🎯 TARGET HIT! +{pnl.toFixed(2)}%</p>
+            <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center py-3">
+              <p className="font-display text-3xl sm:text-4xl text-neon-green text-glow-green animate-rainbow inline-block">🎯 TARGET HIT!</p>
+              <p className="font-mono text-4xl sm:text-5xl font-bold text-neon-green mt-2">+{pnl.toFixed(2)}%</p>
             </motion.div>
           </>
         )}
