@@ -309,6 +309,8 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
             feedId={oppPosition.feedId}
             entryPrice={oppEntryPrice}
             initialCandles={oppCandles}
+            timerSeconds={DUEL_TIMER_SECONDS}
+            started={started}
           />
         </div>
       </div>
