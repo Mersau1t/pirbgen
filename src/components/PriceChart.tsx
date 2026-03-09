@@ -100,19 +100,43 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       ? entryPrice * (1 + tpPriceChange)
       : entryPrice * (1 - tpPriceChange);
 
-    // Оригінальний масштаб (фокус на SL/TP) або розширений (якщо торг завершений)
-    let lowerPrice = Math.min(slPrice, tpPrice);
-    let upperPrice = Math.max(slPrice, tpPrice);
+    // Scale boundaries
+    const focusedLower = Math.min(slPrice, tpPrice);
+    const focusedUpper = Math.max(slPrice, tpPrice);
     
-    // Якщо торг завершений, включаємо фінальний тік у масштаб
+    let expandedLower = focusedLower;
+    let expandedUpper = focusedUpper;
     if (result) {
       const last = candles[candles.length - 1];
       if (last) {
-        lowerPrice = Math.min(lowerPrice, last.low, last.close);
-        upperPrice = Math.max(upperPrice, last.high, last.close);
+        expandedLower = Math.min(focusedLower, last.low, last.close);
+        expandedUpper = Math.max(focusedUpper, last.high, last.close);
       }
     }
-    
+
+    // Detect result change → start zoom animation
+    if (result && !prevResultRef.current) {
+      // Just got result, zoom starts from 0
+    }
+    if (!result) {
+      zoomProgressRef.current = 0;
+    }
+    prevResultRef.current = result ?? null;
+
+    // Smooth lerp zoom: animate zoomProgress 0→1 over ~1s
+    const zoomTarget = result ? 1 : 0;
+    const zoomSpeed = 0.03; // per frame (~60fps → ~0.5s)
+    zoomProgressRef.current += (zoomTarget - zoomProgressRef.current) * zoomSpeed;
+    // Clamp near target
+    if (Math.abs(zoomProgressRef.current - zoomTarget) < 0.001) zoomProgressRef.current = zoomTarget;
+    const zp = zoomProgressRef.current;
+
+    // Easing (ease-out cubic)
+    const eased = 1 - Math.pow(1 - zp, 3);
+
+    const lowerPrice = focusedLower + (expandedLower - focusedLower) * eased;
+    const upperPrice = focusedUpper + (expandedUpper - focusedUpper) * eased;
+
     const boundaryRange = upperPrice - lowerPrice;
     const pricePad = boundaryRange * 0.08;
     const min = lowerPrice - pricePad;
