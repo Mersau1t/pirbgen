@@ -43,11 +43,11 @@ export function startTensionAudio() {
   drone.connect(droneFilter).connect(droneGain).connect(master);
   drone.start(t);
 
-  // Heartbeat pulse — sine with LFO amplitude modulation
+  // Heartbeat pulse — softer sine with gentle modulation
   const heartbeat = ctx.createOscillator();
   const hbGain = ctx.createGain();
   heartbeat.type = 'sine';
-  heartbeat.frequency.setValueAtTime(65, t); // low thump
+  heartbeat.frequency.setValueAtTime(45, t); // Even softer thump
   hbGain.gain.setValueAtTime(0, t);
   heartbeat.connect(hbGain).connect(master);
   heartbeat.start(t);
