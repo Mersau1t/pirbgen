@@ -326,7 +326,7 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
               <div className="absolute left-1/2 top-0 w-0.5 h-full bg-muted-foreground/40 z-10 -translate-x-1/2" />
               {pnl !== 0 && (
                 <motion.div
-                  className={`absolute top-0 h-full ${pnl >= 0 ? 'bg-neon-green' : 'bg-neon-red'} rounded-full`}
+                  className={`absolute top-0 h-full ${pnl >= 0 ? 'bg-neon-green' : 'bg-neon-orange'} rounded-full`}
                   style={{
                     width: `${Math.min(Math.abs(pnl) / (pnl >= 0 ? position.takeProfit : Math.abs(position.stopLoss)) * 50, 50)}%`,
                     left: pnl >= 0 ? '50%' : undefined,
