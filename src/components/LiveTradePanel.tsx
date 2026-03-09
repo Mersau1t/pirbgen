@@ -408,7 +408,7 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
               initial={{ opacity: 0 }}
               animate={{ opacity: [0.4, 1, 0.4] }}
               transition={{ duration: 0.8, repeat: Infinity }}
-              className={`font-display text-sm tracking-wider ${result === 'WIN' ? 'text-neon-green' : 'text-neon-red'}`}
+              className={`font-display text-sm tracking-wider ${result === 'WIN' ? 'text-neon-green' : 'text-neon-orange'}`}
             >
               CLOSING...
             </motion.p>
