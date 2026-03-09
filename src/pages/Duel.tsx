@@ -51,11 +51,11 @@ export default function Duel() {
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="shrink-0 border-b border-border/20 px-4 py-2 flex items-center justify-between">
+      <header className="shrink-0 border-b-2 border-neon-purple/30 px-4 py-2 flex items-center justify-between bg-background/90">
         <Link to="/" className="font-display text-sm text-muted-foreground hover:text-neon-purple transition-colors">
           ← BACK
         </Link>
-        <span className="font-display text-xs text-neon-purple/50 tracking-wider">PVP DUEL MODE</span>
+        <span className="font-display text-xs text-neon-green/50 tracking-wider">⚔️ PVP DUEL MODE</span>
       </header>
 
       {/* Content */}

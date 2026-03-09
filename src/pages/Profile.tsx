@@ -147,11 +147,11 @@ export default function Profile() {
 
   return (
     <div className="h-screen bg-background grid-bg scanlines crt-vignette relative overflow-hidden animate-flicker flex flex-col">
-      <header className="relative z-10 border-b-2 border-neon-green/40 bg-background/90">
+      <header className="relative z-10 border-b-2 border-neon-purple/40 bg-background/90">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
             <span className="text-2xl">🕹️</span>
-            <span className="font-display text-[10px] sm:text-xs tracking-[0.3em] text-neon-green text-glow-green">PIRBGEN</span>
+            <span className="font-display text-[10px] sm:text-xs tracking-[0.3em] text-neon-purple text-glow-purple">PIRBGEN</span>
           </div>
           <Link to="/" className="arcade-btn arcade-btn-primary text-[8px] sm:text-[10px] py-2 px-3">
             ← TERMINAL
@@ -198,7 +198,7 @@ export default function Profile() {
                   </div>
                 ) : (
                   <div className="flex items-center gap-2">
-                    <h2 className="font-display text-xl text-foreground text-glow-green">{profile.display_name}</h2>
+                    <h2 className="font-display text-xl text-foreground text-glow-purple">{profile.display_name}</h2>
                     <button onClick={() => setEditingName(true)} className="text-xs text-muted-foreground hover:text-foreground transition-colors">✏️</button>
                   </div>
                 )}
@@ -215,13 +215,13 @@ export default function Profile() {
             {/* Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {[
-                { label: 'Trades', value: totalTrades.toString(), color: 'text-foreground' },
-                { label: 'Win Rate', value: `${winRate}%`, color: Number(winRate) >= 50 ? 'text-neon-green' : 'text-neon-orange' },
-                { label: 'Best Trade', value: `${bestTrade >= 0 ? '+' : ''}${bestTrade.toFixed(1)}%`, color: bestTrade >= 0 ? 'text-neon-green' : 'text-neon-orange' },
-                { label: 'Total PnL', value: `${totalPnl >= 0 ? '+' : ''}${totalPnl.toFixed(1)}%`, color: totalPnl >= 0 ? 'text-neon-green' : 'text-neon-orange' },
+                { label: 'Trades', value: totalTrades.toString(), color: 'text-foreground', borderColor: 'border-neon-purple/20', bgColor: 'bg-neon-purple/5', labelColor: 'text-neon-purple/50' },
+                { label: 'Win Rate', value: `${winRate}%`, color: Number(winRate) >= 50 ? 'text-neon-green' : 'text-neon-orange', borderColor: 'border-neon-green/20', bgColor: 'bg-neon-green/5', labelColor: 'text-neon-green/50' },
+                { label: 'Best Trade', value: `${bestTrade >= 0 ? '+' : ''}${bestTrade.toFixed(1)}%`, color: bestTrade >= 0 ? 'text-neon-green' : 'text-neon-orange', borderColor: 'border-neon-orange/20', bgColor: 'bg-neon-orange/5', labelColor: 'text-neon-orange/50' },
+                { label: 'Total PnL', value: `${totalPnl >= 0 ? '+' : ''}${totalPnl.toFixed(1)}%`, color: totalPnl >= 0 ? 'text-neon-green' : 'text-neon-orange', borderColor: 'border-neon-purple/20', bgColor: 'bg-neon-purple/5', labelColor: 'text-neon-purple/50' },
               ].map(stat => (
-                <div key={stat.label} className="border-2 border-neon-green/20 p-2 text-center bg-neon-green/5">
-                  <p className="text-[8px] font-display text-neon-green/50 uppercase tracking-wider">{stat.label}</p>
+                <div key={stat.label} className={`border-2 ${stat.borderColor} p-2 text-center ${stat.bgColor}`}>
+                  <p className={`text-[8px] font-display ${stat.labelColor} uppercase tracking-wider`}>{stat.label}</p>
                   <p className={`text-base font-mono font-bold ${stat.color}`}>{stat.value}</p>
                 </div>
               ))}
@@ -229,9 +229,9 @@ export default function Profile() {
           </div>
 
           {/* Trade History */}
-          <div className="pixel-border-green flex flex-col min-h-0 flex-1 bg-background/90">
-            <div className="px-4 py-2 border-b-2 border-neon-green/20 bg-neon-green/5 shrink-0">
-              <h3 className="font-display text-[10px] tracking-[0.2em] text-neon-green text-glow-green uppercase">📜 TRADE HISTORY</h3>
+          <div className="pixel-border flex flex-col min-h-0 flex-1 bg-background/90">
+            <div className="px-4 py-2 border-b-2 border-neon-purple/20 bg-neon-purple/5 shrink-0">
+              <h3 className="font-display text-[10px] tracking-[0.2em] text-neon-purple text-glow-purple uppercase">📜 TRADE HISTORY</h3>
             </div>
 
             {loading ? (

@@ -125,11 +125,14 @@ const MarqueeStrip = ({ ariaHidden }: { ariaHidden?: boolean }) => (
     className="flex whitespace-nowrap gap-20 pr-20 text-[10px] sm:text-[12px] font-display"
     aria-hidden={ariaHidden}
   >
-    {MARQUEE_LINES.map((t, i) => (
-      <span key={i} className={i % 2 === 0 ? 'text-neon-orange text-glow-orange' : 'text-neon-purple'}>
-        {t}
-      </span>
-    ))}
+    {MARQUEE_LINES.map((t, i) => {
+      const colorClass = i % 3 === 0 ? 'text-neon-purple text-glow-purple' : i % 3 === 1 ? 'text-neon-orange' : 'text-neon-green';
+      return (
+        <span key={i} className={colorClass}>
+          {t}
+        </span>
+      );
+    })}
   </div>
 );
 
@@ -412,7 +415,7 @@ export default function PirbTerminal() {
           </div>
           <div className="flex items-center gap-3">
             <div className="hidden sm:flex items-center gap-2 text-[10px] font-display text-neon-green">
-              <span className="w-2 h-2 bg-neon-purple animate-blink" />
+              <span className="w-2 h-2 bg-neon-green animate-blink" />
               <span>BASE</span>
             </div>
             {walletAddress && profile ? (
@@ -482,7 +485,7 @@ export default function PirbTerminal() {
                   {dailyDone ? '✅ DAILY DONE' : '📅 DAILY CHALLENGE (90s)'}
                 </button>
 
-                <Link to="/duel" onClick={() => playCoinSound()} className="arcade-btn w-full text-[10px] py-3 text-center block" style={{ borderColor: 'hsl(var(--neon-purple))', color: 'hsl(var(--neon-purple))', background: 'hsl(var(--neon-purple) / 0.1)' }}>
+                <Link to="/duel" onClick={() => playCoinSound()} className="arcade-btn w-full text-[10px] py-3 text-center block" style={{ borderColor: 'hsl(var(--neon-green))', color: 'hsl(var(--neon-green))', background: 'hsl(var(--neon-green) / 0.1)', boxShadow: 'var(--glow-green)' }}>
                   ⚔️ PVP DUEL (1v1)
                 </Link>
 
@@ -519,9 +522,10 @@ export default function PirbTerminal() {
                 <p className="font-display text-[8px] text-neon-orange animate-blink tracking-widest">REQUESTING ENTROPY</p>
               </div>
               <div className="flex gap-1.5">
-                {[0, 1, 2, 3, 4].map(i => (
-                  <motion.div key={i} className="w-3 h-8 bg-neon-purple" animate={{ scaleY: [0.3, 1, 0.3] }} transition={{ duration: 0.5, repeat: Infinity, delay: i * 0.1 }} />
-                ))}
+                {[0, 1, 2, 3, 4].map(i => {
+                  const barColor = i % 3 === 0 ? 'bg-neon-purple' : i % 3 === 1 ? 'bg-neon-orange' : 'bg-neon-green';
+                  return <motion.div key={i} className={`w-3 h-8 ${barColor}`} animate={{ scaleY: [0.3, 1, 0.3] }} transition={{ duration: 0.5, repeat: Infinity, delay: i * 0.1 }} />;
+                })}
               </div>
             </motion.div>
           )}
@@ -635,11 +639,11 @@ export default function PirbTerminal() {
         </div>
       </main>
 
-      <footer className="relative z-10 border-t-2 border-neon-purple/20 bg-background/90 py-2 px-4 shrink-0">
+      <footer className="relative z-10 border-t-2 border-neon-green/15 bg-background/90 py-2 px-4 shrink-0">
         <div className="max-w-6xl mx-auto flex items-center justify-between text-[8px] font-display text-muted-foreground/40 tracking-wider">
-          <span>PIRBGEN v0.1</span>
-          <span className="text-neon-purple/30 animate-pulse-neon">● LIVE</span>
-          <span className="hidden sm:inline">BASE L2</span>
+          <span className="text-neon-purple/40">PIRBGEN v0.1</span>
+          <span className="text-neon-green/40 animate-pulse-neon">● LIVE</span>
+          <span className="hidden sm:inline text-neon-orange/30">BASE L2</span>
         </div>
       </footer>
     </div>
