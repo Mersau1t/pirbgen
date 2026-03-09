@@ -14,6 +14,90 @@ export type Database = {
   }
   public: {
     Tables: {
+      duel_rooms: {
+        Row: {
+          created_at: string
+          direction: string
+          entry_price: number | null
+          feed_id: string
+          id: string
+          leverage: number
+          p1_closed: boolean | null
+          p1_closed_at: string | null
+          p1_name: string
+          p1_pnl: number | null
+          p1_wallet: string | null
+          p2_closed: boolean | null
+          p2_closed_at: string | null
+          p2_name: string | null
+          p2_pnl: number | null
+          p2_wallet: string | null
+          rarity: string
+          room_code: string
+          started_at: string | null
+          status: string
+          stop_loss: number
+          take_profit: number
+          ticker: string
+          timer_seconds: number
+          winner: string | null
+        }
+        Insert: {
+          created_at?: string
+          direction: string
+          entry_price?: number | null
+          feed_id: string
+          id?: string
+          leverage: number
+          p1_closed?: boolean | null
+          p1_closed_at?: string | null
+          p1_name?: string
+          p1_pnl?: number | null
+          p1_wallet?: string | null
+          p2_closed?: boolean | null
+          p2_closed_at?: string | null
+          p2_name?: string | null
+          p2_pnl?: number | null
+          p2_wallet?: string | null
+          rarity?: string
+          room_code: string
+          started_at?: string | null
+          status?: string
+          stop_loss: number
+          take_profit: number
+          ticker: string
+          timer_seconds?: number
+          winner?: string | null
+        }
+        Update: {
+          created_at?: string
+          direction?: string
+          entry_price?: number | null
+          feed_id?: string
+          id?: string
+          leverage?: number
+          p1_closed?: boolean | null
+          p1_closed_at?: string | null
+          p1_name?: string
+          p1_pnl?: number | null
+          p1_wallet?: string | null
+          p2_closed?: boolean | null
+          p2_closed_at?: string | null
+          p2_name?: string | null
+          p2_pnl?: number | null
+          p2_wallet?: string | null
+          rarity?: string
+          room_code?: string
+          started_at?: string | null
+          status?: string
+          stop_loss?: number
+          take_profit?: number
+          ticker?: string
+          timer_seconds?: number
+          winner?: string | null
+        }
+        Relationships: []
+      }
       leaderboard: {
         Row: {
           created_at: string
