@@ -57,6 +57,8 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
   const [size, setSize] = useState({ w: 0, h: 0 });
   const animFrameRef = useRef(0);
   const timeRef = useRef(0);
+  const zoomProgressRef = useRef(0); // 0 = focused, 1 = zoomed out
+  const prevResultRef = useRef<string | null>(null);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -98,34 +100,30 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       ? entryPrice * (1 + tpPriceChange)
       : entryPrice * (1 - tpPriceChange);
 
-    // Оригінальний масштаб (фокус на SL/TP) або розширений (якщо торг завершений)
-    let lowerPrice = Math.min(slPrice, tpPrice);
-    let upperPrice = Math.max(slPrice, tpPrice);
+    // Scale boundaries (static)
+    const focusedLower = Math.min(slPrice, tpPrice);
+    const focusedUpper = Math.max(slPrice, tpPrice);
     
-    // Якщо торг завершений, включаємо фінальний тік у масштаб
+    let expandedLower = focusedLower;
+    let expandedUpper = focusedUpper;
     if (result) {
       const last = candles[candles.length - 1];
       if (last) {
-        lowerPrice = Math.min(lowerPrice, last.low, last.close);
-        upperPrice = Math.max(upperPrice, last.high, last.close);
+        expandedLower = Math.min(focusedLower, last.low, last.close);
+        expandedUpper = Math.max(focusedUpper, last.high, last.close);
       }
     }
-    
-    const boundaryRange = upperPrice - lowerPrice;
-    const pricePad = boundaryRange * 0.08;
-    const min = lowerPrice - pricePad;
-    const max = upperPrice + pricePad;
-    const range = max - min || 1;
+
+    if (!result) {
+      zoomProgressRef.current = 0;
+    }
+    prevResultRef.current = result ?? null;
 
     const candleSpacing = chartW / Math.max(MAX_VISIBLE - 1, 1);
     const centerIdx = candles.length - 1;
     const centerX = pad.left + chartW / 2;
-
-    const toY = (v: number) => pad.top + chartH - ((v - min) / range) * chartH;
     const toX = (i: number) => centerX + (i - centerIdx) * candleSpacing;
 
-    // Proximity to TP/SL (0..1)
-    // Proximity to TP/SL (0..1)
     const lastClose = candles[candles.length - 1]?.close ?? entryPrice;
     const pnlPct = direction === 'LONG'
       ? ((lastClose - entryPrice) / entryPrice) * leverage * 100
@@ -135,16 +133,30 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
     const proximity = Math.max(slProximity, tpProximity);
 
     const entryIdx = candles.findIndex(c => c.time >= 0);
-    const entryX = entryIdx >= 0 ? toX(entryIdx) : pad.left;
-
-    // Build smooth points
-    const pts = candles.map((c, i) => ({ x: toX(i), y: toY(c.close) }));
 
     let running = true;
 
     const draw = (t: number) => {
       if (!running) return;
       timeRef.current = t;
+
+      // --- Animated zoom lerp (runs every frame) ---
+      const zoomTarget = result ? 1 : 0;
+      zoomProgressRef.current += (zoomTarget - zoomProgressRef.current) * 0.04;
+      if (Math.abs(zoomProgressRef.current - zoomTarget) < 0.001) zoomProgressRef.current = zoomTarget;
+      const eased = 1 - Math.pow(1 - zoomProgressRef.current, 3);
+
+      const lowerPrice = focusedLower + (expandedLower - focusedLower) * eased;
+      const upperPrice = focusedUpper + (expandedUpper - focusedUpper) * eased;
+      const boundaryRange = upperPrice - lowerPrice;
+      const pricePad = boundaryRange * 0.08;
+      const min = lowerPrice - pricePad;
+      const max = upperPrice + pricePad;
+      const range = max - min || 1;
+
+      const toY = (v: number) => pad.top + chartH - ((v - min) / range) * chartH;
+      const pts = candles.map((c, i) => ({ x: toX(i), y: toY(c.close) }));
+      const entryX = entryIdx >= 0 ? toX(entryIdx) : pad.left;
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, w, h);
