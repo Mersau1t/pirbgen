@@ -529,7 +529,18 @@ export default function PirbTerminal() {
                   timerSeconds={timerSeconds}
                 />
               ) : (
-                <div className="flex flex-col items-center justify-center flex-1 gap-4 overflow-hidden">
+                <div className="flex flex-col items-center justify-center flex-1 gap-6 p-4 overflow-hidden">
+                  <motion.div
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ type: 'spring', stiffness: 150 }}
+                    className="text-center"
+                  >
+                    <h1 className={`font-display text-5xl sm:text-6xl tracking-wider ${status === 'WIN' ? 'text-neon-green text-glow-green animate-rainbow' : 'text-neon-orange text-glow-orange'}`}>
+                      {status === 'WIN' ? '🏆 YOU WIN!' : '💀 PIRBED!'}
+                    </h1>
+                  </motion.div>
+
                   <motion.div
                     initial={{ x: status === 'WIN' ? 300 : -300, opacity: 0, rotate: status === 'WIN' ? 15 : -15 }}
                     animate={{ x: 0, opacity: 1, rotate: 0 }}
@@ -537,7 +548,7 @@ export default function PirbTerminal() {
                     className="relative"
                   >
                     <motion.img src={pirbMascot} alt="Pirb"
-                      className="w-28 h-28 sm:w-36 sm:h-36 object-contain"
+                      className="w-32 h-32 sm:w-48 sm:h-48 object-contain"
                       style={{
                         filter: status === 'WIN'
                           ? 'drop-shadow(0 0 20px #07e46e) drop-shadow(0 0 40px #07e46eaa)'
@@ -554,7 +565,7 @@ export default function PirbTerminal() {
                       initial={{ scale: 0, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
                       transition={{ delay: 0.7, type: 'spring', stiffness: 200 }}
-                      className={`absolute -top-2 ${status === 'WIN' ? '-right-4' : '-left-4'} pixel-border px-3 py-1.5 text-[9px] sm:text-[11px] font-display tracking-wider whitespace-nowrap ${
+                      className={`absolute -top-2 ${status === 'WIN' ? '-right-6' : '-left-6'} pixel-border px-3 py-1.5 text-[9px] sm:text-[11px] font-display tracking-wider whitespace-nowrap ${
                         status === 'WIN'
                           ? 'bg-neon-green/10 border-neon-green/40 text-neon-green'
                           : 'bg-neon-orange/10 border-neon-orange/40 text-neon-orange'
@@ -574,28 +585,34 @@ export default function PirbTerminal() {
                     </motion.div>
                   )}
 
-                  <div className="text-center">
-                    <p className={`font-display text-3xl sm:text-4xl ${status === 'WIN' ? 'text-neon-green text-glow-green animate-rainbow' : 'text-neon-orange text-glow-orange'}`}>
-                      {status === 'WIN' ? '🎯 TARGET HIT!' : '💀 PIRBED!'}
-                    </p>
-                    <p className={`font-mono text-4xl sm:text-5xl font-bold mt-1 ${status === 'WIN' ? 'text-neon-green' : 'text-neon-orange'}`}>
-                      {finalPnl >= 0 ? '+' : ''}{finalPnl.toFixed(2)}%
-                    </p>
-                  </div>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                    className="glass-panel rounded-sm p-6 w-full max-w-sm mx-auto"
+                  >
+                    <div className={`text-center p-4 rounded-sm border ${
+                      status === 'WIN' ? 'border-neon-green/40 bg-neon-green/5' : 'border-neon-orange/40 bg-neon-orange/5'
+                    }`}>
+                      <p className="text-[10px] text-muted-foreground font-display tracking-wider mb-2">YOU · {activePos.ticker}</p>
+                      <p className={`font-mono text-4xl sm:text-5xl font-bold ${status === 'WIN' ? 'text-neon-green' : 'text-neon-orange'}`}>
+                        {finalPnl >= 0 ? '+' : ''}{finalPnl.toFixed(2)}%
+                      </p>
+                      
+                      {streak.current > 1 && status === 'WIN' && (
+                        <p className="font-display text-[9px] text-neon-orange tracking-wider mt-4">
+                          🔥 STREAK BONUS: ×{getStreakMultiplier(streak.current).toFixed(1)}
+                        </p>
+                      )}
+                    </div>
+                  </motion.div>
 
-                  {/* Streak multiplier note */}
-                  {streak.current > 1 && status === 'WIN' && (
-                    <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="font-display text-[10px] text-neon-orange tracking-wider">
-                      🔥 STREAK BONUS: ×{getStreakMultiplier(streak.current).toFixed(1)}
-                    </motion.p>
-                  )}
-
-                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="flex gap-3">
-                    <button onClick={() => generatePosition()} className="arcade-btn arcade-btn-primary text-[10px] py-2.5 px-6">
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }} className="flex gap-4">
+                    <button onClick={() => generatePosition()} className="arcade-btn arcade-btn-primary text-[10px] py-3 px-6">
                       🎲 ROLL AGAIN
                     </button>
                     <button onClick={() => { playCoinSound(); resetTerminal(); }}
-                      className="arcade-btn text-[10px] py-2.5 px-6" style={{ borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(var(--neon-orange) / 0.1)', boxShadow: 'var(--glow-orange)' }}>
+                      className="arcade-btn text-[10px] py-3 px-6" style={{ borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(var(--neon-orange) / 0.1)', boxShadow: 'var(--glow-orange)' }}>
                       🏠 HOME
                     </button>
                   </motion.div>
