@@ -137,74 +137,16 @@ export default function PirbTerminal() {
   const [allVolatile, setAllVolatile] = useState<DisplayToken[]>([]);
   
   useEffect(() => {
-    const loadByVolume = async () => {
-      try {
-        // 1. Build a ticker→Pyth feed map from DB + live Pyth feeds
-        const pythMap = new Map<string, { feed_id: string; ticker: string; pair: string; price: number }>();
-
-        // DB tokens (may only have memecoins)
-        const { data: dbTokens } = await (supabase as any).from('volatile_tokens').select('*').limit(200);
-        if (dbTokens) {
-          for (const t of dbTokens) {
-            pythMap.set(t.ticker.toUpperCase(), { feed_id: t.feed_id, ticker: t.ticker, pair: t.pair, price: t.price });
-          }
-        }
-
-        // Also fetch all Pyth feeds to cover BTC, ETH, SOL etc.
-        const allPythFeeds = await fetchAllPythFeeds();
-        for (const f of allPythFeeds) {
-          if (!pythMap.has(f.ticker.toUpperCase())) {
-            pythMap.set(f.ticker.toUpperCase(), { feed_id: f.id, ticker: f.ticker, pair: f.pair, price: 0 });
-          }
-        }
-
-        // 2. Fetch top coins by volume from CoinGecko
-        const cgRes = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=volume_desc&per_page=100&page=1&sparkline=false');
-        if (!cgRes.ok) throw new Error('CoinGecko fetch failed');
-        const cgData: Array<{ symbol: string; current_price: number; total_volume: number }> = await cgRes.json();
-
-        // 3. Match CoinGecko symbols to Pyth feeds
-        const matched: DisplayToken[] = [];
-        for (const coin of cgData) {
-          const sym = coin.symbol.toUpperCase();
-          const pyth = pythMap.get(sym);
-          if (pyth) {
-            matched.push({
-              feed_id: pyth.feed_id,
-              ticker: pyth.ticker,
-              pair: pyth.pair,
-              price: coin.current_price || pyth.price,
-              volume_24h: coin.total_volume,
-            });
-          }
-        }
-
-        if (matched.length > 0) {
-          setAllVolatile(matched);
-          setTopVolatile(matched.slice(0, 8));
-          return;
-        }
-      } catch (e) {
-        console.warn('CoinGecko volume fetch failed, falling back:', e);
-      }
-
-      // Fallback
-      const { data } = await (supabase as any).from('volatile_tokens').select('*').order('volatility', { ascending: false }).limit(50);
-      if (data && data.length > 0) {
-        const mapped = data.map((t: any) => ({ feed_id: t.feed_id, ticker: t.ticker, pair: t.pair, price: t.price, volume_24h: 0 }));
-        setAllVolatile(mapped);
-        setTopVolatile(mapped.slice(0, 8));
-      } else {
-        getTopVolatileTokens().then(tokens => {
-          const mapped = tokens.slice(0, 50).map(t => ({
-            feed_id: t.feed.id, ticker: t.feed.ticker, pair: t.feed.pair, price: t.price, volume_24h: 0,
-          }));
-          setAllVolatile(mapped);
-          setTopVolatile(mapped.slice(0, 8));
-        });
-      }
-    };
-    loadByVolume();
+    // Use the hardcoded 20 solo tokens
+    const mapped: DisplayToken[] = SOLO_TOKENS.map(t => ({
+      feed_id: t.feedId,
+      ticker: t.ticker,
+      pair: t.pair,
+      price: 0,
+      volume_24h: 0,
+    }));
+    setAllVolatile(mapped);
+    setTopVolatile(mapped.slice(0, 8));
   }, []);
 
   // Restore session
