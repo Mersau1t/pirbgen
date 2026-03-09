@@ -85,7 +85,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
     // Compute static values once
     const w = size.w;
     const h = size.h;
-    const priceAxisW = 110;
+    const priceAxisW = 130;
     const timeAxisH = 22;
     const pad = { top: 14, bottom: timeAxisH + 4, left: 8, right: priceAxisW + 6 };
     const chartW = w - pad.left - pad.right;
@@ -256,8 +256,8 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
         ctx.strokeStyle = 'rgba(128, 70, 220, 0.08)';
         ctx.lineWidth = 1;
         ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + chartW, y); ctx.stroke();
-        ctx.fillStyle = 'rgba(200, 180, 255, 0.25)';
-        ctx.font = '9px monospace';
+        ctx.fillStyle = 'rgba(200, 180, 255, 0.3)';
+        ctx.font = 'bold 11px monospace';
         ctx.fillText(formatPrice(price), pad.left + chartW + 8, y);
       }
 
@@ -396,9 +396,9 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       ctx.shadowBlur = 0;
       ctx.setLineDash([]);
       ctx.fillStyle = '#8046dc';
-      ctx.fillRect(pad.left + chartW + 4, entryY - 8, priceAxisW - 8, 16);
+      ctx.fillRect(pad.left + chartW + 4, entryY - 10, priceAxisW - 8, 20);
       ctx.fillStyle = '#F5F5FF';
-      ctx.font = 'bold 9px monospace';
+      ctx.font = 'bold 12px monospace';
       ctx.fillText(formatPrice(entryPrice), pad.left + chartW + 7, entryY);
 
       // --- TAKE PROFIT LINE ---
@@ -416,9 +416,9 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       ctx.restore();
       ctx.setLineDash([]);
       ctx.fillStyle = '#07e46e';
-      ctx.fillRect(pad.left + chartW + 4, tpY - 8, priceAxisW - 8, 16);
+      ctx.fillRect(pad.left + chartW + 4, tpY - 10, priceAxisW - 8, 20);
       ctx.fillStyle = '#0a0a0a';
-      ctx.font = 'bold 8px monospace';
+      ctx.font = 'bold 11px monospace';
       ctx.fillText('TP ' + formatPriceShort(tpPrice), pad.left + chartW + 6, tpY);
 
       // --- STOP LOSS LINE ---
@@ -436,9 +436,9 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       ctx.restore();
       ctx.setLineDash([]);
       ctx.fillStyle = '#ef4444';
-      ctx.fillRect(pad.left + chartW + 4, slY - 8, priceAxisW - 8, 16);
+      ctx.fillRect(pad.left + chartW + 4, slY - 10, priceAxisW - 8, 20);
       ctx.fillStyle = '#F5F5FF';
-      ctx.font = 'bold 8px monospace';
+      ctx.font = 'bold 11px monospace';
       ctx.fillText('SL ' + formatPriceShort(slPrice), pad.left + chartW + 6, slY);
 
       // --- CURRENT PRICE TAG ---
@@ -456,10 +456,10 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
         ctx.shadowColor = curColor;
         ctx.shadowBlur = 4 + tagPulse * 6;
         ctx.fillStyle = curColor;
-        ctx.fillRect(pad.left + chartW + 4, curY - 8, priceAxisW - 8, 16);
+        ctx.fillRect(pad.left + chartW + 4, curY - 10, priceAxisW - 8, 20);
         ctx.restore();
         ctx.fillStyle = '#0a0a0a';
-        ctx.font = 'bold 9px monospace';
+        ctx.font = 'bold 12px monospace';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
         ctx.fillText(formatPrice(lastClose), pad.left + chartW + 7, curY);
