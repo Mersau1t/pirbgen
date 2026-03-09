@@ -53,7 +53,7 @@ function sharpLinePath(ctx: CanvasRenderingContext2D, pts: { x: number; y: numbe
   }
 }
 
-export default function PriceChart({ candles, entryPrice, positive, direction, stopLoss, takeProfit, leverage, result, duelMode }: PriceChartProps) {
+export default function PriceChart({ candles, entryPrice, positive, direction, stopLoss, takeProfit, leverage, result, duelMode, spectator }: PriceChartProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
