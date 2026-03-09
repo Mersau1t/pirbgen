@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import PriceChart, { type Candle } from '@/components/PriceChart';
 import { streamPythPriceById, type PythPriceTick } from '@/lib/pyth';
 
@@ -94,8 +94,11 @@ export default function SpectatorChart({ ticker, feedId, entryPrice, initialCand
         </div>
       </div>
 
-      {/* Chart — neutral colors, duelMode hides SL/TP */}
-      <div className="glass-panel rounded-sm overflow-hidden flex-1 min-h-0 border border-border/20">
+      {/* Chart with subtle white glow background */}
+      <div className="relative rounded-sm overflow-hidden flex-1 min-h-0 border border-foreground/10">
+        {/* White glow layer behind chart */}
+        <div className="absolute inset-0 bg-gradient-to-br from-white/[0.04] via-white/[0.02] to-transparent pointer-events-none" />
+        <div className="absolute inset-0 shadow-[inset_0_0_40px_rgba(255,255,255,0.03)] pointer-events-none" />
         <PriceChart
           candles={candles}
           entryPrice={entryPrice}
