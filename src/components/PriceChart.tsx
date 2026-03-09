@@ -394,7 +394,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       ctx.shadowBlur = 0;
       ctx.setLineDash([]);
       ctx.fillStyle = '#8046dc';
-      ctx.fillRect(pad.left + chartW + 4, entryY - 10, priceAxisW - 8, 20);
+      ctx.fillRect(pad.left + chartW + 4, entryY - 11, priceAxisW - 8, 22);
       ctx.fillStyle = '#F5F5FF';
       ctx.font = 'bold 12px monospace';
       ctx.fillText(formatPrice(entryPrice), pad.left + chartW + 7, entryY);
