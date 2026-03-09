@@ -202,14 +202,22 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
     return (
       <div className="flex items-center justify-center flex-1">
         <AnimatePresence mode="wait">
-          <motion.div key={countdown} initial={{ scale: 2, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.5, opacity: 0 }} transition={{ duration: 0.4 }} className="text-center">
-            {countdown > 0 ? (
+          {countdown === null ? (
+            <motion.p key="sync" animate={{ opacity: [0.4, 1, 0.4] }} transition={{ duration: 1, repeat: Infinity }}
+              className="text-neon-orange font-display text-sm tracking-wider">
+              ⏳ SYNCING...
+            </motion.p>
+          ) : countdown > 0 ? (
+            <motion.div key={countdown} initial={{ scale: 2, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.5, opacity: 0 }} transition={{ duration: 0.4 }} className="text-center">
               <span className="font-display text-7xl text-neon-purple text-glow-purple">{countdown}</span>
-            ) : (
+            </motion.div>
+          ) : (
+            <motion.div key="go" initial={{ scale: 2, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.5, opacity: 0 }} transition={{ duration: 0.4 }} className="text-center">
               <span className="font-display text-4xl text-neon-green text-glow-green tracking-wider">GO!</span>
-            )}
-          </motion.div>
+            </motion.div>
+          )}
         </AnimatePresence>
       </div>
     );
