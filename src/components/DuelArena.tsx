@@ -19,7 +19,7 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
   const [myCandles, setMyCandles] = useState<Candle[]>([]);
   const [oppCandles, setOppCandles] = useState<Candle[]>([]);
   const [loading, setLoading] = useState(true);
-  const [countdown, setCountdown] = useState(3);
+  const [countdown, setCountdown] = useState<number | null>(null);
   const [started, setStarted] = useState(false);
   const [myPnl, setMyPnl] = useState(0);
   const [oppPnl, setOppPnl] = useState(0);
@@ -28,6 +28,7 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
   const [finished, setFinished] = useState(false);
   const pnlUpdateInterval = useRef<number>(0);
   const lastSyncedPnl = useRef(0);
+  const countdownRef = useRef<number>(0);
 
   const opponentSlot = playerSlot === 'p1' ? 'p2' : 'p1';
   const myName = room ? (room[`${playerSlot}_name`] || 'You') : 'You';
