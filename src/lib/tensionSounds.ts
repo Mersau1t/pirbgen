@@ -74,19 +74,19 @@ export function setTensionIntensity(intensity: number) {
   const t = ctx.currentTime;
   const clamped = Math.max(0, Math.min(1, intensity));
 
-  // Master volume: 0 when calm, up to 0.15 at max tension
+  // Master volume: 0 when calm, up to 0.08 at max tension (quieter)
   activeNodes.master.gain.cancelScheduledValues(t);
-  activeNodes.master.gain.setTargetAtTime(clamped * 0.15, t, 0.15);
+  activeNodes.master.gain.setTargetAtTime(clamped * 0.08, t, 0.2);
 
-  // Drone pitch rises with tension (55 → 110 Hz)
-  activeNodes.drone.frequency.setTargetAtTime(55 + clamped * 55, t, 0.2);
+  // Drone pitch rises gently with tension (40 → 65 Hz, softer range)
+  activeNodes.drone.frequency.setTargetAtTime(40 + clamped * 25, t, 0.3);
 
-  // Heartbeat LFO speed: 0.8 Hz (calm) → 3.5 Hz (panic)
-  activeNodes.lfo.frequency.setTargetAtTime(0.8 + clamped * 2.7, t, 0.2);
+  // Heartbeat LFO speed: 0.6 Hz (calm) → 2.2 Hz (moderate intensity)
+  activeNodes.lfo.frequency.setTargetAtTime(0.6 + clamped * 1.6, t, 0.3);
 
-  // Heartbeat volume increases
+  // Heartbeat volume increases gently
   activeNodes.hbGain.gain.cancelScheduledValues(t);
-  activeNodes.hbGain.gain.setTargetAtTime(clamped * 0.12, t, 0.15);
+  activeNodes.hbGain.gain.setTargetAtTime(clamped * 0.06, t, 0.2);
 }
 
 /**
