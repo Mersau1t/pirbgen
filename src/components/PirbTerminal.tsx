@@ -458,7 +458,7 @@ export default function PirbTerminal() {
                       ))}
                     </div>
                     {allVolatile.length > 8 && (
-                      <button onClick={() => setShowAllTokens(!showAllTokens)} className="w-full mt-2 font-display text-[8px] text-neon-cyan/60 hover:text-neon-cyan tracking-wider transition-colors">
+                      <button onClick={() => setShowAllTokens(!showAllTokens)} className="w-full mt-2 font-display text-[8px] text-neon-green/60 hover:text-neon-green tracking-wider transition-colors">
                         {showAllTokens ? '▲ SHOW LESS' : `▼ SHOW ALL ${allVolatile.length} TOKENS`}
                       </button>
                     )}
