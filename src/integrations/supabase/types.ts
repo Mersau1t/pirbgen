@@ -24,13 +24,29 @@ export type Database = {
           leverage: number
           p1_closed: boolean | null
           p1_closed_at: string | null
+          p1_direction: string | null
+          p1_entry_price: number | null
+          p1_feed_id: string | null
+          p1_leverage: number | null
           p1_name: string
           p1_pnl: number | null
+          p1_rarity: string | null
+          p1_stop_loss: number | null
+          p1_take_profit: number | null
+          p1_ticker: string | null
           p1_wallet: string | null
           p2_closed: boolean | null
           p2_closed_at: string | null
+          p2_direction: string | null
+          p2_entry_price: number | null
+          p2_feed_id: string | null
+          p2_leverage: number | null
           p2_name: string | null
           p2_pnl: number | null
+          p2_rarity: string | null
+          p2_stop_loss: number | null
+          p2_take_profit: number | null
+          p2_ticker: string | null
           p2_wallet: string | null
           rarity: string
           room_code: string
@@ -51,13 +67,29 @@ export type Database = {
           leverage: number
           p1_closed?: boolean | null
           p1_closed_at?: string | null
+          p1_direction?: string | null
+          p1_entry_price?: number | null
+          p1_feed_id?: string | null
+          p1_leverage?: number | null
           p1_name?: string
           p1_pnl?: number | null
+          p1_rarity?: string | null
+          p1_stop_loss?: number | null
+          p1_take_profit?: number | null
+          p1_ticker?: string | null
           p1_wallet?: string | null
           p2_closed?: boolean | null
           p2_closed_at?: string | null
+          p2_direction?: string | null
+          p2_entry_price?: number | null
+          p2_feed_id?: string | null
+          p2_leverage?: number | null
           p2_name?: string | null
           p2_pnl?: number | null
+          p2_rarity?: string | null
+          p2_stop_loss?: number | null
+          p2_take_profit?: number | null
+          p2_ticker?: string | null
           p2_wallet?: string | null
           rarity?: string
           room_code: string
@@ -78,13 +110,29 @@ export type Database = {
           leverage?: number
           p1_closed?: boolean | null
           p1_closed_at?: string | null
+          p1_direction?: string | null
+          p1_entry_price?: number | null
+          p1_feed_id?: string | null
+          p1_leverage?: number | null
           p1_name?: string
           p1_pnl?: number | null
+          p1_rarity?: string | null
+          p1_stop_loss?: number | null
+          p1_take_profit?: number | null
+          p1_ticker?: string | null
           p1_wallet?: string | null
           p2_closed?: boolean | null
           p2_closed_at?: string | null
+          p2_direction?: string | null
+          p2_entry_price?: number | null
+          p2_feed_id?: string | null
+          p2_leverage?: number | null
           p2_name?: string | null
           p2_pnl?: number | null
+          p2_rarity?: string | null
+          p2_stop_loss?: number | null
+          p2_take_profit?: number | null
+          p2_ticker?: string | null
           p2_wallet?: string | null
           rarity?: string
           room_code?: string
