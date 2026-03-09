@@ -11,6 +11,7 @@ import { WalletProvider } from "@/contexts/WalletContext";
 import Index from "./pages/Index";
 import Leaderboard from "./pages/Leaderboard";
 import Profile from "./pages/Profile";
+import Duel from "./pages/Duel";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +37,7 @@ const App = () => (
                 <Route path="/" element={<Index />} />
                 <Route path="/leaderboard" element={<Leaderboard />} />
                 <Route path="/profile" element={<Profile />} />
+                <Route path="/duel" element={<Duel />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
