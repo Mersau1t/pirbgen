@@ -538,7 +538,7 @@ export default function PirbTerminal() {
                       className={`absolute -top-2 ${status === 'WIN' ? '-right-4' : '-left-4'} pixel-border px-3 py-1.5 text-[9px] sm:text-[11px] font-display tracking-wider whitespace-nowrap ${
                         status === 'WIN'
                           ? 'bg-neon-green/10 border-neon-green/40 text-neon-green'
-                          : 'bg-neon-red/10 border-neon-red/40 text-neon-red'
+                          : 'bg-neon-orange/10 border-neon-orange/40 text-neon-orange'
                       }`}
                     >
                       {status === 'WIN'
