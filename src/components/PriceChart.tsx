@@ -16,6 +16,7 @@ interface PriceChartProps {
   stopLoss: number;
   takeProfit: number;
   leverage: number;
+  result?: 'WIN' | 'REKT' | null; // Додаємо результат для керування масштабом
 }
 
 const MAX_VISIBLE = 28;
@@ -50,7 +51,7 @@ function sharpLinePath(ctx: CanvasRenderingContext2D, pts: { x: number; y: numbe
   }
 }
 
-export default function PriceChart({ candles, entryPrice, positive, direction, stopLoss, takeProfit, leverage }: PriceChartProps) {
+export default function PriceChart({ candles, entryPrice, positive, direction, stopLoss, takeProfit, leverage, result }: PriceChartProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
@@ -97,14 +98,19 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       ? entryPrice * (1 + tpPriceChange)
       : entryPrice * (1 - tpPriceChange);
 
-    // Include the latest tick/candle extremes in the visible range so SL/TP crossings don't clip
-    const last = candles[candles.length - 1];
-    const lastClose = last?.close ?? entryPrice;
-    const lastLow = last?.low ?? lastClose;
-    const lastHigh = last?.high ?? lastClose;
-
-    const lowerPrice = Math.min(slPrice, tpPrice, lastLow, lastClose);
-    const upperPrice = Math.max(slPrice, tpPrice, lastHigh, lastClose);
+    // Оригінальний масштаб (фокус на SL/TP) або розширений (якщо торг завершений)
+    let lowerPrice = Math.min(slPrice, tpPrice);
+    let upperPrice = Math.max(slPrice, tpPrice);
+    
+    // Якщо торг завершений, включаємо фінальний тік у масштаб
+    if (result) {
+      const last = candles[candles.length - 1];
+      if (last) {
+        lowerPrice = Math.min(lowerPrice, last.low, last.close);
+        upperPrice = Math.max(upperPrice, last.high, last.close);
+      }
+    }
+    
     const boundaryRange = upperPrice - lowerPrice;
     const pricePad = boundaryRange * 0.08;
     const min = lowerPrice - pricePad;
@@ -119,7 +125,8 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
     const toX = (i: number) => centerX + (i - centerIdx) * candleSpacing;
 
     // Proximity to TP/SL (0..1)
-    // lastClose computed above (includes terminal tick)
+    // Proximity to TP/SL (0..1)
+    const lastClose = candles[candles.length - 1]?.close ?? entryPrice;
     const pnlPct = direction === 'LONG'
       ? ((lastClose - entryPrice) / entryPrice) * leverage * 100
       : ((entryPrice - lastClose) / entryPrice) * leverage * 100;
@@ -391,7 +398,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       running = false;
       cancelAnimationFrame(animFrameRef.current);
     };
-  }, [candles, entryPrice, positive, size, direction, stopLoss, takeProfit, leverage]);
+  }, [candles, entryPrice, positive, size, direction, stopLoss, takeProfit, leverage, result]);
 
   return (
     <div ref={containerRef} className="w-full h-full relative">
