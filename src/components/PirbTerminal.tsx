@@ -430,7 +430,7 @@ export default function PirbTerminal() {
       {/* Main content */}
       <main className={`relative z-10 mx-auto px-4 py-2 flex-1 min-h-0 overflow-hidden flex flex-col ${(status === 'PLAYING' || status === 'WIN' || status === 'REKT') ? 'max-w-7xl' : 'max-w-4xl'}`}>
         <div className="flex-1 min-h-0 flex flex-col">
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="sync">
           {status === 'IDLE' && (
             <motion.div
               key="idle"
