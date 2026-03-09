@@ -122,7 +122,7 @@ const MARQUEE_LINES = [
 
 const MarqueeStrip = ({ ariaHidden }: { ariaHidden?: boolean }) => (
   <div
-    className="flex whitespace-nowrap gap-10 pr-10 text-[10px] font-display"
+    className="flex whitespace-nowrap gap-20 pr-20 text-[10px] sm:text-[12px] font-display"
     aria-hidden={ariaHidden}
   >
     {MARQUEE_LINES.map((t, i) => (
