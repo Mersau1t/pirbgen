@@ -305,7 +305,7 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
             <div className="flex items-center gap-4">
               <div className="text-center">
                 <p className="text-[7px] text-muted-foreground/60 uppercase">SL</p>
-                <p className="text-xs font-mono text-neon-red font-bold">{position.stopLoss}%</p>
+                <p className="text-xs font-mono text-neon-orange font-bold">{position.stopLoss}%</p>
               </div>
               <div className="text-center">
                 <p className="text-[7px] text-muted-foreground/60 uppercase">TP</p>
