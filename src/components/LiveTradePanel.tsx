@@ -348,7 +348,7 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
         {hasTimer && !result && (
           <div className="mt-1">
             <div className="flex items-center gap-2">
-              <span className={`text-[9px] font-display tracking-wider ${timerUrgent ? 'text-neon-red animate-pulse' : 'text-neon-orange'}`}>
+              <span className={`text-[9px] font-display tracking-wider ${timerUrgent ? 'text-neon-orange animate-pulse' : 'text-neon-orange'}`}>
                 ⏱ {formatTime(timeLeft)}
               </span>
               <div className="flex-1 h-1.5 bg-muted/20 rounded-full overflow-hidden border border-border/20">
