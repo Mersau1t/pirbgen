@@ -353,7 +353,7 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
               </span>
               <div className="flex-1 h-1.5 bg-muted/20 rounded-full overflow-hidden border border-border/20">
                 <motion.div
-                  className={`h-full rounded-full ${timerUrgent ? 'bg-neon-red' : 'bg-neon-orange'}`}
+                  className={`h-full rounded-full bg-neon-orange`}
                   style={{ width: `${timerPct}%` }}
                   animate={timerUrgent ? { opacity: [0.5, 1, 0.5] } : {}}
                   transition={{ duration: 0.5, repeat: Infinity }}
