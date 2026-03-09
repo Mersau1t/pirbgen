@@ -302,8 +302,8 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
           )}
         </div>
 
-        {/* Opponent panel — spectator only: chart + ticker + price, no PnL/direction/leverage */}
-        <div className="flex-1 min-h-0 min-w-0 flex flex-col">
+        {/* Opponent panel — spectator only */}
+        <div className="basis-1/2 min-h-0 min-w-0 flex flex-col">
           <SpectatorChart
             ticker={oppPosition.ticker}
             feedId={oppPosition.feedId}
