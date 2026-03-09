@@ -397,8 +397,8 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
 
         {readOnly && !result && (
           <div className="flex items-center gap-2 py-1">
-            <span className="w-2 h-2 bg-neon-cyan animate-blink" />
-            <span className="font-display text-[10px] text-neon-cyan tracking-wider">OPPONENT · LIVE</span>
+            <span className="w-2 h-2 bg-neon-green animate-blink" />
+            <span className="font-display text-[10px] text-neon-green tracking-wider">OPPONENT · LIVE</span>
           </div>
         )}
 
