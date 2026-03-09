@@ -16,7 +16,8 @@ interface PriceChartProps {
   stopLoss: number;
   takeProfit: number;
   leverage: number;
-  result?: 'WIN' | 'REKT' | null; // Додаємо результат для керування масштабом
+  result?: 'WIN' | 'REKT' | null;
+  duelMode?: boolean; // clean chart without SL/TP zones/lines
 }
 
 const MAX_VISIBLE = 28;
@@ -51,7 +52,7 @@ function sharpLinePath(ctx: CanvasRenderingContext2D, pts: { x: number; y: numbe
   }
 }
 
-export default function PriceChart({ candles, entryPrice, positive, direction, stopLoss, takeProfit, leverage, result }: PriceChartProps) {
+export default function PriceChart({ candles, entryPrice, positive, direction, stopLoss, takeProfit, leverage, result, duelMode }: PriceChartProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
@@ -101,12 +102,21 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       : entryPrice * (1 - tpPriceChange);
 
     // Scale boundaries (static)
-    const focusedLower = Math.min(slPrice, tpPrice);
-    const focusedUpper = Math.max(slPrice, tpPrice);
+    let focusedLower: number, focusedUpper: number;
+    if (duelMode) {
+      // In duel mode, scale to actual price data
+      const allPrices = candles.flatMap(c => [c.high, c.low, c.close, c.open]);
+      allPrices.push(entryPrice);
+      focusedLower = Math.min(...allPrices);
+      focusedUpper = Math.max(...allPrices);
+    } else {
+      focusedLower = Math.min(slPrice, tpPrice);
+      focusedUpper = Math.max(slPrice, tpPrice);
+    }
     
     let expandedLower = focusedLower;
     let expandedUpper = focusedUpper;
-    if (result) {
+    if (result && !duelMode) {
       const last = candles[candles.length - 1];
       if (last) {
         expandedLower = Math.min(focusedLower, last.low, last.close);
@@ -165,6 +175,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       ctx.fillStyle = 'rgba(10, 6, 20, 0.6)';
       ctx.fillRect(pad.left, pad.top, chartW, chartH);
 
+      if (!duelMode) {
       // --- TP/SL GRADIENT ZONES WITH EFFECTS ---
       const tpYZone = toY(tpPrice);
       const slYZone = toY(slPrice);
@@ -176,7 +187,6 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
         const zoneY = Math.min(yTop, yBot);
         if (zoneH < 1) return;
 
-        // Base gradient fill (static, no pulsation)
         const baseAlpha = 0.08 + prox * 0.12;
         const grad = ctx.createLinearGradient(0, zoneY, 0, zoneY + zoneH);
         grad.addColorStop(0, `${color}${Math.round(baseAlpha * 255).toString(16).padStart(2, '0')}`);
@@ -184,7 +194,6 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
         ctx.fillStyle = grad;
         ctx.fillRect(pad.left, zoneY, chartW, zoneH);
 
-        // Horizontal energy waves (smooth sine waves moving through zone)
         ctx.save();
         ctx.beginPath();
         ctx.rect(pad.left, zoneY, chartW, zoneH);
@@ -207,7 +216,6 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
         }
         ctx.restore();
 
-        // Subtle horizontal scan lines (static, no flicker)
         ctx.save();
         ctx.beginPath();
         ctx.rect(pad.left, zoneY, chartW, zoneH);
@@ -218,9 +226,8 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
         }
         ctx.restore();
 
-        // Glowing edge at boundary (only when close, smooth not blinking)
         if (prox > 0.4) {
-          const edgeIntensity = (prox - 0.4) / 0.6; // 0→1 as prox goes 0.4→1
+          const edgeIntensity = (prox - 0.4) / 0.6;
           ctx.save();
           ctx.shadowColor = color;
           ctx.shadowBlur = 6 + edgeIntensity * 18;
@@ -244,6 +251,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       const redTop = direction === 'LONG' ? entryYZone : slYZone;
       const redBot = direction === 'LONG' ? slYZone : entryYZone;
       drawZone(redTop, redBot, '#ef4444', false, slProximity);
+      }
 
       // --- GRID ---
       ctx.textAlign = 'left';
@@ -399,6 +407,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       ctx.font = 'bold 14px monospace';
       ctx.fillText(formatPrice(entryPrice), pad.left + chartW + 7, entryY);
 
+      if (!duelMode) {
       // --- TAKE PROFIT LINE ---
       const tpY = toY(tpPrice);
       const tpPulse = tpProximity > 0.6 ? (0.5 + 0.5 * Math.sin(t / 250)) : 0;
@@ -438,6 +447,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       ctx.fillStyle = '#F5F5FF';
       ctx.font = 'bold 13px monospace';
       ctx.fillText('SL ' + formatPriceShort(slPrice), pad.left + chartW + 6, slY);
+      }
 
       // --- CURRENT PRICE TAG ---
       if (candles.length > 0) {
@@ -511,7 +521,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       running = false;
       cancelAnimationFrame(animFrameRef.current);
     };
-  }, [candles, entryPrice, positive, size, direction, stopLoss, takeProfit, leverage, result]);
+  }, [candles, entryPrice, positive, size, direction, stopLoss, takeProfit, leverage, result, duelMode]);
 
   return (
     <div ref={containerRef} className="w-full h-full relative">

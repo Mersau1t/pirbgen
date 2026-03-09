@@ -374,6 +374,7 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
           takeProfit={duelMode ? 9999 : position.takeProfit}
           leverage={position.leverage}
           result={result}
+          duelMode={duelMode}
         />
       </div>
 
