@@ -67,22 +67,61 @@ function formatVolume(v: number): string {
 }
 
 
+const MARQUEE_LINES = [
+  "PIRB: ur gonna get rekt so hard 💀",
+  "PIRB: *aggressively poops on ur portfolio* 💩",
+  "PIRB: ngmi energy detected fr fr 📡",
+  "PIRB: this is called getting PIRBED bestie",
+  "PIRB: ur the exit liquidity no cap",
+  "PIRB: wen lambo? never for u kek 😂",
+  "PIRB: cope harder anon",
+  "PIRB: skill issue tbh",
+  "PIRB: *PIRB pecks ur liquidation button*",
+  "PIRB: ratio + L + PIRBED",
+  "PIRB: touch grass after this L",
+  "PIRB: sheeeesh that entry was mid",
+  "PIRB: imagine fumbling this bag 😭",
+  "PIRB: not even ur mom would long this",
+  "PIRB: bro think he's a trader 💀💀💀",
+  "PIRB: HFSP — have fun staying PIRBED",
+  "PIRB: plot twist: u were the liquidity all along",
+  "PIRB: *PIRB steals ur stop loss*",
+  "PIRB: another degen down bad",
+  "PIRB: enjoy being poor, anon",
+  "PIRB: that candle is redder than ur face rn",
+  "PIRB: *PIRB flies away with ur money*",
+  "PIRB: ur portfolio called... it's crying fr",
+  "PIRB: just close it bro. save urself",
+  "PIRB: bro really thought he was built different",
+  "PIRB: lmao u really went in? 💀",
+  "PIRB: my nft trades better than u",
+  "PIRB: rent free in PIRB's head now",
+  "PIRB: get ratioed + PIRBED",
+  "PIRB: ur down bad and it's beautiful",
+  "PIRB: *aggressive cooing intensifies*",
+  "PIRB: ur a degenerate and PIRB respects it... kinda",
+  "PIRB: this is fine. ur fine. ur not fine.",
+  "PIRB: certified W for PIRB, L for u",
+  "PIRB: *PIRB counts ur liquidations like bread crumbs*",
+  "PIRB: that leverage is not it chief",
+  "PIRB: u can't be serious rn 💀",
+  "PIRB: anon discovered the worst entry 🔍",
+  "PIRB: sir this is a Wendy's not a trading desk",
+  "PIRB: imagine not taking profit lmaooo",
+  "PIRB: PIRB has seen better trades in a kindergarten",
+  "PIRB: no thoughts, head empty, only loss",
+  "PIRB: broooo 💀💀",
+  "PIRB: PvE but the E is ur own bad decisions",
+  "PIRB: it do be like that sometimes... for u",
+  "PIRB: it's giving rekt energy",
+  "PIRB: iykyk but u clearly don't",
+  "PIRB: based on the vibes? ded account incoming",
+  "PIRB: ur conviction is almost impressive. almost.",
+  "PIRB: *PIRB documents ur demise for the archives* 📂",
+];
+
 const TickerMarquee = () => {
-  const lines = [
-    "PIRB: ur gonna get rekt so hard 💀",
-    "PIRB: *aggressively poops on ur portfolio* 💩",
-    "PIRB: ngmi energy detected fr fr 📡",
-    "PIRB: this is called getting PIRBED bestie",
-    "PIRB: ur the exit liquidity no cap",
-    "PIRB: wen lambo? never for u kek 😂",
-    "PIRB: cope harder anon",
-    "PIRB: skill issue tbh",
-    "PIRB: *PIRB pecks ur liquidation button*",
-    "PIRB: ratio + L + PIRBED",
-    "PIRB: touch grass after this L",
-    "PIRB: sheeeesh that entry was mid",
-  ];
-  const doubled = [...lines, ...lines];
+  const doubled = [...MARQUEE_LINES, ...MARQUEE_LINES];
   return (
     <div className="overflow-hidden border-b-2 border-neon-purple/30 bg-background/80 py-1.5">
       <div className="animate-marquee flex whitespace-nowrap gap-10 text-[10px] font-display">
@@ -437,37 +476,6 @@ export default function PirbTerminal() {
                 )}
               </div>
 
-              {/* Top Volume tokens */}
-              {topVolatile.length > 0 && (
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="w-full max-w-md">
-                  <div className="pixel-border bg-background/80 p-3 max-h-[280px] overflow-y-auto">
-                    <p className="font-display text-[9px] text-neon-green tracking-wider mb-2 text-center">📊 TOP VOLUME · TAP TO TRADE</p>
-                    <div className="grid grid-cols-2 gap-1.5">
-                      {(showAllTokens ? allVolatile : topVolatile).map((t, i) => (
-                        <motion.button
-                          key={t.feed_id}
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: Math.min(0.4 + i * 0.04, 1) }}
-                          onClick={() => generatePosition({ id: t.feed_id, ticker: t.ticker, pair: t.pair })}
-                          className="flex items-center justify-between px-2 py-1.5 rounded bg-neon-purple/5 border border-neon-purple/10 hover:bg-neon-purple/15 hover:border-neon-purple/30 transition-colors cursor-pointer text-left"
-                        >
-                          <span className="font-display text-[10px] text-foreground/80 tracking-wider">{t.ticker}</span>
-                          <span className="font-display text-[9px] tracking-wider text-neon-green/70">
-                            {t.volume_24h > 0 ? formatVolume(t.volume_24h) : '—'}
-                          </span>
-                        </motion.button>
-                      ))}
-                    </div>
-                    {allVolatile.length > 8 && (
-                      <button onClick={() => setShowAllTokens(!showAllTokens)} className="w-full mt-2 font-display text-[8px] text-neon-green/60 hover:text-neon-green tracking-wider transition-colors">
-                        {showAllTokens ? '▲ SHOW LESS' : `▼ SHOW ALL ${allVolatile.length} TOKENS`}
-                      </button>
-                    )}
-                    <p className="font-display text-[7px] text-muted-foreground/30 text-center mt-1.5 tracking-wider">24H VOLUME · TAP ANY TOKEN</p>
-                  </div>
-                </motion.div>
-              )}
 
               <div className="flex items-center gap-2 text-[8px] font-display text-muted-foreground/40">
                 <span className="text-neon-purple/40">●</span>
