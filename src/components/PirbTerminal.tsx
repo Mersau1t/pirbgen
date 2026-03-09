@@ -120,16 +120,25 @@ const MARQUEE_LINES = [
   "PIRB: *PIRB documents ur demise for the archives* 📂",
 ];
 
+const MarqueeStrip = ({ ariaHidden }: { ariaHidden?: boolean }) => (
+  <div
+    className="flex whitespace-nowrap gap-10 pr-10 text-[10px] font-display"
+    aria-hidden={ariaHidden}
+  >
+    {MARQUEE_LINES.map((t, i) => (
+      <span key={i} className={i % 2 === 0 ? 'text-neon-orange text-glow-orange' : 'text-neon-purple'}>
+        {t}
+      </span>
+    ))}
+  </div>
+);
+
 const TickerMarquee = () => {
-  const doubled = [...MARQUEE_LINES, ...MARQUEE_LINES];
   return (
     <div className="overflow-hidden border-b-2 border-neon-purple/30 bg-background/80 py-1.5">
-      <div className="animate-marquee flex whitespace-nowrap gap-10 text-[10px] font-display">
-        {doubled.map((t, i) => (
-          <span key={i} className={i % 2 === 0 ? 'text-neon-orange text-glow-orange' : 'text-neon-purple'}>
-            {t}
-          </span>
-        ))}
+      <div className="animate-marquee flex w-max">
+        <MarqueeStrip />
+        <MarqueeStrip ariaHidden />
       </div>
     </div>
   );
