@@ -561,7 +561,7 @@ export default function PirbTerminal() {
 
                   {/* Streak multiplier note */}
                   {streak.current > 1 && status === 'WIN' && (
-                    <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="font-display text-[10px] text-neon-amber tracking-wider">
+                    <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="font-display text-[10px] text-neon-orange tracking-wider">
                       🔥 STREAK BONUS: ×{getStreakMultiplier(streak.current).toFixed(1)}
                     </motion.p>
                   )}
