@@ -19,7 +19,7 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
   const [myCandles, setMyCandles] = useState<Candle[]>([]);
   const [oppCandles, setOppCandles] = useState<Candle[]>([]);
   const [loading, setLoading] = useState(true);
-  const [countdown, setCountdown] = useState(3);
+  const [countdown, setCountdown] = useState<number | null>(null);
   const [started, setStarted] = useState(false);
   const [myPnl, setMyPnl] = useState(0);
   const [oppPnl, setOppPnl] = useState(0);
@@ -28,6 +28,7 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
   const [finished, setFinished] = useState(false);
   const pnlUpdateInterval = useRef<number>(0);
   const lastSyncedPnl = useRef(0);
+  const countdownRef = useRef<number>(0);
 
   const opponentSlot = playerSlot === 'p1' ? 'p2' : 'p1';
   const myName = room ? (room[`${playerSlot}_name`] || 'You') : 'You';
@@ -85,13 +86,28 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
     load();
   }, [roomId, playerSlot]);
 
-  // Countdown
+  // Server-synced countdown based on started_at
   useEffect(() => {
-    if (loading) return;
-    if (countdown <= 0) { setStarted(true); return; }
-    const t = setTimeout(() => setCountdown(c => c - 1), 1000);
-    return () => clearTimeout(t);
-  }, [loading, countdown]);
+    if (loading || !room?.started_at) return;
+
+    const startTime = new Date(room.started_at).getTime();
+
+    const tick = () => {
+      const now = Date.now();
+      const diff = startTime - now;
+      if (diff <= 0) {
+        setCountdown(0);
+        setStarted(true);
+        clearInterval(countdownRef.current);
+        return;
+      }
+      setCountdown(Math.ceil(diff / 1000));
+    };
+
+    tick(); // immediate check
+    countdownRef.current = window.setInterval(tick, 100);
+    return () => clearInterval(countdownRef.current);
+  }, [loading, room?.started_at]);
 
   // Realtime opponent updates
   useEffect(() => {
@@ -186,14 +202,22 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
     return (
       <div className="flex items-center justify-center flex-1">
         <AnimatePresence mode="wait">
-          <motion.div key={countdown} initial={{ scale: 2, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.5, opacity: 0 }} transition={{ duration: 0.4 }} className="text-center">
-            {countdown > 0 ? (
+          {countdown === null ? (
+            <motion.p key="sync" animate={{ opacity: [0.4, 1, 0.4] }} transition={{ duration: 1, repeat: Infinity }}
+              className="text-neon-orange font-display text-sm tracking-wider">
+              ⏳ SYNCING...
+            </motion.p>
+          ) : countdown > 0 ? (
+            <motion.div key={countdown} initial={{ scale: 2, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.5, opacity: 0 }} transition={{ duration: 0.4 }} className="text-center">
               <span className="font-display text-7xl text-neon-purple text-glow-purple">{countdown}</span>
-            ) : (
+            </motion.div>
+          ) : (
+            <motion.div key="go" initial={{ scale: 2, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.5, opacity: 0 }} transition={{ duration: 0.4 }} className="text-center">
               <span className="font-display text-4xl text-neon-green text-glow-green tracking-wider">GO!</span>
-            )}
-          </motion.div>
+            </motion.div>
+          )}
         </AnimatePresence>
       </div>
     );

@@ -109,13 +109,15 @@ export default function DuelLobby({ onRoomReady }: DuelLobbyProps) {
 
       if (findErr || !room) throw new Error('Room not found or already started');
 
+      // Set started_at to 5 seconds in the future so both players sync
+      const startTime = new Date(Date.now() + 5000).toISOString();
       const { error: joinErr } = await supabase
         .from('duel_rooms')
         .update({
           p2_name: playerName,
           p2_wallet: walletAddress || null,
           status: 'playing',
-          started_at: new Date().toISOString(),
+          started_at: startTime,
         } as any)
         .eq('id', room.id);
 
