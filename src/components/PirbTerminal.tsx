@@ -374,7 +374,7 @@ export default function PirbTerminal() {
   const rarityStyle = activePos ? RARITY_STYLES[activePos.rarity] : RARITY_STYLES.common;
 
   return (
-    <div className="h-screen bg-background grid-bg scanlines crt-vignette relative overflow-hidden animate-flicker flex flex-col">
+    <div className="h-screen bg-background grid-bg scanlines crt-vignette relative overflow-hidden flex flex-col">
       {/* Particles on IDLE */}
       {status === 'IDLE' && (
         <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
