@@ -433,7 +433,7 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
               transition={{ x: { duration: 0.5, ease: 'easeOut' }, scale: { duration: 0.3 } }}
               className="text-center py-1"
             >
-              <p className="font-display text-lg text-neon-red text-glow-red inline-block">💀 LIQUIDATED {pnl.toFixed(2)}%</p>
+              <p className="font-display text-lg text-neon-orange text-glow-orange inline-block">💀 LIQUIDATED {pnl.toFixed(2)}%</p>
             </motion.div>
           </>
         )}

@@ -35,7 +35,6 @@ export default function SpectatorChart({ ticker, feedId, entryPrice, initialCand
   });
   const candleRef = useRef<{ ticks: PythPriceTick[] }>({ ticks: [] });
 
-  // Price streaming
   useEffect(() => {
     let rafId = 0;
     let pendingPrice: number | null = null;
@@ -68,7 +67,6 @@ export default function SpectatorChart({ ticker, feedId, entryPrice, initialCand
     return () => { cleanup(); if (rafId) cancelAnimationFrame(rafId); clearInterval(candleTick); };
   }, [feedId]);
 
-  // Countdown timer (mirrors LiveTradePanel)
   useEffect(() => {
     if (!started) return;
     setTimeLeft(timerSeconds);
@@ -88,7 +86,6 @@ export default function SpectatorChart({ ticker, feedId, entryPrice, initialCand
 
   return (
     <div className="flex flex-col flex-1 min-h-0 gap-1">
-      {/* Header — mirrors LiveTradePanel structure but neutral */}
       <div className="glass-panel rounded-sm px-3 py-1.5 shrink-0">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2">
@@ -117,16 +114,15 @@ export default function SpectatorChart({ ticker, feedId, entryPrice, initialCand
           </div>
         </div>
 
-        {/* Timer bar — same as LiveTradePanel */}
         {started && timeLeft > 0 && (
           <div className="mt-1">
             <div className="flex items-center gap-2">
-              <span className={`text-[9px] font-display tracking-wider ${timerUrgent ? 'text-neon-red animate-pulse' : 'text-neon-orange'}`}>
+              <span className={`text-[9px] font-display tracking-wider ${timerUrgent ? 'text-neon-orange animate-pulse' : 'text-neon-orange'}`}>
                 ⏱ {formatTime(timeLeft)}
               </span>
               <div className="flex-1 h-1.5 bg-muted/20 rounded-full overflow-hidden border border-border/20">
                 <motion.div
-                  className={`h-full rounded-full ${timerUrgent ? 'bg-neon-red' : 'bg-neon-orange'}`}
+                  className={`h-full rounded-full ${timerUrgent ? 'bg-neon-orange' : 'bg-neon-orange'}`}
                   style={{ width: `${timerPct}%` }}
                   animate={timerUrgent ? { opacity: [0.5, 1, 0.5] } : {}}
                   transition={{ duration: 0.5, repeat: Infinity }}
@@ -137,7 +133,6 @@ export default function SpectatorChart({ ticker, feedId, entryPrice, initialCand
         )}
       </div>
 
-      {/* Chart — spectator mode, neutral colors */}
       <div className="relative rounded-sm overflow-hidden flex-1 min-h-0 border border-foreground/10">
         <div className="absolute inset-0 bg-gradient-to-br from-white/[0.04] via-white/[0.02] to-transparent pointer-events-none" />
         <PriceChart
@@ -153,7 +148,6 @@ export default function SpectatorChart({ ticker, feedId, entryPrice, initialCand
         />
       </div>
 
-      {/* Bottom bar — mirrors LiveTradePanel but no button */}
       <div className="shrink-0">
         <div className="flex items-center gap-2 py-1">
           <span className="w-2 h-2 bg-muted-foreground/40 animate-blink" />
