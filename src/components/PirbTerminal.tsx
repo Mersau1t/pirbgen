@@ -639,11 +639,11 @@ export default function PirbTerminal() {
         </div>
       </main>
 
-      <footer className="relative z-10 border-t-2 border-neon-purple/20 bg-background/90 py-2 px-4 shrink-0">
+      <footer className="relative z-10 border-t-2 border-neon-green/15 bg-background/90 py-2 px-4 shrink-0">
         <div className="max-w-6xl mx-auto flex items-center justify-between text-[8px] font-display text-muted-foreground/40 tracking-wider">
-          <span>PIRBGEN v0.1</span>
-          <span className="text-neon-purple/30 animate-pulse-neon">● LIVE</span>
-          <span className="hidden sm:inline">BASE L2</span>
+          <span className="text-neon-purple/40">PIRBGEN v0.1</span>
+          <span className="text-neon-green/40 animate-pulse-neon">● LIVE</span>
+          <span className="hidden sm:inline text-neon-orange/30">BASE L2</span>
         </div>
       </footer>
     </div>
