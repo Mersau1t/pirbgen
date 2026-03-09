@@ -52,12 +52,12 @@ export function startTensionAudio() {
   heartbeat.connect(hbGain).connect(master);
   heartbeat.start(t);
 
-  // LFO to modulate heartbeat gain (creates pulsing)
+  // LFO to modulate heartbeat gain (creates gentle pulsing)
   const lfo = ctx.createOscillator();
   const lfoGain = ctx.createGain();
   lfo.type = 'sine';
-  lfo.frequency.setValueAtTime(0.8, t); // ~48 BPM heartbeat
-  lfoGain.gain.setValueAtTime(0.08, t);
+  lfo.frequency.setValueAtTime(0.6, t); // Slower, more relaxed pulse
+  lfoGain.gain.setValueAtTime(0.04, t); // Gentler modulation
   lfo.connect(lfoGain).connect(hbGain.gain);
   lfo.start(t);
 
