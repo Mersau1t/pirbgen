@@ -228,30 +228,30 @@ export default function PirbTerminal() {
     }
   }, [activePos, entryPrice, status]);
 
-  const buildHistoricalCandles = async (feedId: string, price: number) => {
+  const buildHistoricalCandles = async (feedId: string, _price: number) => {
     let historyCandles: Candle[] = [];
-    try {
-      historyCandles = await fetchHistoricalCandles(feedId, 10, 5);
-    } catch (err) {
-      console.error('Failed to load history:', err);
-    }
-    if (historyCandles.length < 3) {
-      const histCount = 8;
-      let histPrice = price;
-      const rawCandles: { open: number; high: number; low: number; close: number }[] = [];
-      for (let i = 0; i < histCount; i++) {
-        const vol = histPrice * 0.004;
-        const close = histPrice;
-        const ticks = [close];
-        for (let t = 0; t < 4; t++) {
-          histPrice += (Math.random() - 0.5) * vol;
-          ticks.push(histPrice);
-        }
-        const open = histPrice;
-        rawCandles.unshift({ open, high: Math.max(...ticks), low: Math.min(...ticks), close });
+    
+    // Try with different intervals if first attempt yields too few candles
+    const attempts = [
+      { count: 10, interval: 5 },   // 10 candles, 5s apart
+      { count: 15, interval: 3 },   // 15 candles, 3s apart (more recent data)
+      { count: 20, interval: 2 },   // 20 candles, 2s apart
+    ];
+    
+    for (const { count, interval } of attempts) {
+      try {
+        historyCandles = await fetchHistoricalCandles(feedId, count, interval);
+        if (historyCandles.length >= 3) break;
+      } catch (err) {
+        console.error('Failed to load history:', err);
       }
-      historyCandles = rawCandles.map((c, i) => ({ ...c, time: -(histCount - i) * 2 }));
     }
+
+    // If still no data, return empty — chart will start from entry point only
+    if (historyCandles.length < 1) {
+      console.warn('No Pyth historical data available for', feedId);
+    }
+    
     return historyCandles;
   };
 
