@@ -125,7 +125,8 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
     const toX = (i: number) => centerX + (i - centerIdx) * candleSpacing;
 
     // Proximity to TP/SL (0..1)
-    // lastClose computed above (includes terminal tick)
+    // Proximity to TP/SL (0..1)
+    const lastClose = candles[candles.length - 1]?.close ?? entryPrice;
     const pnlPct = direction === 'LONG'
       ? ((lastClose - entryPrice) / entryPrice) * leverage * 100
       : ((entryPrice - lastClose) / entryPrice) * leverage * 100;
