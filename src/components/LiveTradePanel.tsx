@@ -74,6 +74,24 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
   const [showResultAnim, setShowResultAnim] = useState(false);
   const candleRef = useRef<{ ticks: PythPriceTick[] }>({ ticks: [] });
   const resultFiredRef = useRef(false);
+  const terminalTickAddedRef = useRef(false);
+
+  const appendTerminalCandle = useCallback((price: number) => {
+    if (terminalTickAddedRef.current) return;
+    terminalTickAddedRef.current = true;
+
+    setCandles(prev => {
+      const lastLiveTime = [...prev].reverse().find(c => c.time >= 0)?.time ?? 0;
+      const terminal: Candle = {
+        open: price,
+        high: price,
+        low: price,
+        close: price,
+        time: lastLiveTime + 1,
+      };
+      return [...prev.slice(-27), terminal];
+    });
+  }, []);
 
   const hasTimer = !!timerSeconds && timerSeconds > 0;
   const rarityStyle = RARITY_STYLES[position.rarity];
@@ -188,6 +206,8 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
     if (!resultFiredRef.current) {
       if (calculatedPnl <= position.stopLoss) {
         resultFiredRef.current = true;
+        // Ensure the chart shows the exact tick that crossed into SL
+        appendTerminalCandle(currentPrice);
         setResult('REKT');
         playRektSound();
         onResult('REKT', calculatedPnl);
@@ -195,6 +215,8 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
         setTimeout(() => setShowResultAnim(true), 1500);
       } else if (calculatedPnl >= position.takeProfit) {
         resultFiredRef.current = true;
+        // Ensure the chart shows the exact tick that crossed into TP
+        appendTerminalCandle(currentPrice);
         setResult('WIN');
         playWinSound();
         onResult('WIN', calculatedPnl);
@@ -339,7 +361,7 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
       </div>
 
       {/* Chart */}
-      <div className="glass-panel rounded-sm overflow-hidden flex-1 min-h-0 border border-border/20">
+      <div className="glass-panel rounded-sm overflow-hidden border border-border/20 h-[260px] sm:h-[320px] shrink-0">
         <PriceChart candles={candles} entryPrice={entryPrice} positive={pnl >= 0} direction={position.direction} stopLoss={position.stopLoss} takeProfit={position.takeProfit} leverage={position.leverage} />
       </div>
 
