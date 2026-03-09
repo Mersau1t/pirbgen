@@ -35,7 +35,12 @@ interface LiveTradePanelProps {
   onExitEarly: (pnl: number) => void;
   playerName: string;
   walletAddress: string | null;
-  timerSeconds?: number; // optional countdown timer (e.g. 90 for daily challenge)
+  timerSeconds?: number;
+  duelMode?: boolean; // disables SL/TP hit, hides SL/TP UI
+  onPnlChange?: (pnl: number) => void; // real-time PnL callback
+  compact?: boolean; // compact header for split-screen
+  readOnly?: boolean; // no close button, no leaderboard save
+  label?: string; // label like "YOU" or opponent name
 }
 
 const formatTime = (s: number) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
