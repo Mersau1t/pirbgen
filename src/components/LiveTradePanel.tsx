@@ -361,8 +361,8 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
       </div>
 
       {/* Chart */}
-      <div className="glass-panel rounded-sm overflow-hidden border border-border/20 h-[260px] sm:h-[320px] shrink-0">
-        <PriceChart candles={candles} entryPrice={entryPrice} positive={pnl >= 0} direction={position.direction} stopLoss={position.stopLoss} takeProfit={position.takeProfit} leverage={position.leverage} />
+      <div className="glass-panel rounded-sm overflow-hidden flex-1 min-h-0 border border-border/20">
+        <PriceChart candles={candles} entryPrice={entryPrice} positive={pnl >= 0} direction={position.direction} stopLoss={position.stopLoss} takeProfit={position.takeProfit} leverage={position.leverage} result={result} />
       </div>
 
       {/* Bottom actions */}
