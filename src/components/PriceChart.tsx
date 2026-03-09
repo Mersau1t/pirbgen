@@ -434,9 +434,9 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       ctx.restore();
       ctx.setLineDash([]);
       ctx.fillStyle = '#ef4444';
-      ctx.fillRect(pad.left + chartW + 4, slY - 10, priceAxisW - 8, 20);
+      ctx.fillRect(pad.left + chartW + 4, slY - 11, priceAxisW - 8, 22);
       ctx.fillStyle = '#F5F5FF';
-      ctx.font = 'bold 11px monospace';
+      ctx.font = 'bold 13px monospace';
       ctx.fillText('SL ' + formatPriceShort(slPrice), pad.left + chartW + 6, slY);
 
       // --- CURRENT PRICE TAG ---
