@@ -466,6 +466,10 @@ export default function PirbTerminal() {
                   {dailyDone ? '✅ DAILY DONE' : '📅 DAILY CHALLENGE (90s)'}
                 </button>
 
+                <Link to="/duel" onClick={() => playCoinSound()} className="arcade-btn w-full text-[10px] py-3 text-center block" style={{ borderColor: 'hsl(var(--neon-magenta))', color: 'hsl(var(--neon-magenta))', background: 'hsl(var(--neon-magenta) / 0.1)' }}>
+                  ⚔️ PVP DUEL (1v1)
+                </Link>
+
                 <Link to="/leaderboard" onClick={() => playCoinSound()} className="arcade-btn arcade-btn-secondary w-full text-[10px] py-3 text-center block" style={{ borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(25 95% 53% / 0.1)' }}>
                   🏆 LEADERBOARD
                 </Link>
