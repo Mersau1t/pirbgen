@@ -418,8 +418,9 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
         {showResultAnim && result === 'WIN' && !duelMode && (
           <>
             <PixelConfetti active={true} />
-            <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center py-1">
-              <p className="font-display text-lg text-neon-green text-glow-green animate-rainbow inline-block">🎯 TARGET HIT! +{pnl.toFixed(2)}%</p>
+            <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center py-3">
+              <p className="font-display text-3xl sm:text-4xl text-neon-green text-glow-green animate-rainbow inline-block">🎯 TARGET HIT!</p>
+              <p className="font-mono text-4xl sm:text-5xl font-bold text-neon-green mt-2">+{pnl.toFixed(2)}%</p>
             </motion.div>
           </>
         )}
@@ -431,9 +432,10 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
               initial={{ scale: 0.5, opacity: 0, x: 0 }}
               animate={{ scale: 1, opacity: 1, x: [0, -8, 8, -6, 6, -3, 3, 0] }}
               transition={{ x: { duration: 0.5, ease: 'easeOut' }, scale: { duration: 0.3 } }}
-              className="text-center py-1"
+              className="text-center py-3"
             >
-              <p className="font-display text-lg text-neon-orange text-glow-orange inline-block">💀 LIQUIDATED {pnl.toFixed(2)}%</p>
+              <p className="font-display text-3xl sm:text-4xl text-neon-orange text-glow-orange inline-block">💀 PIRBED!</p>
+              <p className="font-mono text-4xl sm:text-5xl font-bold text-neon-orange mt-2">{pnl.toFixed(2)}%</p>
             </motion.div>
           </>
         )}
