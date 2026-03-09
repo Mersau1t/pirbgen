@@ -118,7 +118,16 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
         event: 'UPDATE', schema: 'public', table: 'duel_rooms', filter: `id=eq.${roomId}`,
       }, (payload) => {
         const u = payload.new as any;
-        if (u[`${opponentSlot}_closed`]) setOpponentClosed(true);
+        // Sync opponent closed status + final PnL
+        if (u[`${opponentSlot}_closed`] && !opponentClosed) {
+          setOpponentClosed(true);
+          const finalOppPnl = u[`${opponentSlot}_pnl`];
+          if (finalOppPnl != null) setOppPnl(finalOppPnl);
+        }
+        // Sync my closed status (if closed from timer on other side)
+        if (u[`${playerSlot}_closed`] && !myClosed) {
+          setMyClosed(true);
+        }
         if (u.status === 'finished') {
           setRoom((prev: any) => prev ? { ...prev, ...u } : prev);
           setFinished(true);
@@ -126,7 +135,7 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [room, roomId, opponentSlot]);
+  }, [room, roomId, opponentSlot, playerSlot, opponentClosed, myClosed]);
 
   // Sync my PnL to DB every 2s
   useEffect(() => {
