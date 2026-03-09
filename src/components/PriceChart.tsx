@@ -153,34 +153,86 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       ctx.fillStyle = 'rgba(10, 6, 20, 0.6)';
       ctx.fillRect(pad.left, pad.top, chartW, chartH);
 
-      // --- TP/SL GRADIENT ZONES ---
+      // --- TP/SL GRADIENT ZONES WITH EFFECTS ---
       const tpYZone = toY(tpPrice);
       const slYZone = toY(slPrice);
       const entryYZone = toY(entryPrice);
 
-      // Green zone
-      const greenGrad = ctx.createLinearGradient(0, Math.min(tpYZone, entryYZone), 0, Math.max(tpYZone, entryYZone));
-      if (direction === 'LONG') {
-        greenGrad.addColorStop(0, 'rgba(7, 228, 110, 0.18)');
-        greenGrad.addColorStop(1, 'rgba(7, 228, 110, 0.0)');
-      } else {
-        greenGrad.addColorStop(0, 'rgba(7, 228, 110, 0.0)');
-        greenGrad.addColorStop(1, 'rgba(7, 228, 110, 0.18)');
-      }
-      ctx.fillStyle = greenGrad;
-      ctx.fillRect(pad.left, Math.min(tpYZone, entryYZone), chartW, Math.abs(tpYZone - entryYZone));
+      // Pulsation based on proximity
+      const zonePulse = 0.5 + 0.5 * Math.sin(t / 400);
+      const greenPulseAlpha = 0.12 + tpProximity * 0.15 * zonePulse;
+      const redPulseAlpha = 0.12 + slProximity * 0.15 * zonePulse;
 
-      // Red zone
-      const redGrad = ctx.createLinearGradient(0, Math.min(slYZone, entryYZone), 0, Math.max(slYZone, entryYZone));
-      if (direction === 'LONG') {
-        redGrad.addColorStop(0, 'rgba(239, 68, 68, 0.0)');
-        redGrad.addColorStop(1, 'rgba(239, 68, 68, 0.18)');
-      } else {
-        redGrad.addColorStop(0, 'rgba(239, 68, 68, 0.18)');
-        redGrad.addColorStop(1, 'rgba(239, 68, 68, 0.0)');
-      }
-      ctx.fillStyle = redGrad;
-      ctx.fillRect(pad.left, Math.min(slYZone, entryYZone), chartW, Math.abs(slYZone - entryYZone));
+      // Helper to draw zone with all effects
+      const drawZone = (yTop: number, yBot: number, color: string, alpha: number, proximity: number) => {
+        const zoneH = Math.abs(yBot - yTop);
+        const zoneY = Math.min(yTop, yBot);
+        if (zoneH < 1) return;
+
+        // Base gradient fill with pulsation
+        const grad = ctx.createLinearGradient(0, zoneY, 0, zoneY + zoneH);
+        grad.addColorStop(0, `${color}${Math.round(alpha * 255).toString(16).padStart(2, '0')}`);
+        grad.addColorStop(1, `${color}00`);
+        ctx.fillStyle = grad;
+        ctx.fillRect(pad.left, zoneY, chartW, zoneH);
+
+        // Diagonal warning stripes (animated)
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(pad.left, zoneY, chartW, zoneH);
+        ctx.clip();
+        const stripeOffset = (t / 30) % 20;
+        ctx.strokeStyle = `${color}${Math.round(0.08 * 255).toString(16).padStart(2, '0')}`;
+        ctx.lineWidth = 1;
+        for (let sx = pad.left - zoneH - 40 + stripeOffset; sx < pad.left + chartW + 40; sx += 20) {
+          ctx.beginPath();
+          ctx.moveTo(sx, zoneY + zoneH);
+          ctx.lineTo(sx + zoneH, zoneY);
+          ctx.stroke();
+        }
+        ctx.restore();
+
+        // Noise/static texture
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(pad.left, zoneY, chartW, zoneH);
+        ctx.clip();
+        const noiseCount = Math.floor(chartW * zoneH / 300);
+        for (let ni = 0; ni < noiseCount; ni++) {
+          const nx = pad.left + Math.random() * chartW;
+          const ny = zoneY + Math.random() * zoneH;
+          const noiseAlpha = 0.03 + Math.random() * 0.06;
+          ctx.fillStyle = `${color}${Math.round(noiseAlpha * 255).toString(16).padStart(2, '0')}`;
+          ctx.fillRect(nx, ny, 1, 1);
+        }
+        ctx.restore();
+
+        // Glowing edge at boundary
+        if (proximity > 0.3) {
+          const edgeGlow = proximity * zonePulse;
+          ctx.save();
+          ctx.shadowColor = color;
+          ctx.shadowBlur = 8 + edgeGlow * 16;
+          ctx.strokeStyle = `${color}${Math.round((0.3 + edgeGlow * 0.5) * 255).toString(16).padStart(2, '0')}`;
+          ctx.lineWidth = 2;
+          const edgeY = yTop < yBot ? zoneY : zoneY + zoneH;
+          ctx.beginPath();
+          ctx.moveTo(pad.left, edgeY);
+          ctx.lineTo(pad.left + chartW, edgeY);
+          ctx.stroke();
+          ctx.restore();
+        }
+      };
+
+      // Green zone (TP)
+      const greenTop = direction === 'LONG' ? tpYZone : entryYZone;
+      const greenBot = direction === 'LONG' ? entryYZone : tpYZone;
+      drawZone(greenTop, greenBot, '#07e46e', greenPulseAlpha, tpProximity);
+
+      // Red zone (SL)
+      const redTop = direction === 'LONG' ? entryYZone : slYZone;
+      const redBot = direction === 'LONG' ? slYZone : entryYZone;
+      drawZone(redTop, redBot, '#ef4444', redPulseAlpha, slProximity);
 
       // --- GRID ---
       ctx.textAlign = 'left';
