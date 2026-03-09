@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import LiveTradePanel, { type DegenPosition } from '@/components/LiveTradePanel';
+import SpectatorChart from '@/components/SpectatorChart';
 import { type Candle } from '@/components/PriceChart';
 import { fetchHistoricalCandles } from '@/lib/pyth';
 import { DUEL_TIMER_SECONDS } from '@/lib/duelConstants';
