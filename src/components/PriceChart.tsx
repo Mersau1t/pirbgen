@@ -16,7 +16,8 @@ interface PriceChartProps {
   stopLoss: number;
   takeProfit: number;
   leverage: number;
-  result?: 'WIN' | 'REKT' | null; // Додаємо результат для керування масштабом
+  result?: 'WIN' | 'REKT' | null;
+  duelMode?: boolean; // clean chart without SL/TP zones/lines
 }
 
 const MAX_VISIBLE = 28;
