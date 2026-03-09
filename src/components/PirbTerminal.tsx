@@ -316,14 +316,25 @@ export default function PirbTerminal() {
     const { feedIndex, params } = getDailyParams(allVolatile.length);
     const token = allVolatile[feedIndex % allVolatile.length];
 
-    const livePrice = await fetchPythPriceById(token.feed_id);
+    let livePrice = await fetchPythPriceById(token.feed_id);
+    let usedToken = token;
+    
+    // Fallback: if daily token feed is broken, try next tokens
+    if (!livePrice) {
+      for (let i = 1; i < allVolatile.length; i++) {
+        usedToken = allVolatile[(feedIndex + i) % allVolatile.length];
+        livePrice = await fetchPythPriceById(usedToken.feed_id);
+        if (livePrice) break;
+      }
+    }
+    
     if (!livePrice) { setStatus('IDLE'); return; }
 
     const pos: DegenPosition = {
       id: Date.now(),
-      asset: token.ticker,
-      ticker: token.ticker,
-      feedId: token.feed_id,
+      asset: usedToken.ticker,
+      ticker: usedToken.ticker,
+      feedId: usedToken.feed_id,
       direction: params.direction,
       leverage: params.leverage,
       stopLoss: params.stopLoss,
@@ -331,7 +342,7 @@ export default function PirbTerminal() {
       rarity: params.rarity,
     };
 
-    const historyCandles = await buildHistoricalCandles(token.feed_id, livePrice);
+    const historyCandles = await buildHistoricalCandles(usedToken.feed_id, livePrice);
     setActivePos(pos);
     setEntryPrice(livePrice);
     setInitialCandles(historyCandles);
