@@ -318,8 +318,8 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
         ctx.save();
         ctx.beginPath();
         sharpLinePath(ctx, pts);
-        ctx.strokeStyle = proximity > 0.6
-          ? (positive ? 'rgba(7, 228, 110, 0.35)' : 'rgba(239, 68, 68, 0.35)')
+        ctx.strokeStyle = proximity > 0.7
+          ? (positive ? 'rgba(7, 228, 110, 0.3)' : 'rgba(239, 68, 68, 0.3)')
           : 'rgba(200, 180, 255, 0.3)';
         ctx.lineWidth = 3;
         ctx.shadowColor = lineGlowColor;
