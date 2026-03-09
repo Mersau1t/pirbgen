@@ -275,11 +275,10 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       // --- SMOOTH PRICE LINE ---
       if (pts.length > 1) {
         // Animated glow intensity based on proximity to TP/SL
-        const pulse = 0.5 + 0.5 * Math.sin(t / 300);
-        const glowBase = 8 + proximity * 20;
-        const glowAnim = glowBase + pulse * proximity * 10;
+        const glowBase = 6 + proximity * 12;
+        const glowAnim = glowBase + proximity * 4; // no pulsation on glow
         const glowColor = positive ? '#07e46e' : '#ef4444';
-        const lineGlowColor = proximity > 0.6 ? glowColor : '#8046dc';
+        const lineGlowColor = proximity > 0.7 ? glowColor : '#8046dc';
 
         // --- GRADIENT FILL UNDER LINE ---
         ctx.save();
