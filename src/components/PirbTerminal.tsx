@@ -68,13 +68,24 @@ function formatVolume(v: number): string {
 
 
 const TickerMarquee = () => {
-  const tickers = ['PYTH LIVE FEEDS 🔴', '500+ CRYPTO PAIRS', 'VOLUME RANKED 📊', 'ANY TOKEN ANY TIME', 'POWERED BY PYTH NETWORK ⚡'];
-  const doubled = [...tickers, ...tickers];
+  const lines = [
+    "PIRB: ur gonna get rekt so hard 💀",
+    "PIRB: *aggressively poops on ur portfolio* 💩",
+    "PIRB: imagine losing money to a pigeon lmao 🐦",
+    "PIRB: ngmi energy detected 📡",
+    "PIRB: this is called getting PIRBED",
+    "PIRB: ur the exit liquidity, anon",
+    "PIRB: wen lambo? never for u 😂",
+    "PIRB: my grandma trades better",
+    "PIRB: skill issue tbh",
+    "PIRB: *pecks your liquidation button*",
+  ];
+  const doubled = [...lines, ...lines];
   return (
     <div className="overflow-hidden border-b-2 border-neon-purple/30 bg-background/80 py-1.5">
       <div className="animate-marquee flex whitespace-nowrap gap-10 text-[10px] font-display">
         {doubled.map((t, i) => (
-          <span key={i} className={t.includes('PYTH') ? 'text-neon-purple text-glow-purple' : 'text-neon-green text-glow-green'}>
+          <span key={i} className={i % 2 === 0 ? 'text-neon-orange text-glow-orange' : 'text-neon-magenta'}>
             {t}
           </span>
         ))}
