@@ -472,7 +472,7 @@ export default function PirbTerminal() {
                 <span>PYTH ENTROPY</span>
                 <span className="text-neon-orange/40">●</span>
                 <span>PYTH NETWORK</span>
-                <span className="text-neon-cyan/40">●</span>
+                <span className="text-neon-green/40">●</span>
                 <span>BASE L2</span>
               </div>
             </motion.div>
