@@ -125,11 +125,14 @@ const MarqueeStrip = ({ ariaHidden }: { ariaHidden?: boolean }) => (
     className="flex whitespace-nowrap gap-20 pr-20 text-[10px] sm:text-[12px] font-display"
     aria-hidden={ariaHidden}
   >
-    {MARQUEE_LINES.map((t, i) => (
-      <span key={i} className={i % 2 === 0 ? 'text-neon-orange text-glow-orange' : 'text-neon-purple'}>
-        {t}
-      </span>
-    ))}
+    {MARQUEE_LINES.map((t, i) => {
+      const colorClass = i % 3 === 0 ? 'text-neon-purple text-glow-purple' : i % 3 === 1 ? 'text-neon-orange' : 'text-neon-green';
+      return (
+        <span key={i} className={colorClass}>
+          {t}
+        </span>
+      );
+    })}
   </div>
 );
 
