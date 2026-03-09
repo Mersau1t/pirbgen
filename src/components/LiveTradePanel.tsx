@@ -56,7 +56,7 @@ function fmtPrice(p: number): string {
   return '$' + p.toPrecision(6);
 }
 
-function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandles, onResult, onExitEarly, playerName, walletAddress, timerSeconds }: LiveTradePanelProps) {
+function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandles, onResult, onExitEarly, playerName, walletAddress, timerSeconds, duelMode, onPnlChange, compact, readOnly, label }: LiveTradePanelProps) {
   const [entryPrice] = useState(initialEntryPrice);
   const [currentPrice, setCurrentPrice] = useState(initialEntryPrice);
   const [pnl, setPnl] = useState(0);
