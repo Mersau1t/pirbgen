@@ -36,7 +36,8 @@ export default function Duel() {
       p1_pnl: room.p1_pnl,
       p2_pnl: room.p2_pnl,
       winner: room.winner,
-      ticker: room.ticker,
+      p1_ticker: room.p1_ticker || room.ticker || '',
+      p2_ticker: room.p2_ticker || room.ticker || '',
     });
     setState('result');
   };
