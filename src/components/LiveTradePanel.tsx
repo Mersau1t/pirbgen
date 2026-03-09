@@ -7,6 +7,7 @@ import { streamPythPriceById, type PythPriceTick } from '@/lib/pyth';
 import { playWinSound, playRektSound, playCoinSound } from '@/lib/sounds';
 import { playTimerTick, playTimerUrgent } from '@/lib/timerSounds';
 import { startTensionAudio, setTensionIntensity, stopTensionAudio } from '@/lib/tensionSounds';
+import { getPirbTrashTalkCycled } from '@/lib/pirbTalk';
 
 interface DegenPosition {
   id: number;
