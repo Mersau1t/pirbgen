@@ -456,10 +456,10 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
         ctx.shadowColor = curColor;
         ctx.shadowBlur = 4 + tagPulse * 6;
         ctx.fillStyle = curColor;
-        ctx.fillRect(pad.left + chartW + 4, curY - 8, priceAxisW - 8, 16);
+        ctx.fillRect(pad.left + chartW + 4, curY - 10, priceAxisW - 8, 20);
         ctx.restore();
         ctx.fillStyle = '#0a0a0a';
-        ctx.font = 'bold 9px monospace';
+        ctx.font = 'bold 12px monospace';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
         ctx.fillText(formatPrice(lastClose), pad.left + chartW + 7, curY);
