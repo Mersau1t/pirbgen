@@ -287,6 +287,8 @@ export default function PirbTerminal() {
 
     let rarity, direction: TradeDirection, leverage, sl, rr;
 
+    setIsGainzy(gainzyMode);
+
     if (gainzyMode) {
       // Gainzy = always max leverage, degen rarity
       rarity = RARITY_CONFIG[3]; // degen
