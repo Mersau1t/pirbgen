@@ -42,6 +42,7 @@ interface LiveTradePanelProps {
   compact?: boolean; // compact header for split-screen
   readOnly?: boolean; // no close button, no leaderboard save
   label?: string; // label like "YOU" or opponent name
+  gainzyMode?: boolean; // gainzy mode trash talk
 }
 
 const formatTime = (s: number) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
@@ -57,7 +58,7 @@ function fmtPrice(p: number): string {
   return '$' + p.toPrecision(6);
 }
 
-function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandles, onResult, onExitEarly, playerName, walletAddress, timerSeconds, duelMode, onPnlChange, compact, readOnly, label }: LiveTradePanelProps) {
+function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandles, onResult, onExitEarly, playerName, walletAddress, timerSeconds, duelMode, onPnlChange, compact, readOnly, label, gainzyMode }: LiveTradePanelProps) {
   const [entryPrice] = useState(initialEntryPrice);
   const [currentPrice, setCurrentPrice] = useState(initialEntryPrice);
   const [pnl, setPnl] = useState(0);
@@ -386,7 +387,7 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
             <div className="flex items-center gap-2 flex-1 overflow-hidden">
               <span className="w-2 h-2 bg-neon-orange animate-blink shrink-0" />
               <span className="font-display text-[10px] text-neon-orange text-glow-orange tracking-wider truncate">
-                {getPirbTrashTalkCycled(elapsedTime, duelMode ? 'duel' : hasTimer ? 'daily' : 'solo')}
+                {getPirbTrashTalkCycled(elapsedTime, gainzyMode ? 'gainzy' : duelMode ? 'duel' : hasTimer ? 'daily' : 'solo')}
               </span>
             </div>
             <button onClick={handleExit} className="arcade-btn arcade-btn-primary text-[10px] py-2 px-4">

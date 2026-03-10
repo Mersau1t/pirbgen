@@ -572,6 +572,7 @@ export default function PirbTerminal() {
                   playerName={profile?.display_name || 'Anonymous'}
                   walletAddress={walletAddress || null}
                   timerSeconds={timerSeconds}
+                  gainzyMode={isGainzy}
                 />
               ) : (
                 <div className="flex flex-col items-center justify-center flex-1 gap-6 p-4 overflow-hidden">
