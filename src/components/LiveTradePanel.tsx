@@ -42,6 +42,7 @@ interface LiveTradePanelProps {
   compact?: boolean; // compact header for split-screen
   readOnly?: boolean; // no close button, no leaderboard save
   label?: string; // label like "YOU" or opponent name
+  gainzyMode?: boolean; // gainzy mode trash talk
 }
 
 const formatTime = (s: number) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
