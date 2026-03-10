@@ -166,6 +166,7 @@ export default function PirbTerminal() {
   const [streak, setStreak] = useState<StreakData>(getStreak());
   const [dailyDone, setDailyDone] = useState(hasDoneDaily());
   const [isDaily, setIsDaily] = useState(false);
+  const [isGainzy, setIsGainzy] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState<number | undefined>(undefined);
 
   const toggleMusic = () => {
