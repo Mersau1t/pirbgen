@@ -262,7 +262,7 @@ export default function PirbTerminal() {
     return historyCandles;
   };
 
-  const generatePosition = useCallback(async (specificFeed?: { id: string; ticker: string; pair: string }) => {
+  const generatePosition = useCallback(async (specificFeed?: { id: string; ticker: string; pair: string }, gainzyMode = false) => {
     playGenerateClick();
     setStatus('GENERATING');
     setIsDaily(false);
@@ -284,11 +284,23 @@ export default function PirbTerminal() {
       price = livePrice;
     }
 
-    const rarity = pickRarity();
-    const direction: TradeDirection = Math.random() > 0.5 ? 'LONG' : 'SHORT';
-    const leverage = randInt(rarity.leverageRange[0], rarity.leverageRange[1]);
-    const sl = randInt(rarity.slRange[0], rarity.slRange[1]);
-    const rr = randInt(rarity.rrRange[0], rarity.rrRange[1]);
+    let rarity, direction: TradeDirection, leverage, sl, rr;
+
+    if (gainzyMode) {
+      // Gainzy = always max leverage, degen rarity
+      rarity = RARITY_CONFIG[3]; // degen
+      direction = Math.random() > 0.5 ? 'LONG' : 'SHORT';
+      leverage = 200;
+      sl = randInt(3, 5);
+      rr = randInt(10, 20);
+    } else {
+      const picked = pickRarity();
+      rarity = picked;
+      direction = Math.random() > 0.5 ? 'LONG' : 'SHORT';
+      leverage = randInt(picked.leverageRange[0], picked.leverageRange[1]);
+      sl = randInt(picked.slRange[0], picked.slRange[1]);
+      rr = randInt(picked.rrRange[0], picked.rrRange[1]);
+    }
 
     const pos: DegenPosition = {
       id: Date.now(),
@@ -453,6 +465,22 @@ export default function PirbTerminal() {
               exit={{ opacity: 0, y: -20 }}
               className="flex flex-col items-center justify-center gap-4 flex-1"
             >
+              {/* Daily Challenge — above mascot */}
+              {!dailyDone && allVolatile.length > 0 && (
+                <motion.button
+                  onClick={() => generateDaily()}
+                  className="arcade-btn text-[9px] py-2 px-5 tracking-wider"
+                  style={{ borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(var(--neon-orange) / 0.1)', boxShadow: 'var(--glow-orange)' }}
+                  animate={{ scale: [1, 1.03, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  📅 DAILY CHALLENGE (90s)
+                </motion.button>
+              )}
+              {dailyDone && (
+                <span className="font-display text-[8px] text-muted-foreground/50 tracking-wider">✅ DAILY DONE — COME BACK TOMORROW</span>
+              )}
+
               <motion.img
                 src={pirbMascot}
                 alt="Pirb the pigeon"
@@ -475,14 +503,13 @@ export default function PirbTerminal() {
                   🎲 GENERATE
                 </button>
                 
-                {/* Daily Challenge */}
+                {/* Gainzy Mode — max leverage */}
                 <button
-                  onClick={() => generateDaily()}
-                  disabled={dailyDone || allVolatile.length === 0}
-                  className={`arcade-btn w-full text-[10px] py-3 ${dailyDone ? 'opacity-40 cursor-not-allowed' : ''}`}
-                  style={{ borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(var(--neon-orange) / 0.1)' }}
+                  onClick={() => generatePosition(undefined, true)}
+                  className="arcade-btn w-full text-[10px] py-3"
+                  style={{ borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(var(--neon-orange) / 0.15)', boxShadow: 'var(--glow-orange)' }}
                 >
-                  {dailyDone ? '✅ DAILY DONE' : '📅 DAILY CHALLENGE (90s)'}
+                  🔥 GAINZY MODE (200× MAX)
                 </button>
 
                 <Link to="/duel" onClick={() => playCoinSound()} className="arcade-btn w-full text-[10px] py-3 text-center block" style={{ borderColor: 'hsl(var(--neon-green))', color: 'hsl(var(--neon-green))', background: 'hsl(var(--neon-green) / 0.1)', boxShadow: 'var(--glow-green)' }}>
