@@ -262,7 +262,7 @@ export default function PirbTerminal() {
     return historyCandles;
   };
 
-  const generatePosition = useCallback(async (specificFeed?: { id: string; ticker: string; pair: string }) => {
+  const generatePosition = useCallback(async (specificFeed?: { id: string; ticker: string; pair: string }, gainzyMode = false) => {
     playGenerateClick();
     setStatus('GENERATING');
     setIsDaily(false);
@@ -284,11 +284,23 @@ export default function PirbTerminal() {
       price = livePrice;
     }
 
-    const rarity = pickRarity();
-    const direction: TradeDirection = Math.random() > 0.5 ? 'LONG' : 'SHORT';
-    const leverage = randInt(rarity.leverageRange[0], rarity.leverageRange[1]);
-    const sl = randInt(rarity.slRange[0], rarity.slRange[1]);
-    const rr = randInt(rarity.rrRange[0], rarity.rrRange[1]);
+    let rarity, direction: TradeDirection, leverage, sl, rr;
+
+    if (gainzyMode) {
+      // Gainzy = always max leverage, degen rarity
+      rarity = RARITY_CONFIG[3]; // degen
+      direction = Math.random() > 0.5 ? 'LONG' : 'SHORT';
+      leverage = 200;
+      sl = randInt(3, 5);
+      rr = randInt(10, 20);
+    } else {
+      const picked = pickRarity();
+      rarity = picked;
+      direction = Math.random() > 0.5 ? 'LONG' : 'SHORT';
+      leverage = randInt(picked.leverageRange[0], picked.leverageRange[1]);
+      sl = randInt(picked.slRange[0], picked.slRange[1]);
+      rr = randInt(picked.rrRange[0], picked.rrRange[1]);
+    }
 
     const pos: DegenPosition = {
       id: Date.now(),
