@@ -465,6 +465,22 @@ export default function PirbTerminal() {
               exit={{ opacity: 0, y: -20 }}
               className="flex flex-col items-center justify-center gap-4 flex-1"
             >
+              {/* Daily Challenge — above mascot */}
+              {!dailyDone && allVolatile.length > 0 && (
+                <motion.button
+                  onClick={() => generateDaily()}
+                  className="arcade-btn text-[9px] py-2 px-5 tracking-wider"
+                  style={{ borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(var(--neon-orange) / 0.1)', boxShadow: 'var(--glow-orange)' }}
+                  animate={{ scale: [1, 1.03, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  📅 DAILY CHALLENGE (90s)
+                </motion.button>
+              )}
+              {dailyDone && (
+                <span className="font-display text-[8px] text-muted-foreground/50 tracking-wider">✅ DAILY DONE — COME BACK TOMORROW</span>
+              )}
+
               <motion.img
                 src={pirbMascot}
                 alt="Pirb the pigeon"
@@ -487,14 +503,13 @@ export default function PirbTerminal() {
                   🎲 GENERATE
                 </button>
                 
-                {/* Daily Challenge */}
+                {/* Gainzy Mode — max leverage */}
                 <button
-                  onClick={() => generateDaily()}
-                  disabled={dailyDone || allVolatile.length === 0}
-                  className={`arcade-btn w-full text-[10px] py-3 ${dailyDone ? 'opacity-40 cursor-not-allowed' : ''}`}
-                  style={{ borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(var(--neon-orange) / 0.1)' }}
+                  onClick={() => generatePosition(undefined, true)}
+                  className="arcade-btn w-full text-[10px] py-3"
+                  style={{ borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(var(--neon-orange) / 0.15)', boxShadow: 'var(--glow-orange)' }}
                 >
-                  {dailyDone ? '✅ DAILY DONE' : '📅 DAILY CHALLENGE (90s)'}
+                  🔥 GAINZY MODE (200× MAX)
                 </button>
 
                 <Link to="/duel" onClick={() => playCoinSound()} className="arcade-btn w-full text-[10px] py-3 text-center block" style={{ borderColor: 'hsl(var(--neon-green))', color: 'hsl(var(--neon-green))', background: 'hsl(var(--neon-green) / 0.1)', boxShadow: 'var(--glow-green)' }}>
