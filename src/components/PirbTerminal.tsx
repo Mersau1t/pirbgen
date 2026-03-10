@@ -166,6 +166,7 @@ export default function PirbTerminal() {
   const [streak, setStreak] = useState<StreakData>(getStreak());
   const [dailyDone, setDailyDone] = useState(hasDoneDaily());
   const [isDaily, setIsDaily] = useState(false);
+  const [isGainzy, setIsGainzy] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState<number | undefined>(undefined);
 
   const toggleMusic = () => {
@@ -285,6 +286,8 @@ export default function PirbTerminal() {
     }
 
     let rarity, direction: TradeDirection, leverage, sl, rr;
+
+    setIsGainzy(gainzyMode);
 
     if (gainzyMode) {
       // Gainzy = always max leverage, degen rarity
@@ -650,8 +653,9 @@ export default function PirbTerminal() {
                   </motion.div>
 
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }} className="flex gap-4">
-                    <button onClick={() => generatePosition()} className="arcade-btn arcade-btn-primary text-[10px] py-3 px-6">
-                      🎲 ROLL AGAIN
+                    <button onClick={() => generatePosition(undefined, isGainzy)} className="arcade-btn arcade-btn-primary text-[10px] py-3 px-6"
+                      style={isGainzy ? { borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(var(--neon-orange) / 0.15)', boxShadow: 'var(--glow-orange)' } : {}}>
+                      {isGainzy ? '🔥 GAINZY AGAIN' : '🎲 ROLL AGAIN'}
                     </button>
                     <button onClick={() => { playCoinSound(); resetTerminal(); }}
                       className="arcade-btn text-[10px] py-3 px-6" style={{ borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(var(--neon-orange) / 0.1)', boxShadow: 'var(--glow-orange)' }}>
