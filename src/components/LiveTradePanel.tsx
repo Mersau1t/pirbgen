@@ -383,14 +383,14 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
       {/* Bottom actions */}
       <div className="shrink-0">
         {!result && !readOnly && (
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 flex-1 overflow-hidden">
+          <div className="flex items-center gap-3 h-9">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
               <span className="w-2 h-2 bg-neon-orange animate-blink shrink-0" />
-              <span className="font-display text-[10px] text-neon-orange text-glow-orange tracking-wider truncate">
+              <span className="font-display text-[9px] text-neon-orange text-glow-orange tracking-wider truncate block">
                 {getPirbTrashTalkCycled(elapsedTime, gainzyMode ? 'gainzy' : duelMode ? 'duel' : hasTimer ? 'daily' : 'solo')}
               </span>
             </div>
-            <button onClick={handleExit} className="arcade-btn arcade-btn-primary text-[10px] py-2 px-4">
+            <button onClick={handleExit} className="arcade-btn arcade-btn-primary text-[10px] py-2 px-4 shrink-0 whitespace-nowrap">
               ⚡ CLOSE POSITION
             </button>
           </div>
