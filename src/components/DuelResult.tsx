@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import pirbMascot from '@/assets/pirb-mascot.png';
+import { getMascot } from '@/lib/mascots';
 
 interface DuelResultProps {
   myName: string;
