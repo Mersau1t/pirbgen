@@ -543,7 +543,7 @@ export default function PirbTerminal() {
 
           {status === 'GENERATING' && (
             <motion.div key="generating" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center justify-center gap-6 flex-1">
-              <motion.img src={pirbMascot} alt="Pirb pecking" className="w-32 h-32 object-contain drop-shadow-[0_0_30px_hsl(265,66%,55%,0.4)]"
+              <motion.img src={getMascot('generating', isGainzy)} alt="Pirb pecking" className="w-32 h-32 object-contain drop-shadow-[0_0_30px_hsl(265,66%,55%,0.4)]"
                 animate={{ rotate: [-5, 5, -10, 8, -5], y: [0, 3, 0, 2, 0] }} transition={{ duration: 0.6, repeat: Infinity }} />
               <div className="text-center space-y-3">
                 <p className="font-display text-sm sm:text-lg text-neon-purple text-glow-purple tracking-wider">
