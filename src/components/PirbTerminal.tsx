@@ -485,7 +485,7 @@ export default function PirbTerminal() {
               )}
 
               <motion.img
-                src={pirbMascot}
+                src={getMascot('idle', isGainzy)}
                 alt="Pirb the pigeon"
                 className="w-24 h-24 sm:w-32 sm:h-32 object-contain drop-shadow-[0_0_40px_hsl(265,66%,55%,0.4)]"
                 animate={{ y: [0, -10, 0] }}
