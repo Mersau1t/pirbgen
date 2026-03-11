@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import pirbMascot from '@/assets/pirb-mascot.png';
+import { getMascot } from '@/lib/mascots';
 import { playGenerateClick, playCoinSound, startBgMusic, stopBgMusic, isBgMusicPlaying } from '@/lib/sounds';
 import { type Candle } from '@/components/PriceChart';
 import { pickVolatileFeed, fetchHistoricalCandles, fetchPythPriceById, getTopVolatileTokens, fetchAllPythFeeds } from '@/lib/pyth';
@@ -485,7 +485,7 @@ export default function PirbTerminal() {
               )}
 
               <motion.img
-                src={pirbMascot}
+                src={getMascot('idle', isGainzy)}
                 alt="Pirb the pigeon"
                 className="w-24 h-24 sm:w-32 sm:h-32 object-contain drop-shadow-[0_0_40px_hsl(265,66%,55%,0.4)]"
                 animate={{ y: [0, -10, 0] }}
@@ -543,7 +543,7 @@ export default function PirbTerminal() {
 
           {status === 'GENERATING' && (
             <motion.div key="generating" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center justify-center gap-6 flex-1">
-              <motion.img src={pirbMascot} alt="Pirb pecking" className="w-32 h-32 object-contain drop-shadow-[0_0_30px_hsl(265,66%,55%,0.4)]"
+              <motion.img src={getMascot('generating', isGainzy)} alt="Pirb pecking" className="w-32 h-32 object-contain drop-shadow-[0_0_30px_hsl(265,66%,55%,0.4)]"
                 animate={{ rotate: [-5, 5, -10, 8, -5], y: [0, 3, 0, 2, 0] }} transition={{ duration: 0.6, repeat: Infinity }} />
               <div className="text-center space-y-3">
                 <p className="font-display text-sm sm:text-lg text-neon-purple text-glow-purple tracking-wider">
@@ -593,7 +593,7 @@ export default function PirbTerminal() {
                     transition={{ type: 'spring', stiffness: 120, damping: 12, delay: 0.2 }}
                     className="relative"
                   >
-                    <motion.img src={pirbMascot} alt="Pirb"
+                    <motion.img src={getMascot(status === 'WIN' ? 'win' : 'lose', isGainzy)} alt="Pirb"
                       className="w-32 h-32 sm:w-48 sm:h-48 object-contain"
                       style={{
                         filter: status === 'WIN'

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import pirbMascot from '@/assets/pirb-mascot.png';
+import { getMascot } from '@/lib/mascots';
 
 interface DuelResultProps {
   myName: string;
@@ -36,7 +36,7 @@ export default function DuelResult({ myName, opponentName, myPnl, opponentPnl, w
       </motion.div>
 
       <motion.img
-        src={pirbMascot}
+        src={getMascot(iWon ? 'win' : isDraw ? 'duel' : 'lose')}
         alt="Pirb"
         className="w-24 h-24 object-contain"
         initial={{ x: iWon ? 300 : -300, opacity: 0 }}
