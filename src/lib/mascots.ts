@@ -8,11 +8,10 @@ import pirbDaily from '@/assets/pirb-daily.png';
 import pirbRage from '@/assets/pirb-rage.png';
 import pirbStreak from '@/assets/pirb-streak.png';
 
-// --- GAINZY variants (replace imports when assets are ready) ---
-const gainzyMascot = pirbDefault;
-const gainzyGenerating = pirbDefault;
-const gainzyWin = pirbDefault;
-const gainzyLose = pirbDefault;
+import gainzyMascot from '@/assets/gainzy-mascot.png';
+import gainzyGenerating from '@/assets/gainzy-generating.png';
+import gainzyWin from '@/assets/gainzy-win.png';
+import gainzyLose from '@/assets/gainzy-lose.png';
 
 export type MascotState = 'idle' | 'generating' | 'win' | 'lose' | 'duel' | 'daily' | 'rage' | 'streak';
 
