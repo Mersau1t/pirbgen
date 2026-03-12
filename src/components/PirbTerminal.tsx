@@ -593,7 +593,7 @@ export default function PirbTerminal() {
                     transition={{ type: 'spring', stiffness: 120, damping: 12, delay: 0.2 }}
                     className="relative"
                   >
-                    <motion.img src={getMascot(status === 'WIN' ? 'win' : 'lose', isGainzy)} alt="Pirb"
+                    <motion.img src={getMascot(status === 'WIN' ? (streak.current >= 3 ? 'streak' : 'win') : (finalPnl <= -50 ? 'rage' : 'lose'), isGainzy)} alt="Pirb"
                       className="w-32 h-32 sm:w-48 sm:h-48 object-contain"
                       style={{
                         filter: status === 'WIN'
