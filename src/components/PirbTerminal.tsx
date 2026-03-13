@@ -555,8 +555,8 @@ export default function PirbTerminal() {
               <motion.img src={getMascot('generating', isGainzy)} alt="Pirb pecking" className="w-32 h-32 object-contain drop-shadow-[0_0_30px_hsl(265,66%,55%,0.4)]"
                 animate={{ rotate: [-5, 5, -10, 8, -5], y: [0, 3, 0, 2, 0] }} transition={{ duration: 0.6, repeat: Infinity }} />
               <div className="text-center space-y-3">
-                <p className="font-display text-sm sm:text-lg text-neon-purple text-glow-purple tracking-wider">
-                  {isDaily ? 'DAILY CHALLENGE LOADING...' : 'PIRB IS PECKING...'}
+               <p className="font-display text-sm sm:text-lg text-neon-purple text-glow-purple tracking-wider">
+                  {isDaily ? '📅 DAILY CHALLENGE LOADING...' : 'PIRB IS PECKING...'}
                 </p>
                 <p className="font-display text-[8px] text-neon-orange animate-blink tracking-widest">REQUESTING ENTROPY</p>
               </div>
