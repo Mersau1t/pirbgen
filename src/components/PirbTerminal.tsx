@@ -278,11 +278,20 @@ export default function PirbTerminal() {
       feed = specificFeed;
       price = livePrice;
     } else {
-      const token = pickSoloToken();
-      const livePrice = await fetchPythPriceById(token.feedId);
-      if (!livePrice) { setStatus('IDLE'); return; }
-      feed = { id: token.feedId, ticker: token.ticker, pair: token.pair };
-      price = livePrice;
+      // Try tokens with fallback — if price fetch fails, try next
+      const shuffled = [...SOLO_TOKENS].sort(() => Math.random() - 0.5);
+      let found = false;
+      for (const token of shuffled) {
+        const livePrice = await fetchPythPriceById(token.feedId);
+        if (livePrice) {
+          feed = { id: token.feedId, ticker: token.ticker, pair: token.pair };
+          price = livePrice;
+          found = true;
+          break;
+        }
+        console.warn(`Token ${token.ticker} feed failed, trying next...`);
+      }
+      if (!found) { setStatus('IDLE'); return; }
     }
 
     let rarity, direction: TradeDirection, leverage, sl, rr;
@@ -543,11 +552,11 @@ export default function PirbTerminal() {
 
           {status === 'GENERATING' && (
             <motion.div key="generating" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center justify-center gap-6 flex-1">
-              <motion.img src={getMascot('generating', isGainzy)} alt="Pirb pecking" className="w-32 h-32 object-contain drop-shadow-[0_0_30px_hsl(265,66%,55%,0.4)]"
+              <motion.img src={getMascot(isDaily ? 'daily-generating' : 'generating', isGainzy)} alt="Pirb pecking" className="w-32 h-32 object-contain drop-shadow-[0_0_30px_hsl(265,66%,55%,0.4)]"
                 animate={{ rotate: [-5, 5, -10, 8, -5], y: [0, 3, 0, 2, 0] }} transition={{ duration: 0.6, repeat: Infinity }} />
               <div className="text-center space-y-3">
-                <p className="font-display text-sm sm:text-lg text-neon-purple text-glow-purple tracking-wider">
-                  {isDaily ? 'DAILY CHALLENGE LOADING...' : 'PIRB IS PECKING...'}
+               <p className="font-display text-sm sm:text-lg text-neon-purple text-glow-purple tracking-wider">
+                  {isDaily ? '📅 DAILY CHALLENGE LOADING...' : 'PIRB IS PECKING...'}
                 </p>
                 <p className="font-display text-[8px] text-neon-orange animate-blink tracking-widest">REQUESTING ENTROPY</p>
               </div>

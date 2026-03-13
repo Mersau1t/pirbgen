@@ -13,7 +13,7 @@ import gainzyGenerating from '@/assets/gainzy-generating.png';
 import gainzyWin from '@/assets/gainzy-win.png';
 import gainzyLose from '@/assets/gainzy-lose.png';
 
-export type MascotState = 'idle' | 'generating' | 'win' | 'lose' | 'duel' | 'daily' | 'rage' | 'streak';
+export type MascotState = 'idle' | 'generating' | 'win' | 'lose' | 'duel' | 'daily' | 'rage' | 'streak' | 'daily-generating';
 
 export function getMascot(state: MascotState, isGainzy = false): string {
   if (isGainzy) {
@@ -29,6 +29,7 @@ export function getMascot(state: MascotState, isGainzy = false): string {
   switch (state) {
     case 'idle': return pirbIdle;
     case 'generating': return pirbPeck;
+    case 'daily-generating': return pirbDaily;
     case 'win': return pirbWin;
     case 'lose': return pirbLose;
     case 'duel': return pirbDuel;
