@@ -29,6 +29,7 @@ export function getMascot(state: MascotState, isGainzy = false): string {
   switch (state) {
     case 'idle': return pirbIdle;
     case 'generating': return pirbPeck;
+    case 'daily-generating': return pirbDaily;
     case 'win': return pirbWin;
     case 'lose': return pirbLose;
     case 'duel': return pirbDuel;
