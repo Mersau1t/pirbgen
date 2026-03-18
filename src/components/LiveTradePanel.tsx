@@ -37,12 +37,12 @@ interface LiveTradePanelProps {
   playerName: string;
   walletAddress: string | null;
   timerSeconds?: number;
-  duelMode?: boolean; // disables SL/TP hit, hides SL/TP UI
-  onPnlChange?: (pnl: number) => void; // real-time PnL callback
-  compact?: boolean; // compact header for split-screen
-  readOnly?: boolean; // no close button, no leaderboard save
-  label?: string; // label like "YOU" or opponent name
-  gainzyMode?: boolean; // gainzy mode trash talk
+  duelMode?: boolean;
+  onPnlChange?: (pnl: number) => void;
+  compact?: boolean;
+  readOnly?: boolean;
+  label?: string;
+  gainzyMode?: boolean;
 }
 
 const formatTime = (s: number) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
@@ -56,6 +56,16 @@ function fmtPrice(p: number): string {
   if (abs >= 0.01) return '$' + p.toFixed(7);
   if (abs >= 0.0001) return '$' + p.toFixed(9);
   return '$' + p.toPrecision(6);
+}
+
+// Shorter format for mobile
+function fmtPriceMobile(p: number): string {
+  const abs = Math.abs(p);
+  if (abs >= 10000) return '$' + (p / 1000).toFixed(1) + 'k';
+  if (abs >= 1000) return '$' + p.toFixed(2);
+  if (abs >= 100) return '$' + p.toFixed(3);
+  if (abs >= 1) return '$' + p.toFixed(4);
+  return '$' + p.toPrecision(4);
 }
 
 function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandles, onResult, onExitEarly, playerName, walletAddress, timerSeconds, duelMode, onPnlChange, compact, readOnly, label, gainzyMode }: LiveTradePanelProps) {
@@ -153,7 +163,7 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
       clearInterval(candleTick);
       clearInterval(elapsedTimer);
     };
-  }, [position.ticker, result]);
+  }, [position.feedId, result]);
 
   // Countdown timer
   useEffect(() => {
@@ -166,7 +176,6 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
           clearInterval(iv);
           return 0;
         }
-        // Sound effects
         if (next <= 10) playTimerUrgent();
         else if (next % 10 === 0) playTimerTick();
         return next;
@@ -188,13 +197,13 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
     }
   }, [timeLeft, hasTimer, result, pnl]);
 
-  // Start tension audio on trade open, stop on result
+  // Start tension audio
   useEffect(() => {
     startTensionAudio();
     return () => stopTensionAudio();
   }, []);
 
-  // PnL calculation + tension intensity
+  // PnL calculation + tension
   useEffect(() => {
     if (result) {
       stopTensionAudio();
@@ -205,9 +214,8 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
     setPnl(calculatedPnl);
     onPnlChange?.(calculatedPnl);
 
-    if (duelMode) return; // No SL/TP logic in duel mode
+    if (duelMode) return;
 
-    // Tension intensity: how close are we to SL or TP (0..1)
     const slProximity = Math.abs(calculatedPnl / position.stopLoss);
     const tpProximity = Math.abs(calculatedPnl / position.takeProfit);
     const intensity = Math.max(slProximity, tpProximity);
@@ -263,67 +271,75 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
 
   return (
     <div className="flex flex-col flex-1 min-h-0 gap-1">
-      {/* Position info */}
-      <div className="glass-panel rounded-sm px-3 py-1.5 shrink-0">
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex items-center gap-2">
-            {label && <span className="text-[9px] font-display text-muted-foreground tracking-wider uppercase">{label}</span>}
-            <h2 className={`font-display ${compact ? 'text-sm' : 'text-xl sm:text-2xl'} text-foreground text-glow-purple`}>{position.ticker}/USD</h2>
-            <span className={`px-1.5 py-0.5 text-[9px] font-display tracking-wider ${
+      {/* Position info — responsive layout */}
+      <div className="glass-panel rounded-sm px-2 sm:px-3 py-1 sm:py-1.5 shrink-0">
+        {/* Row 1: Asset info + PnL */}
+        <div className="flex items-center justify-between gap-1 sm:gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 min-w-0">
+            {label && <span className="text-[8px] sm:text-[9px] font-display text-muted-foreground tracking-wider uppercase">{label}</span>}
+            <h2 className={`font-display ${compact ? 'text-xs sm:text-sm' : 'text-base sm:text-2xl'} text-foreground text-glow-purple truncate`}>{position.ticker}/USD</h2>
+            <span className={`px-1 sm:px-1.5 py-0.5 text-[8px] sm:text-[9px] font-display tracking-wider shrink-0 ${
               position.direction === 'LONG'
                 ? 'bg-neon-green/10 text-neon-green border border-neon-green/30'
                 : 'bg-neon-orange/10 text-neon-orange border border-neon-orange/30'
             }`}>
               {position.direction}
             </span>
-            <span className={`${compact ? 'text-[10px]' : 'text-sm'} font-display ${rarityStyle.text}`}>{position.leverage}x</span>
-            <span className={`text-[8px] font-display tracking-[0.15em] px-1.5 py-0.5 border ${rarityStyle.border} ${rarityStyle.text} ${rarityStyle.bg}`}>{rarityStyle.label}</span>
+            <span className={`${compact ? 'text-[9px] sm:text-[10px]' : 'text-xs sm:text-sm'} font-display ${rarityStyle.text} shrink-0`}>{position.leverage}x</span>
+            <span className={`hidden sm:inline text-[8px] font-display tracking-[0.15em] px-1.5 py-0.5 border ${rarityStyle.border} ${rarityStyle.text} ${rarityStyle.bg}`}>{rarityStyle.label}</span>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="text-center">
-              <p className="text-[7px] text-muted-foreground/60 uppercase">Current</p>
-              <p className={`font-mono ${compact ? 'text-sm' : 'text-xl sm:text-2xl'} font-bold transition-colors duration-500 ease-in-out`}
-                 style={{ color: pnl >= 0 ? '#07e46e' : '#f97316', textShadow: pnl >= 0 ? '0 0 12px #07e46e88' : '0 0 12px #f9731688' }}>
-                {fmtPrice(currentPrice)}
-              </p>
-            </div>
-            <div className="text-center">
-              <p className="text-[7px] text-muted-foreground/60 uppercase">Entry</p>
-              <p className={`font-mono ${compact ? 'text-[10px]' : 'text-sm'} text-neon-purple`}>{fmtPrice(entryPrice)}</p>
-            </div>
-            <div className="text-center">
-              <p className="text-[7px] text-muted-foreground/60 uppercase">PnL</p>
-              <p className={`font-mono ${compact ? 'text-sm' : 'text-lg'} font-bold transition-colors duration-500 ease-in-out`}
-                 style={{ color: pnl >= 0 ? '#07e46e' : '#f97316' }}>
-                {pnl >= 0 ? '+' : ''}{pnl.toFixed(2)}%
-              </p>
-            </div>
+          {/* PnL - always visible */}
+          <div className="text-right shrink-0">
+            <p className="text-[6px] sm:text-[7px] text-muted-foreground/60 uppercase">PnL</p>
+            <p className={`font-mono ${compact ? 'text-xs sm:text-sm' : 'text-sm sm:text-lg'} font-bold transition-colors duration-500 ease-in-out`}
+               style={{ color: pnl >= 0 ? '#07e46e' : '#f97316' }}>
+              {pnl >= 0 ? '+' : ''}{pnl.toFixed(2)}%
+            </p>
           </div>
-
-          {/* SL/TP only in non-duel mode */}
-          {!duelMode && (
-            <div className="flex items-center gap-4">
-              <div className="text-center">
-                <p className="text-[7px] text-muted-foreground/60 uppercase">SL</p>
-                <p className="text-xs font-mono text-neon-orange font-bold">{position.stopLoss}%</p>
-              </div>
-              <div className="text-center">
-                <p className="text-[7px] text-muted-foreground/60 uppercase">TP</p>
-                <p className="text-xs font-mono text-neon-green font-bold">+{position.takeProfit}%</p>
-              </div>
-              <div className="text-center">
-                <p className="text-[7px] text-muted-foreground/60 uppercase">Time</p>
-                <p className="text-xs font-mono text-muted-foreground">{formatTime(elapsedTime)}</p>
-              </div>
-            </div>
-          )}
         </div>
 
-        {/* PnL progress bar - only in non-duel mode */}
+        {/* Row 2: Prices — collapsed on mobile */}
+        <div className="flex items-center gap-2 sm:gap-4 mt-0.5 sm:mt-1">
+          <div className="text-center">
+            <p className="text-[6px] sm:text-[7px] text-muted-foreground/60 uppercase">Current</p>
+            <p className={`font-mono ${compact ? 'text-[10px] sm:text-sm' : 'text-xs sm:text-xl'} font-bold transition-colors duration-500 ease-in-out`}
+               style={{ color: pnl >= 0 ? '#07e46e' : '#f97316', textShadow: pnl >= 0 ? '0 0 12px #07e46e88' : '0 0 12px #f9731688' }}>
+              <span className="sm:hidden">{fmtPriceMobile(currentPrice)}</span>
+              <span className="hidden sm:inline">{fmtPrice(currentPrice)}</span>
+            </p>
+          </div>
+          <div className="text-center">
+            <p className="text-[6px] sm:text-[7px] text-muted-foreground/60 uppercase">Entry</p>
+            <p className={`font-mono ${compact ? 'text-[9px] sm:text-[10px]' : 'text-[10px] sm:text-sm'} text-neon-purple`}>
+              <span className="sm:hidden">{fmtPriceMobile(entryPrice)}</span>
+              <span className="hidden sm:inline">{fmtPrice(entryPrice)}</span>
+            </p>
+          </div>
+
+          {/* SL/TP — inline on this row */}
+          {!duelMode && (
+            <>
+              <div className="text-center">
+                <p className="text-[6px] sm:text-[7px] text-muted-foreground/60 uppercase">SL</p>
+                <p className="text-[10px] sm:text-xs font-mono text-neon-orange font-bold">{position.stopLoss}%</p>
+              </div>
+              <div className="text-center">
+                <p className="text-[6px] sm:text-[7px] text-muted-foreground/60 uppercase">TP</p>
+                <p className="text-[10px] sm:text-xs font-mono text-neon-green font-bold">+{position.takeProfit}%</p>
+              </div>
+            </>
+          )}
+          <div className="text-center">
+            <p className="text-[6px] sm:text-[7px] text-muted-foreground/60 uppercase">Time</p>
+            <p className="text-[10px] sm:text-xs font-mono text-muted-foreground">{formatTime(elapsedTime)}</p>
+          </div>
+        </div>
+
+        {/* PnL progress bar */}
         {!duelMode && (
-          <div className="mt-2">
-            <div className="h-2 bg-muted/20 rounded-full overflow-hidden relative border border-border/20">
+          <div className="mt-1 sm:mt-2">
+            <div className="h-1.5 sm:h-2 bg-muted/20 rounded-full overflow-hidden relative border border-border/20">
               <div className="absolute left-1/2 top-0 w-0.5 h-full bg-muted-foreground/40 z-10 -translate-x-1/2" />
               {pnl !== 0 && (
                 <motion.div
@@ -338,7 +354,7 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
                 />
               )}
             </div>
-            <div className="flex justify-between text-[8px] text-muted-foreground mt-0.5">
+            <div className="flex justify-between text-[7px] sm:text-[8px] text-muted-foreground mt-0.5">
               <span className="text-neon-orange">{position.stopLoss}%</span>
               <span className="text-neon-green">+{position.takeProfit}%</span>
             </div>
@@ -348,13 +364,13 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
         {/* Timer bar */}
         {hasTimer && !result && (
           <div className="mt-1">
-            <div className="flex items-center gap-2">
-              <span className={`text-[9px] font-display tracking-wider ${timerUrgent ? 'text-neon-orange animate-pulse' : 'text-neon-orange'}`}>
+            <div className="flex items-center gap-1 sm:gap-2">
+              <span className={`text-[8px] sm:text-[9px] font-display tracking-wider ${timerUrgent ? 'text-neon-orange animate-pulse' : 'text-neon-orange'}`}>
                 ⏱ {formatTime(timeLeft)}
               </span>
-              <div className="flex-1 h-1.5 bg-muted/20 rounded-full overflow-hidden border border-border/20">
+              <div className="flex-1 h-1 sm:h-1.5 bg-muted/20 rounded-full overflow-hidden border border-border/20">
                 <motion.div
-                  className={`h-full rounded-full bg-neon-orange`}
+                  className="h-full rounded-full bg-neon-orange"
                   style={{ width: `${timerPct}%` }}
                   animate={timerUrgent ? { opacity: [0.5, 1, 0.5] } : {}}
                   transition={{ duration: 0.5, repeat: Infinity }}
@@ -383,15 +399,15 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
       {/* Bottom actions */}
       <div className="shrink-0">
         {!result && !readOnly && (
-          <div className="flex items-center gap-3 h-9">
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              <span className="w-2 h-2 bg-neon-orange animate-blink shrink-0" />
-              <span className="font-display text-[9px] text-neon-orange text-glow-orange tracking-wider truncate block">
+          <div className="flex items-center gap-2 sm:gap-3 h-8 sm:h-9">
+            <div className="flex items-center gap-1 sm:gap-2 flex-1 min-w-0">
+              <span className="w-1.5 sm:w-2 h-1.5 sm:h-2 bg-neon-orange animate-blink shrink-0" />
+              <span className="font-display text-[8px] sm:text-[9px] text-neon-orange text-glow-orange tracking-wider truncate block">
                 {getPirbTrashTalkCycled(elapsedTime, gainzyMode ? 'gainzy' : duelMode ? 'duel' : hasTimer ? 'daily' : 'solo')}
               </span>
             </div>
-            <button onClick={handleExit} className="arcade-btn arcade-btn-primary text-[10px] py-2 px-4 shrink-0 whitespace-nowrap">
-              ⚡ CLOSE POSITION
+            <button onClick={handleExit} className="arcade-btn arcade-btn-primary text-[8px] sm:text-[10px] py-1.5 sm:py-2 px-3 sm:px-4 shrink-0 whitespace-nowrap">
+              ⚡ CLOSE
             </button>
           </div>
         )}
@@ -399,7 +415,7 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
         {readOnly && !result && (
           <div className="flex items-center gap-2 py-1">
             <span className="w-2 h-2 bg-neon-green animate-blink" />
-            <span className="font-display text-[10px] text-neon-green tracking-wider">OPPONENT · LIVE</span>
+            <span className="font-display text-[9px] sm:text-[10px] text-neon-green tracking-wider">OPPONENT · LIVE</span>
           </div>
         )}
 
@@ -409,7 +425,7 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
               initial={{ opacity: 0 }}
               animate={{ opacity: [0.4, 1, 0.4] }}
               transition={{ duration: 0.8, repeat: Infinity }}
-              className={`font-display text-sm tracking-wider ${result === 'WIN' ? 'text-neon-green' : 'text-neon-orange'}`}
+              className={`font-display text-xs sm:text-sm tracking-wider ${result === 'WIN' ? 'text-neon-green' : 'text-neon-orange'}`}
             >
               CLOSING...
             </motion.p>
@@ -419,9 +435,9 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
         {showResultAnim && result === 'WIN' && !duelMode && (
           <>
             <PixelConfetti active={true} />
-            <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center py-3">
-              <p className="font-display text-3xl sm:text-4xl text-neon-green text-glow-green animate-rainbow inline-block">🎯 TARGET HIT!</p>
-              <p className="font-mono text-4xl sm:text-5xl font-bold text-neon-green mt-2">+{pnl.toFixed(2)}%</p>
+            <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center py-2 sm:py-3">
+              <p className="font-display text-2xl sm:text-4xl text-neon-green text-glow-green animate-rainbow inline-block">🎯 TARGET HIT!</p>
+              <p className="font-mono text-3xl sm:text-5xl font-bold text-neon-green mt-1 sm:mt-2">+{pnl.toFixed(2)}%</p>
             </motion.div>
           </>
         )}
@@ -433,10 +449,10 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
               initial={{ scale: 0.5, opacity: 0, x: 0 }}
               animate={{ scale: 1, opacity: 1, x: [0, -8, 8, -6, 6, -3, 3, 0] }}
               transition={{ x: { duration: 0.5, ease: 'easeOut' }, scale: { duration: 0.3 } }}
-              className="text-center py-3"
+              className="text-center py-2 sm:py-3"
             >
-              <p className="font-display text-3xl sm:text-4xl text-neon-orange text-glow-orange inline-block">💀 PIRBED!</p>
-              <p className="font-mono text-4xl sm:text-5xl font-bold text-neon-orange mt-2">{pnl.toFixed(2)}%</p>
+              <p className="font-display text-2xl sm:text-4xl text-neon-orange text-glow-orange inline-block">💀 PIRBED!</p>
+              <p className="font-mono text-3xl sm:text-5xl font-bold text-neon-orange mt-1 sm:mt-2">{pnl.toFixed(2)}%</p>
             </motion.div>
           </>
         )}

@@ -123,13 +123,39 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
           setMyClosed(true);
         }
         if (u.status === 'finished') {
-          setRoom((prev: any) => prev ? { ...prev, ...u } : prev);
+          // Use fresh data from the payload, not stale room state
+          setRoom((prev: any) => prev ? { ...prev, ...u } : u);
           setFinished(true);
+        }
+        // If opponent closed and I'm already closed, try to finalize
+        if (u[`${opponentSlot}_closed`] && myClosed && u.status !== 'finished') {
+          checkBothClosed();
         }
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [room, roomId, opponentSlot, playerSlot, opponentClosed, myClosed]);
+
+  // Polling fallback: if both closed but no 'finished' event after 5s, check manually
+  useEffect(() => {
+    if (!myClosed || finished) return;
+    const pollId = setInterval(async () => {
+      const { data } = await supabase.from('duel_rooms').select('*').eq('id', roomId).single();
+      if (data) {
+        const r = data as any;
+        if (r.status === 'finished') {
+          setRoom(r);
+          setFinished(true);
+          clearInterval(pollId);
+        } else if (r.p1_closed && r.p2_closed && r.status !== 'finished') {
+          // Both closed but not finalized — finalize now
+          const winner = r.p1_pnl > r.p2_pnl ? 'p1' : r.p2_pnl > r.p1_pnl ? 'p2' : 'draw';
+          await supabase.from('duel_rooms').update({ status: 'finished', winner } as any).eq('id', roomId);
+        }
+      }
+    }, 3000);
+    return () => clearInterval(pollId);
+  }, [myClosed, finished, roomId]);
 
   // Sync my PnL to DB every 2s
   useEffect(() => {
@@ -182,9 +208,18 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
   };
 
   useEffect(() => {
-    if (!finished || !room) return;
-    onFinished(room);
-  }, [finished, room]);
+    if (!finished) return;
+    // Fetch fresh room data to ensure we have winner + final PnL
+    const fetchFinal = async () => {
+      const { data } = await supabase.from('duel_rooms').select('*').eq('id', roomId).single();
+      if (data) {
+        onFinished(data);
+      } else if (room) {
+        onFinished(room);
+      }
+    };
+    fetchFinal();
+  }, [finished]);
 
   const myEntryPrice = room ? getNumField(room, playerSlot, 'entry_price') : 0;
   const oppEntryPrice = room ? getNumField(room, opponentSlot, 'entry_price') : 0;

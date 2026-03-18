@@ -1,22 +1,9 @@
-// Duel-mode constants: limited token pool + Pyth feed IDs
+// Duel-mode constants: full token pool (same as solo) + Pyth feed IDs
 
-export const DUEL_TOKENS = [
-  {
-    ticker: 'BTC',
-    pair: 'BTC/USD',
-    feedId: '0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43',
-  },
-  {
-    ticker: 'ETH',
-    pair: 'ETH/USD',
-    feedId: '0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace',
-  },
-  {
-    ticker: 'SOL',
-    pair: 'SOL/USD',
-    feedId: '0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d',
-  },
-];
+import { SOLO_TOKENS } from './soloTokens';
+
+// Duel uses the same token pool as solo
+export const DUEL_TOKENS = SOLO_TOKENS;
 
 export const DUEL_TIMER_SECONDS = 60;
 

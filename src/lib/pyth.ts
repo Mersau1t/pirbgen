@@ -2,6 +2,10 @@
 
 const HERMES_URL = 'https://hermes.pyth.network';
 
+const DEBUG = import.meta.env.DEV;
+const log = DEBUG ? console.log : () => {};
+const warn = DEBUG ? console.warn : () => {};
+
 export interface PythFeed {
   id: string;
   ticker: string;    // e.g. "BTC"
@@ -63,13 +67,13 @@ export async function fetchAllPythFeeds(): Promise<PythFeed[]> {
       feeds.push({
         id: '0x' + feed.id,
         ticker: base,
-        pair: `${base}/USDT`,
+        pair: `${base}/USD`, // Fixed: was incorrectly "USDT"
       });
     }
 
     feedsCache = feeds;
     feedsCacheTime = Date.now();
-    console.log(`Loaded ${feeds.length} Pyth feeds (crypto + equity + fx + metal)`);
+    log(`Loaded ${feeds.length} Pyth feeds (crypto + equity + fx + metal)`);
     return feeds;
   } catch (err) {
     console.error('Failed to fetch Pyth feeds:', err);
@@ -137,7 +141,6 @@ async function fetchPricesAtTime(feedIds: string[], timestamp: number): Promise<
   const result = new Map<string, number>();
   if (feedIds.length === 0) return result;
 
-  // Hermes timestamp endpoint only takes one set of ids, batch them
   try {
     const params = feedIds.map(id => `ids[]=${id}`).join('&');
     const res = await fetch(`${HERMES_URL}/v2/updates/price/${timestamp}?${params}&parsed=true`);
@@ -169,7 +172,6 @@ async function computeVolatility(feedIds: string[]): Promise<Map<string, number>
   const intervals = 8;
   const step = Math.floor(86400 / intervals); // ~3h apart
 
-  // Fetch prices at 8 time points + current (in parallel)
   const timestamps = Array.from({ length: intervals }, (_, i) => now - (intervals - i) * step);
   
   const [currentPrices, ...historicalPrices] = await Promise.all([
@@ -180,7 +182,6 @@ async function computeVolatility(feedIds: string[]): Promise<Map<string, number>
   const result = new Map<string, number>();
 
   for (const id of feedIds) {
-    // Collect all price points for this feed
     const prices: number[] = [];
     for (const snapshot of historicalPrices) {
       const p = snapshot.get(id);
@@ -190,23 +191,19 @@ async function computeVolatility(feedIds: string[]): Promise<Map<string, number>
     if (cur && cur.price > 0) prices.push(cur.price);
 
     if (prices.length < 3) {
-      // Fallback to confidence ratio
       if (cur) result.set(id, cur.confidence / cur.price);
       continue;
     }
 
-    // Compute log-returns
     const returns: number[] = [];
     for (let i = 1; i < prices.length; i++) {
       returns.push(Math.log(prices[i] / prices[i - 1]));
     }
 
-    // Standard deviation of returns
     const mean = returns.reduce((a, b) => a + b, 0) / returns.length;
     const variance = returns.reduce((a, r) => a + (r - mean) ** 2, 0) / returns.length;
     const stddev = Math.sqrt(variance);
 
-    // Annualize (roughly): stddev * sqrt(365 * 24 / 3) ≈ * 53
     result.set(id, stddev * 53);
   }
 
@@ -214,7 +211,7 @@ async function computeVolatility(feedIds: string[]): Promise<Map<string, number>
 }
 
 /**
- * Get top volatile tokens (cached). Used for display + feed picking.
+ * Get top volatile tokens (cached).
  */
 export async function getTopVolatileTokens(): Promise<VolatileToken[]> {
   if (volatilityCache.length > 0 && Date.now() - volatilityCacheTime < VOLATILITY_CACHE_TTL) {
@@ -224,7 +221,6 @@ export async function getTopVolatileTokens(): Promise<VolatileToken[]> {
   const feeds = await fetchAllPythFeeds();
   if (feeds.length === 0) return [];
 
-  // Sample a batch of ~50
   const batchSize = Math.min(50, feeds.length);
   const shuffled = [...feeds].sort(() => Math.random() - 0.5);
   const batch = shuffled.slice(0, batchSize);
@@ -247,13 +243,13 @@ export async function getTopVolatileTokens(): Promise<VolatileToken[]> {
   volatilityCache = scored;
   volatilityCacheTime = Date.now();
 
-  console.log(`Top volatile (annualized): ${scored.slice(0, 5).map(s => `${s.feed.ticker} ${(s.volatility * 100).toFixed(0)}%`).join(', ')}`);
+  log(`Top volatile (annualized): ${scored.slice(0, 5).map(s => `${s.feed.ticker} ${(s.volatility * 100).toFixed(0)}%`).join(', ')}`);
 
   return scored;
 }
 
 /**
- * Pick a feed weighted toward most volatile (stddev of 24h returns).
+ * Pick a feed weighted toward most volatile.
  */
 export async function pickVolatileFeed(): Promise<{ feed: PythFeed; price: number } | null> {
   const scored = await getTopVolatileTokens();
@@ -265,8 +261,7 @@ export async function pickVolatileFeed(): Promise<{ feed: PythFeed; price: numbe
 }
 
 /**
- * Fetch historical price candles from Hermes timestamp API (CORS-friendly).
- * Returns ~count candles of ~intervalSec seconds each, ending at now.
+ * Fetch historical price candles from Hermes timestamp API.
  */
 export async function fetchHistoricalCandles(
   feedId: string,
@@ -305,7 +300,6 @@ export async function fetchHistoricalCandles(
     const results = await Promise.all(promises);
     results.sort((a, b) => a.idx - b.idx);
 
-    // Build candles from consecutive price points using confidence for high/low
     for (let i = 0; i < results.length - 1; i++) {
       const open = results[i].price;
       const close = results[i + 1].price;
@@ -323,7 +317,7 @@ export async function fetchHistoricalCandles(
       });
     }
     
-    console.log(`Loaded ${candles.length} historical candles from Hermes for ${feedId}`);
+    log(`Loaded ${candles.length} historical candles from Hermes for ${feedId}`);
   } catch (err) {
     console.error('Failed to fetch historical candles:', err);
   }
@@ -332,7 +326,8 @@ export async function fetchHistoricalCandles(
 }
 
 /**
- * Create a streaming connection to Pyth Hermes SSE by feed ID
+ * Create a streaming connection to Pyth Hermes SSE by feed ID.
+ * Includes reconnect logic with max retries.
  */
 export interface PythPriceTick {
   price: number;
@@ -343,26 +338,51 @@ export function streamPythPriceById(
   feedId: string,
   onPrice: (tick: PythPriceTick) => void
 ): () => void {
-  const url = `${HERMES_URL}/v2/updates/price/stream?ids[]=${feedId}&parsed=true`;
-  const eventSource = new EventSource(url);
+  const MAX_RETRIES = 5;
+  const RETRY_DELAY_MS = 2000;
+  let retries = 0;
+  let eventSource: EventSource | null = null;
+  let closed = false;
 
-  eventSource.onmessage = (event) => {
-    try {
-      const data = JSON.parse(event.data);
-      const parsed = data.parsed?.[0]?.price;
-      if (parsed) {
-        const price = parsePythPrice(parsed);
-        const confidence = Number(parsed.conf) * Math.pow(10, parsed.expo);
-        onPrice({ price, confidence });
+  function connect() {
+    if (closed) return;
+
+    const url = `${HERMES_URL}/v2/updates/price/stream?ids[]=${feedId}&parsed=true`;
+    eventSource = new EventSource(url);
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        const parsed = data.parsed?.[0]?.price;
+        if (parsed) {
+          retries = 0; // Reset retries on successful message
+          const price = parsePythPrice(parsed);
+          const confidence = Number(parsed.conf) * Math.pow(10, parsed.expo);
+          onPrice({ price, confidence });
+        }
+      } catch (err) {
+        console.error('Error parsing Pyth stream data:', err);
       }
-    } catch (err) {
-      console.error('Error parsing Pyth stream data:', err);
-    }
-  };
+    };
 
-  eventSource.onerror = () => {
-    console.error('Pyth SSE stream error for feed:', feedId);
-  };
+    eventSource.onerror = () => {
+      eventSource?.close();
+      retries++;
+      
+      if (retries > MAX_RETRIES) {
+        console.error(`Pyth SSE: max retries (${MAX_RETRIES}) reached for ${feedId}, giving up`);
+        return;
+      }
 
-  return () => eventSource.close();
+      warn(`Pyth SSE error for ${feedId}, retry ${retries}/${MAX_RETRIES} in ${RETRY_DELAY_MS}ms`);
+      setTimeout(connect, RETRY_DELAY_MS * retries);
+    };
+  }
+
+  connect();
+
+  return () => {
+    closed = true;
+    eventSource?.close();
+  };
 }

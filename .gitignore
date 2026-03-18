@@ -12,6 +12,15 @@ dist
 dist-ssr
 *.local
 
+# Environment variables — NEVER commit secrets
+.env
+.env.*
+!.env.example
+
+# Lock files (keep only one package manager)
+bun.lockb
+bun.lock
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

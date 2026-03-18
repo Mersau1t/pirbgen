@@ -18,7 +18,7 @@ interface PriceChartProps {
   leverage: number;
   result?: 'WIN' | 'REKT' | null;
   duelMode?: boolean;
-  spectator?: boolean; // neutral colors, no position info leaked
+  spectator?: boolean;
 }
 
 const MAX_VISIBLE = 28;
@@ -26,25 +26,52 @@ const MAX_VISIBLE = 28;
 function formatPrice(p: number): string {
   const abs = Math.abs(p);
   if (abs >= 10000) return '$' + p.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  if (abs >= 1000) return '$' + p.toFixed(3);
-  if (abs >= 100) return '$' + p.toFixed(4);
-  if (abs >= 1) return '$' + p.toFixed(5);
-  if (abs >= 0.01) return '$' + p.toFixed(7);
-  if (abs >= 0.0001) return '$' + p.toFixed(9);
-  return '$' + p.toPrecision(6);
+  if (abs >= 1000) return '$' + p.toFixed(2);
+  if (abs >= 100) return '$' + p.toFixed(3);
+  if (abs >= 1) return '$' + p.toFixed(4);
+  if (abs >= 0.01) return '$' + p.toFixed(6);
+  if (abs >= 0.0001) return '$' + p.toFixed(8);
+  // Very small prices: use subscript notation e.g. $0.0₅3736
+  return formatTinyPrice(p);
 }
 
 function formatPriceShort(p: number): string {
   const abs = Math.abs(p);
   if (abs >= 10000) return p.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  if (abs >= 1000) return p.toFixed(3);
-  if (abs >= 100) return p.toFixed(4);
-  if (abs >= 1) return p.toFixed(5);
-  if (abs >= 0.01) return p.toFixed(7);
-  return p.toPrecision(5);
+  if (abs >= 1000) return p.toFixed(2);
+  if (abs >= 100) return p.toFixed(3);
+  if (abs >= 1) return p.toFixed(4);
+  if (abs >= 0.01) return p.toFixed(6);
+  return formatTinyPrice(p).replace('$', '');
 }
 
-/** Sharp line through points */
+// Format very small prices compactly: $0.0{5}3736 style → "$0.0₅3736"
+function formatTinyPrice(p: number): string {
+  const abs = Math.abs(p);
+  if (abs === 0) return '$0';
+  const str = abs.toFixed(20);
+  // Count leading zeros after "0."
+  const match = str.match(/^0\.0*/);
+  if (!match) return '$' + abs.toPrecision(4);
+  const leadingZeros = match[0].length - 2; // subtract "0."
+  if (leadingZeros <= 3) return '$' + abs.toFixed(leadingZeros + 4);
+  // Show as $0.0₅3736 (subscript number = count of zeros)
+  const significant = str.slice(match[0].length, match[0].length + 4);
+  const sign = p < 0 ? '-' : '';
+  return `${sign}$0.0\u2080${String.fromCharCode(0x2080 + leadingZeros)}${significant}`;
+}
+
+// Mobile-aware short format (fewer decimals)
+function formatPriceMobile(p: number): string {
+  const abs = Math.abs(p);
+  if (abs >= 10000) return '$' + (p / 1000).toFixed(1) + 'k';
+  if (abs >= 1000) return '$' + p.toFixed(2);
+  if (abs >= 100) return '$' + p.toFixed(3);
+  if (abs >= 1) return '$' + p.toFixed(4);
+  if (abs >= 0.01) return '$' + p.toFixed(5);
+  return formatTinyPrice(p);
+}
+
 function sharpLinePath(ctx: CanvasRenderingContext2D, pts: { x: number; y: number }[]) {
   if (pts.length < 2) return;
   ctx.moveTo(pts[0].x, pts[0].y);
@@ -59,7 +86,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
   const [size, setSize] = useState({ w: 0, h: 0 });
   const animFrameRef = useRef(0);
   const timeRef = useRef(0);
-  const zoomProgressRef = useRef(0); // 0 = focused, 1 = zoomed out
+  const zoomProgressRef = useRef(0);
   const prevResultRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -84,14 +111,30 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
     canvas.width = size.w * dpr;
     canvas.height = size.h * dpr;
 
-    // Compute static values once
     const w = size.w;
     const h = size.h;
-    const priceAxisW = 145;
-    const timeAxisH = 22;
-    const pad = { top: 14, bottom: timeAxisH + 4, left: 8, right: priceAxisW + 6 };
+
+    // --- RESPONSIVE VALUES ---
+    const isMobile = w < 480;
+    const isSmall = w < 640;
+    // Dynamic axis width: wider for normal prices, narrower for tiny/huge prices (compact format)
+    const baseAxisW = isMobile ? 80 : isSmall ? 100 : 130;
+    const priceAxisW = baseAxisW;
+    const timeAxisH = isMobile ? 18 : 22;
+    const gridFontSize = isMobile ? 9 : isSmall ? 10 : 12;
+    const priceFontSize = isMobile ? 9 : isSmall ? 11 : 12;
+    const labelFontSize = isMobile ? 8 : isSmall ? 10 : 11;
+    const entryLabelSize = isMobile ? 7 : 8;
+    const timeFontSize = isMobile ? 7 : 8;
+    const tagW = priceAxisW - 8;
+    const tagH = isMobile ? 18 : 22;
+
+    const pad = { top: isMobile ? 10 : 14, bottom: timeAxisH + 4, left: isMobile ? 4 : 8, right: priceAxisW + 6 };
     const chartW = w - pad.left - pad.right;
     const chartH = h - pad.top - pad.bottom;
+
+    const formatFn = isMobile ? formatPriceMobile : formatPrice;
+    const formatShortFn = isMobile ? ((p: number) => formatPriceMobile(p).replace('$', '')) : formatPriceShort;
 
     const slPriceChange = stopLoss / leverage / 100;
     const tpPriceChange = takeProfit / leverage / 100;
@@ -102,10 +145,8 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       ? entryPrice * (1 + tpPriceChange)
       : entryPrice * (1 - tpPriceChange);
 
-    // Scale boundaries (static)
     let focusedLower: number, focusedUpper: number;
     if (duelMode) {
-      // In duel mode, scale to actual price data
       const allPrices = candles.flatMap(c => [c.high, c.low, c.close, c.open]);
       allPrices.push(entryPrice);
       focusedLower = Math.min(...allPrices);
@@ -151,7 +192,6 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       if (!running) return;
       timeRef.current = t;
 
-      // --- Animated zoom lerp (runs every frame) ---
       const zoomTarget = result ? 1 : 0;
       zoomProgressRef.current += (zoomTarget - zoomProgressRef.current) * 0.04;
       if (Math.abs(zoomProgressRef.current - zoomTarget) < 0.001) zoomProgressRef.current = zoomTarget;
@@ -177,12 +217,11 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       ctx.fillRect(pad.left, pad.top, chartW, chartH);
 
       if (!duelMode) {
-      // --- TP/SL GRADIENT ZONES WITH EFFECTS ---
+      // --- TP/SL GRADIENT ZONES ---
       const tpYZone = toY(tpPrice);
       const slYZone = toY(slPrice);
       const entryYZone = toY(entryPrice);
 
-      // Helper to draw zone with energy wave effect
       const drawZone = (yTop: number, yBot: number, color: string, isTP: boolean, prox: number) => {
         const zoneH = Math.abs(yBot - yTop);
         const zoneY = Math.min(yTop, yBot);
@@ -195,27 +234,30 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
         ctx.fillStyle = grad;
         ctx.fillRect(pad.left, zoneY, chartW, zoneH);
 
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(pad.left, zoneY, chartW, zoneH);
-        ctx.clip();
-        const waveCount = 3;
-        for (let wi = 0; wi < waveCount; wi++) {
-          const waveY = zoneY + (zoneH / (waveCount + 1)) * (wi + 1);
-          const waveOffset = t / (600 + wi * 200);
-          const waveAlpha = 0.04 + prox * 0.08;
+        // Wave effect (skip on very small screens for perf)
+        if (!isMobile) {
+          ctx.save();
           ctx.beginPath();
-          ctx.moveTo(pad.left, waveY);
-          for (let wx = pad.left; wx <= pad.left + chartW; wx += 3) {
-            const normalizedX = (wx - pad.left) / chartW;
-            const dy = Math.sin(normalizedX * Math.PI * 4 + waveOffset + wi * 2) * (3 + prox * 8);
-            ctx.lineTo(wx, waveY + dy);
+          ctx.rect(pad.left, zoneY, chartW, zoneH);
+          ctx.clip();
+          const waveCount = 3;
+          for (let wi = 0; wi < waveCount; wi++) {
+            const waveY = zoneY + (zoneH / (waveCount + 1)) * (wi + 1);
+            const waveOffset = t / (600 + wi * 200);
+            const waveAlpha = 0.04 + prox * 0.08;
+            ctx.beginPath();
+            ctx.moveTo(pad.left, waveY);
+            for (let wx = pad.left; wx <= pad.left + chartW; wx += 3) {
+              const normalizedX = (wx - pad.left) / chartW;
+              const dy = Math.sin(normalizedX * Math.PI * 4 + waveOffset + wi * 2) * (3 + prox * 8);
+              ctx.lineTo(wx, waveY + dy);
+            }
+            ctx.strokeStyle = `${color}${Math.round(waveAlpha * 255).toString(16).padStart(2, '0')}`;
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
           }
-          ctx.strokeStyle = `${color}${Math.round(waveAlpha * 255).toString(16).padStart(2, '0')}`;
-          ctx.lineWidth = 1.5;
-          ctx.stroke();
+          ctx.restore();
         }
-        ctx.restore();
 
         ctx.save();
         ctx.beginPath();
@@ -243,12 +285,10 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
         }
       };
 
-      // Green zone (TP)
       const greenTop = direction === 'LONG' ? tpYZone : entryYZone;
       const greenBot = direction === 'LONG' ? entryYZone : tpYZone;
       drawZone(greenTop, greenBot, '#07e46e', true, tpProximity);
 
-      // Red zone (SL)
       const redTop = direction === 'LONG' ? entryYZone : slYZone;
       const redBot = direction === 'LONG' ? slYZone : entryYZone;
       drawZone(redTop, redBot, '#ef4444', false, slProximity);
@@ -257,7 +297,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       // --- GRID ---
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
-      const gridSteps = 6;
+      const gridSteps = isMobile ? 4 : 6;
       for (let i = 0; i <= gridSteps; i++) {
         const price = min + (range / gridSteps) * i;
         const y = toY(price);
@@ -265,25 +305,25 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
         ctx.lineWidth = 1;
         ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + chartW, y); ctx.stroke();
         ctx.fillStyle = 'rgba(200, 180, 255, 0.35)';
-        ctx.font = 'bold 13px monospace';
-        ctx.fillText(formatPrice(price), pad.left + chartW + 8, y);
+        ctx.font = `bold ${gridFontSize}px monospace`;
+        ctx.fillText(formatFn(price), pad.left + chartW + 8, y);
       }
 
-      // --- CRT SCANLINES ---
-      ctx.save();
-      for (let sy = pad.top; sy < pad.top + chartH; sy += 3) {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.06)';
-        ctx.fillRect(pad.left, sy, chartW, 1);
+      // --- CRT SCANLINES (skip on mobile for perf) ---
+      if (!isMobile) {
+        ctx.save();
+        for (let sy = pad.top; sy < pad.top + chartH; sy += 3) {
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.06)';
+          ctx.fillRect(pad.left, sy, chartW, 1);
+        }
+        const flicker = 0.015 + 0.008 * Math.sin(t / 120);
+        ctx.fillStyle = `rgba(200, 180, 255, ${flicker})`;
+        ctx.fillRect(pad.left, pad.top, chartW, chartH);
+        ctx.restore();
       }
-      // CRT flicker
-      const flicker = 0.015 + 0.008 * Math.sin(t / 120); // very subtle
-      ctx.fillStyle = `rgba(200, 180, 255, ${flicker})`;
-      ctx.fillRect(pad.left, pad.top, chartW, chartH);
-      ctx.restore();
 
       // --- SMOOTH PRICE LINE ---
       if (pts.length > 1) {
-        // In spectator mode, use neutral white/purple colors only
         const neutralLine = '#c8b4ff';
         const neutralDot = '#e0d4ff';
         const neutralGlow = '#8046dc';
@@ -293,7 +333,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
         const glowColor = spectator ? neutralGlow : (positive ? '#07e46e' : '#ef4444');
         const lineGlowColor = spectator ? neutralGlow : (proximity > 0.7 ? glowColor : '#8046dc');
 
-        // --- GRADIENT FILL UNDER LINE ---
+        // Gradient fill under line
         ctx.save();
         ctx.beginPath();
         sharpLinePath(ctx, pts);
@@ -325,7 +365,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
         ctx.strokeStyle = spectator ? 'rgba(200, 180, 255, 0.15)' : (proximity > 0.7
           ? (positive ? 'rgba(7, 228, 110, 0.2)' : 'rgba(239, 68, 68, 0.2)')
           : 'rgba(200, 180, 255, 0.15)');
-        ctx.lineWidth = 6;
+        ctx.lineWidth = isMobile ? 4 : 6;
         ctx.shadowColor = lineGlowColor;
         ctx.shadowBlur = glowAnim;
         ctx.stroke();
@@ -338,7 +378,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
         ctx.strokeStyle = spectator ? 'rgba(200, 180, 255, 0.3)' : (proximity > 0.7
           ? (positive ? 'rgba(7, 228, 110, 0.3)' : 'rgba(239, 68, 68, 0.3)')
           : 'rgba(200, 180, 255, 0.3)');
-        ctx.lineWidth = 3;
+        ctx.lineWidth = isMobile ? 2 : 3;
         ctx.shadowColor = lineGlowColor;
         ctx.shadowBlur = glowAnim * 0.5;
         ctx.stroke();
@@ -348,17 +388,16 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
         ctx.beginPath();
         sharpLinePath(ctx, pts);
         ctx.strokeStyle = '#e0d4ff';
-        ctx.lineWidth = 1.8;
+        ctx.lineWidth = isMobile ? 1.5 : 1.8;
         ctx.stroke();
 
         // --- PULSATING DOT ---
         const lastPt = pts[pts.length - 1];
         const dotColor = spectator ? neutralDot : (positive ? '#07e46e' : '#ef4444');
         const dotPulse = 0.7 + 0.3 * Math.sin(t / 500);
-        const dotR = 3.5 + dotPulse * 1.2;
+        const dotR = (isMobile ? 2.5 : 3.5) + dotPulse * 1.2;
         const ringR = dotR + 2 + dotPulse * 2;
 
-        // Outer ring glow
         ctx.save();
         ctx.beginPath();
         ctx.arc(lastPt.x, lastPt.y, ringR, 0, Math.PI * 2);
@@ -368,20 +407,18 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
         ctx.fill();
         ctx.restore();
 
-        // Inner dot
         ctx.beginPath();
         ctx.arc(lastPt.x, lastPt.y, dotR, 0, Math.PI * 2);
         ctx.fillStyle = dotColor;
         ctx.fill();
 
-        // White center
         ctx.beginPath();
         ctx.arc(lastPt.x, lastPt.y, 1.5, 0, Math.PI * 2);
         ctx.fillStyle = '#F5F5FF';
         ctx.fill();
 
-        // --- SPARK PARTICLES ---
-        const sparkCount = spectator ? 3 : Math.floor(3 + proximity * 8);
+        // --- SPARK PARTICLES (fewer on mobile) ---
+        const sparkCount = isMobile ? 2 : (spectator ? 3 : Math.floor(3 + proximity * 8));
         ctx.save();
         for (let sp = 0; sp < sparkCount; sp++) {
           const angle = (t / 400 + sp * (Math.PI * 2 / sparkCount)) % (Math.PI * 2);
@@ -410,11 +447,11 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       ctx.beginPath(); ctx.moveTo(pad.left, entryY); ctx.lineTo(pad.left + chartW, entryY); ctx.stroke();
       ctx.shadowBlur = 0;
       ctx.setLineDash([]);
-      ctx.fillStyle = '#8046dc';
-      ctx.fillRect(pad.left + chartW + 4, entryY - 11, priceAxisW - 8, 22);
-      ctx.fillStyle = '#F5F5FF';
-      ctx.font = 'bold 14px monospace';
-      ctx.fillText(formatPrice(entryPrice), pad.left + chartW + 7, entryY);
+
+      // Collect all price tags, then resolve overlaps before drawing
+      const priceTags: { y: number; color: string; textColor: string; label: string; priority: number }[] = [];
+      
+      priceTags.push({ y: entryY, color: '#8046dc', textColor: '#F5F5FF', label: formatFn(entryPrice), priority: 2 });
 
       if (!duelMode) {
       // --- TAKE PROFIT LINE ---
@@ -431,11 +468,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       ctx.beginPath(); ctx.moveTo(pad.left, tpY); ctx.lineTo(pad.left + chartW, tpY); ctx.stroke();
       ctx.restore();
       ctx.setLineDash([]);
-      ctx.fillStyle = '#07e46e';
-      ctx.fillRect(pad.left + chartW + 4, tpY - 11, priceAxisW - 8, 22);
-      ctx.fillStyle = '#0a0a0a';
-      ctx.font = 'bold 13px monospace';
-      ctx.fillText('TP ' + formatPriceShort(tpPrice), pad.left + chartW + 6, tpY);
+      priceTags.push({ y: tpY, color: '#07e46e', textColor: '#0a0a0a', label: 'TP ' + formatShortFn(tpPrice), priority: 1 });
 
       // --- STOP LOSS LINE ---
       const slY = toY(slPrice);
@@ -451,11 +484,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       ctx.beginPath(); ctx.moveTo(pad.left, slY); ctx.lineTo(pad.left + chartW, slY); ctx.stroke();
       ctx.restore();
       ctx.setLineDash([]);
-      ctx.fillStyle = '#ef4444';
-      ctx.fillRect(pad.left + chartW + 4, slY - 11, priceAxisW - 8, 22);
-      ctx.fillStyle = '#F5F5FF';
-      ctx.font = 'bold 13px monospace';
-      ctx.fillText('SL ' + formatPriceShort(slPrice), pad.left + chartW + 6, slY);
+      priceTags.push({ y: slY, color: '#ef4444', textColor: '#F5F5FF', label: 'SL ' + formatShortFn(slPrice), priority: 1 });
       }
 
       // --- CURRENT PRICE TAG ---
@@ -467,18 +496,43 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
         ctx.lineWidth = 1;
         ctx.beginPath(); ctx.moveTo(pad.left, curY); ctx.lineTo(pad.left + chartW, curY); ctx.stroke();
         ctx.setLineDash([]);
-        // Animated tag
+        priceTags.push({ y: curY, color: curColor, textColor: '#0a0a0a', label: formatFn(lastClose), priority: 3 });
+      }
+
+      // --- RESOLVE OVERLAPPING PRICE TAGS ---
+      // Sort by priority (highest = most important, drawn last / gets best position)
+      priceTags.sort((a, b) => a.priority - b.priority);
+      const minGap = tagH + 2;
+      const resolvedTags = priceTags.map(tag => ({ ...tag, resolvedY: tag.y }));
+      
+      // Simple collision resolution: push overlapping tags apart
+      for (let pass = 0; pass < 5; pass++) {
+        resolvedTags.sort((a, b) => a.resolvedY - b.resolvedY);
+        for (let i = 1; i < resolvedTags.length; i++) {
+          const gap = resolvedTags[i].resolvedY - resolvedTags[i - 1].resolvedY;
+          if (gap < minGap) {
+            const overlap = minGap - gap;
+            resolvedTags[i - 1].resolvedY -= overlap / 2;
+            resolvedTags[i].resolvedY += overlap / 2;
+          }
+        }
+      }
+
+      // Draw all price tags at resolved positions
+      for (const tag of resolvedTags) {
         ctx.save();
-        ctx.shadowColor = curColor;
-        ctx.shadowBlur = 6;
-        ctx.fillStyle = curColor;
-        ctx.fillRect(pad.left + chartW + 4, curY - 11, priceAxisW - 8, 22);
+        if (tag.priority === 3) { // current price gets glow
+          ctx.shadowColor = tag.color;
+          ctx.shadowBlur = 6;
+        }
+        ctx.fillStyle = tag.color;
+        ctx.fillRect(pad.left + chartW + 4, tag.resolvedY - tagH / 2, tagW, tagH);
         ctx.restore();
-        ctx.fillStyle = '#0a0a0a';
-        ctx.font = 'bold 14px monospace';
+        ctx.fillStyle = tag.textColor;
+        ctx.font = `bold ${tag.priority >= 2 ? priceFontSize : labelFontSize}px monospace`;
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
-        ctx.fillText(formatPrice(lastClose), pad.left + chartW + 7, curY);
+        ctx.fillText(tag.label, pad.left + chartW + 6, tag.resolvedY);
       }
 
       // --- ENTRY VERTICAL MARKER ---
@@ -489,7 +543,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
         ctx.beginPath(); ctx.moveTo(entryX, pad.top); ctx.lineTo(entryX, pad.top + chartH); ctx.stroke();
         ctx.setLineDash([]);
         ctx.fillStyle = '#8046dc';
-        ctx.font = 'bold 8px monospace';
+        ctx.font = `bold ${entryLabelSize}px monospace`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'bottom';
         ctx.shadowColor = '#8046dc';
@@ -499,12 +553,13 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
       }
 
       // --- TIME AXIS ---
-      ctx.font = '8px monospace';
+      ctx.font = `${timeFontSize}px monospace`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
       const timeY = pad.top + chartH + 5;
+      const timeStep = isMobile ? 6 : 4;
       candles.forEach((candle, i) => {
-        if (candles.length > 10 && i % 4 !== 0 && i !== candles.length - 1) return;
+        if (candles.length > 10 && i % timeStep !== 0 && i !== candles.length - 1) return;
         const x = toX(i);
         const sec = candle.time;
         const absSec = Math.abs(sec);
@@ -535,7 +590,7 @@ export default function PriceChart({ candles, entryPrice, positive, direction, s
   return (
     <div ref={containerRef} className="w-full h-full relative">
       <canvas ref={canvasRef} className="w-full h-full" style={{ display: 'block' }} />
-      <div className="absolute top-1 left-3 text-[9px] text-muted-foreground/40 font-mono tracking-wider">PYTH LIVE</div>
+      <div className="absolute top-1 left-2 sm:left-3 text-[7px] sm:text-[9px] text-muted-foreground/40 font-mono tracking-wider">PYTH LIVE</div>
     </div>
   );
 }

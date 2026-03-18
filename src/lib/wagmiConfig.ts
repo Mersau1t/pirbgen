@@ -3,7 +3,7 @@ import { mainnet, polygon, arbitrum, optimism, base } from 'wagmi/chains';
 
 export const config = getDefaultConfig({
   appName: 'PIRB.GEN',
-  projectId: '04b863be73c6671b9e6c2bb36fd7e0c8', // WalletConnect projectId
+  projectId: import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || '',
   chains: [mainnet, polygon, arbitrum, optimism, base],
   ssr: false,
 });

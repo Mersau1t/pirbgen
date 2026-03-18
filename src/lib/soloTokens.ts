@@ -1,4 +1,4 @@
-// 20 major tokens for solo mode with verified Pyth Hermes feed IDs
+// Major tokens for solo mode with verified Pyth Hermes feed IDs
 export const SOLO_TOKENS = [
   { ticker: 'BTC', pair: 'BTC/USD', feedId: '0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43' },
   { ticker: 'ETH', pair: 'ETH/USD', feedId: '0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace' },
@@ -13,10 +13,10 @@ export const SOLO_TOKENS = [
   { ticker: 'APT', pair: 'APT/USD', feedId: '0x03ae4db29ed4ae33d323568895aa00337e658e348b37509f5372ae51f0af00d5' },
   { ticker: 'ARB', pair: 'ARB/USD', feedId: '0x3fa4252848f9f0a1480be62745a4629d9eb1322aebab8a791e344b3b9c1adcf5' },
   { ticker: 'OP', pair: 'OP/USD', feedId: '0x385f64d993f7b77d8182ed5003d97c60aa3361f3cecfe711544d2d59165e9bdf' },
-  
   { ticker: 'TIA', pair: 'TIA/USD', feedId: '0x09f7c1d7dfbb7df2b8fe3d3d87ee94a2259d212da4f30c1f0540d066dfa44723' },
   { ticker: 'WIF', pair: 'WIF/USD', feedId: '0x4ca4beeca86f0d164160323817a4e42b10010a724c2217c6ee41b54cd4cc61fc' },
   { ticker: 'PEPE', pair: 'PEPE/USD', feedId: '0xd69731a2e74ac1ce884fc3890f7ee324b6deb66147055249568869ed700882e4' },
+  { ticker: 'PYTHOIL', pair: 'PYTHOIL/USD', feedId: '0x67784f72e95ac01337edb7d7bd5bbd1c03669101b7068a620df228ed4e52ef14' },
 ];
 
 /** Pick a random token from the solo pool */
