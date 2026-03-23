@@ -15,10 +15,11 @@ import pythoilBarrel from '@/assets/pythoil-barrel.png';
 
 import { getStreak, recordWin, recordLoss, getStreakMultiplier, type StreakData } from '@/lib/streaks';
 import { hasDoneDaily, markDailyDone, getDailyParams } from '@/lib/dailyChallenge';
+import { useEntropy, derivePosition, type EntropySeed } from '@/hooks/useEntropy';
 
 // --- TYPES ---
 type TradeDirection = 'LONG' | 'SHORT';
-type GameStatus = 'IDLE' | 'GENERATING' | 'PLAYING' | 'WIN' | 'REKT';
+type GameStatus = 'IDLE' | 'GENERATING' | 'PREVIEW' | 'PLAYING' | 'WIN' | 'REKT';
 
 interface DegenPosition {
   id: number;
@@ -169,6 +170,18 @@ export default function PirbTerminal() {
   const [isDaily, setIsDaily] = useState(false);
   const [isGainzy, setIsGainzy] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState<number | undefined>(undefined);
+
+  // ── Entropy mode ────────────────────────────────────────────────────
+  const [entropyMode, setEntropyMode] = useState<'classic' | 'entropy'>('classic');
+  const entropy = useEntropy();
+  // Entropy reroll tracking: seed + nonce counter + locked params
+  const [eSeed, setESeed] = useState<`0x${string}` | null>(null);
+  const [eNonce, setENonce] = useState(0);           // increments on every reroll
+  const [ePreRerolls, setEPreRerolls] = useState(0);  // 0-3 pre-game rerolls used
+  const [ePostRerolls, setEPostRerolls] = useState(0); // 0-3 post-game rerolls used
+  const [ePreview, setEPreview] = useState<EntropySeed | null>(null); // current preview position
+  const [lockedFeed, setLockedFeed] = useState<{ id: string; ticker: string; pair: string } | null>(null);
+  const [eGainzy, setEGainzy] = useState(false); // gainzy locks leverage=200
 
   const toggleMusic = () => {
     if (isBgMusicPlaying()) {
@@ -330,6 +343,142 @@ export default function PirbTerminal() {
     setStatus('PLAYING');
   }, []);
 
+  // ── ENTROPY: request seed (1 tx) then show preview ─────────────────
+  const startEntropy = useCallback(async (feed?: { id: string; ticker: string; pair: string }, gainzy = false) => {
+    if (!walletAddress) { connectWallet(); return; }
+    playGenerateClick();
+    setStatus('GENERATING');
+    setIsDaily(false);
+    setTimerSeconds(undefined);
+    setLockedFeed(feed || null);
+    setEGainzy(gainzy);
+    setIsGainzy(gainzy);
+    setESeed(null);
+    setENonce(0);
+    setEPreRerolls(0);
+    setEPostRerolls(0);
+    setEPreview(null);
+    entropy.reset();
+    await entropy.requestSolo();
+  }, [walletAddress, connectWallet, entropy]);
+
+  // When seed arrives → derive initial position → show PREVIEW
+  useEffect(() => {
+    if (entropy.status !== 'ready' || !entropy.seed) return;
+    if (status !== 'GENERATING') return;
+
+    const seed = entropy.seed;
+    setESeed(seed);
+    setENonce(0);
+
+    // Derive position from seed+nonce=0
+    const lockToken = lockedFeed
+      ? SOLO_TOKENS.findIndex(t => t.feedId === lockedFeed.id)
+      : undefined;
+    const lockLev = eGainzy ? 200 : undefined;
+    const pos = derivePosition(seed, 0, lockToken !== undefined && lockToken >= 0 ? lockToken : undefined, lockLev);
+    setEPreview(pos);
+    setStatus('PREVIEW');
+  }, [entropy.status, entropy.seed, status, lockedFeed, eGainzy]);
+
+  // Pre-game reroll: reroll a single param (token/dir/lev/sl/tp)
+  const preReroll = useCallback((paramIndex: 1 | 2 | 3 | 4 | 5) => {
+    if (!eSeed || !ePreview || ePreRerolls >= 3) return;
+    // Locked params: skip if trying to reroll locked param
+    if (lockedFeed && paramIndex === 1) return; // token locked (PYTHOIL)
+    if (eGainzy && paramIndex === 3) return;    // leverage locked (200)
+
+    const newNonce = eNonce + 1;
+    setENonce(newNonce);
+    setEPreRerolls(prev => prev + 1);
+
+    // Derive new random for this single param
+    const derived = derivePosition(eSeed, newNonce,
+      lockedFeed ? (SOLO_TOKENS.findIndex(t => t.feedId === lockedFeed.id)) : undefined,
+      eGainzy ? 200 : undefined,
+    );
+
+    // Apply only the rerolled param, keep the rest from current preview
+    const updated = { ...ePreview };
+    switch (paramIndex) {
+      case 1: updated.tokenIndex = derived.tokenIndex; break;
+      case 2: updated.direction = derived.direction; break;
+      case 3: updated.leverage = derived.leverage; updated.rarity = derived.rarity; break;
+      case 4: updated.stopLoss = derived.stopLoss; updated.takeProfit = derived.stopLoss * updated.rrRatio; break;
+      case 5: updated.rrRatio = derived.rrRatio; updated.takeProfit = updated.stopLoss * derived.rrRatio; break;
+    }
+    setEPreview(updated as EntropySeed);
+  }, [eSeed, ePreview, ePreRerolls, eNonce, lockedFeed, eGainzy]);
+
+  // Confirm preview → start playing (with token fallback if feed fails)
+  const confirmPreview = useCallback(async () => {
+    if (!ePreview) return;
+    setStatus('GENERATING'); // brief loading
+
+    // Determine token — locked feed or from preview index
+    let token = lockedFeed
+      ? { ticker: lockedFeed.ticker, feedId: lockedFeed.id, pair: lockedFeed.pair }
+      : SOLO_TOKENS[ePreview.tokenIndex] || SOLO_TOKENS[0];
+
+    let livePrice = await fetchPythPriceById(token.feedId);
+
+    // Fallback: if token feed fails, try other tokens (skip locked feeds)
+    if (!livePrice && !lockedFeed) {
+      for (let i = 0; i < SOLO_TOKENS.length; i++) {
+        if (i === ePreview.tokenIndex) continue;
+        const fallback = SOLO_TOKENS[i];
+        const p = await fetchPythPriceById(fallback.feedId);
+        if (p) {
+          token = { ticker: fallback.ticker, feedId: fallback.feedId, pair: fallback.pair };
+          livePrice = p;
+          console.warn(`Token ${SOLO_TOKENS[ePreview.tokenIndex]?.ticker} feed failed, using ${fallback.ticker}`);
+          break;
+        }
+      }
+    }
+
+    if (!livePrice) { setStatus('IDLE'); return; }
+
+    setActivePos({
+      id: Date.now(),
+      asset: token.ticker, ticker: token.ticker, feedId: token.feedId,
+      direction: ePreview.direction, leverage: ePreview.leverage,
+      stopLoss: -ePreview.stopLoss, takeProfit: ePreview.takeProfit,
+      rarity: ePreview.rarity,
+    });
+    setEntryPrice(livePrice);
+    setInitialCandles(await buildHistoricalCandles(token.feedId, livePrice));
+    setFinalPnl(0);
+    setStatus('PLAYING');
+  }, [ePreview, lockedFeed]);
+
+  // Post-game reroll: derive new position → go to PREVIEW for param tweaking
+  const postReroll = useCallback(() => {
+    if (!eSeed || ePostRerolls >= 3) return;
+
+    const newNonce = eNonce + 1;
+    setENonce(newNonce);
+    setEPostRerolls(prev => prev + 1);
+    // Reset pre-rerolls for the new preview round
+    setEPreRerolls(0);
+
+    const lockToken = lockedFeed
+      ? SOLO_TOKENS.findIndex(t => t.feedId === lockedFeed.id)
+      : undefined;
+    const lockLev = eGainzy ? 200 : undefined;
+    const pos = derivePosition(eSeed, newNonce, lockToken !== undefined && lockToken >= 0 ? lockToken : undefined, lockLev);
+
+    setEPreview(pos);
+    setStatus('PREVIEW');
+  }, [eSeed, eNonce, ePostRerolls, lockedFeed, eGainzy]);
+
+  // If entropy errors, fall back to IDLE
+  useEffect(() => {
+    if (entropy.status === 'error' && status === 'GENERATING') {
+      setStatus('IDLE');
+    }
+  }, [entropy.status, status]);
+
   const generateDaily = useCallback(async () => {
     if (allVolatile.length === 0) return;
     playGenerateClick();
@@ -400,6 +549,9 @@ export default function PirbTerminal() {
     setFinalPnl(0);
     setIsDaily(false);
     setTimerSeconds(undefined);
+    setESeed(null); setENonce(0); setEPreRerolls(0); setEPostRerolls(0);
+    setEPreview(null); setLockedFeed(null); setEGainzy(false);
+    entropy.reset();
   };
 
   const rarityStyle = activePos ? RARITY_STYLES[activePos.rarity] : RARITY_STYLES.common;
@@ -497,7 +649,10 @@ export default function PirbTerminal() {
 
               {/* Floating PYTHOIL barrel — transparent over buttons, visible in empty zones */}
               <motion.button
-                onClick={() => generatePosition({ id: '0x67784f72e95ac01337edb7d7bd5bbd1c03669101b7068a620df228ed4e52ef14', ticker: 'PYTHOIL', pair: 'PYTHOIL/USD' })}
+                onClick={() => {
+                  const pf = { id: '0x67784f72e95ac01337edb7d7bd5bbd1c03669101b7068a620df228ed4e52ef14', ticker: 'PYTHOIL', pair: 'PYTHOIL/USD' };
+                  entropyMode === 'entropy' ? startEntropy(pf) : generatePosition(pf);
+                }}
                 className="fixed z-[1] cursor-pointer group"
                 initial={{ left: '8%', top: '35%' }}
                 animate={{
@@ -537,12 +692,57 @@ export default function PirbTerminal() {
               </div>
 
               <div className="pixel-border p-3 sm:p-4 lg:p-6 w-full max-w-md space-y-2 sm:space-y-3 bg-background/90 shrink-0">
-                <button onClick={() => generatePosition()} className="arcade-btn arcade-btn-primary w-full text-xs sm:text-sm lg:text-base py-2 sm:py-3">
+                {/* ── Mode Toggle: ENTROPY / CLASSIC ────────────────── */}
+                <div className="flex items-center justify-center gap-0 font-display text-[8px] sm:text-[9px] tracking-wider">
+                  <button
+                    onClick={() => setEntropyMode('entropy')}
+                    className={`px-3 sm:px-4 py-1.5 sm:py-2 border transition-all duration-200 ${
+                      entropyMode === 'entropy'
+                        ? 'bg-neon-purple/20 border-neon-purple/60 text-neon-purple text-glow-purple'
+                        : 'bg-transparent border-muted-foreground/20 text-muted-foreground/50 hover:text-muted-foreground/80'
+                    }`}
+                    style={{ borderRadius: '2px 0 0 2px' }}
+                  >
+                    🔗 ENTROPY
+                  </button>
+                  <button
+                    onClick={() => setEntropyMode('classic')}
+                    className={`px-3 sm:px-4 py-1.5 sm:py-2 border border-l-0 transition-all duration-200 ${
+                      entropyMode === 'classic'
+                        ? 'bg-neon-green/20 border-neon-green/60 text-neon-green text-glow-green'
+                        : 'bg-transparent border-muted-foreground/20 text-muted-foreground/50 hover:text-muted-foreground/80'
+                    }`}
+                    style={{ borderRadius: '0 2px 2px 0' }}
+                  >
+                    🎲 CLASSIC
+                  </button>
+                </div>
+                {entropyMode === 'entropy' && (
+                  <div className="text-center font-display text-[6px] sm:text-[7px] text-neon-purple/50 tracking-wider">
+                    ON-CHAIN · PYTH ENTROPY · BASE L2
+                    {entropy.fee && (
+                      <span className="ml-2 text-neon-orange/50">FEE: {entropy.feeFormatted}</span>
+                    )}
+                    {entropy.error && (
+                      <div className="text-neon-orange mt-1">{entropy.error}</div>
+                    )}
+                  </div>
+                )}
+                {entropyMode === 'classic' && (
+                  <div className="text-center font-display text-[6px] sm:text-[7px] text-neon-green/50 tracking-wider">
+                    OFF-CHAIN · INSTANT · NO FEES
+                  </div>
+                )}
+
+                <button
+                  onClick={() => entropyMode === 'entropy' ? startEntropy() : generatePosition()}
+                  className="arcade-btn arcade-btn-primary w-full text-xs sm:text-sm lg:text-base py-2 sm:py-3"
+                >
                   🎲 GENERATE
                 </button>
                 
                 <button
-                  onClick={() => generatePosition(undefined, true)}
+                  onClick={() => entropyMode === 'entropy' ? startEntropy(undefined, true) : generatePosition(undefined, true)}
                   className="arcade-btn w-full text-[9px] sm:text-[10px] py-2 sm:py-3"
                   style={{ borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(var(--neon-orange) / 0.15)', boxShadow: 'var(--glow-orange)' }}
                 >
@@ -555,6 +755,10 @@ export default function PirbTerminal() {
 
                 <Link to="/leaderboard" onClick={() => playCoinSound()} className="arcade-btn arcade-btn-secondary w-full text-[9px] sm:text-[10px] py-2 sm:py-3 text-center block" style={{ borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(25 95% 53% / 0.1)' }}>
                   🏆 LEADERBOARD
+                </Link>
+
+                <Link to="/benchmark" onClick={() => playCoinSound()} className="arcade-btn w-full text-[9px] sm:text-[10px] py-2 sm:py-3 text-center block" style={{ borderColor: 'hsl(var(--neon-purple))', color: 'hsl(var(--neon-purple))', background: 'hsl(var(--neon-purple) / 0.1)', boxShadow: 'var(--glow-purple)' }}>
+                  💩 ORACLE SPEED BENCHMARK
                 </Link>
                 {walletAddress && (
                   <Link to="/profile" onClick={() => playCoinSound()} className="arcade-btn w-full text-[9px] sm:text-[10px] py-2 sm:py-3 text-center block" style={{ borderColor: 'hsl(var(--neon-green))', color: 'hsl(var(--neon-green))', background: 'hsl(var(--neon-green) / 0.1)', boxShadow: 'var(--glow-green)' }}>
@@ -583,13 +787,94 @@ export default function PirbTerminal() {
                <p className="font-display text-xs sm:text-lg text-neon-purple text-glow-purple tracking-wider">
                   {isDaily ? '📅 DAILY CHALLENGE LOADING...' : 'PIRB IS PECKING...'}
                 </p>
-                <p className="font-display text-[7px] sm:text-[8px] text-neon-orange animate-blink tracking-widest">REQUESTING ENTROPY</p>
+                <p className="font-display text-[7px] sm:text-[8px] text-neon-orange animate-blink tracking-widest">
+                  {entropyMode === 'entropy'
+                    ? entropy.status === 'requesting' ? '⛓ SENDING TX TO BASE...'
+                    : entropy.status === 'waiting_callback' ? '🔮 WAITING FOR PYTH CALLBACK...'
+                    : '🔗 REQUESTING ENTROPY'
+                    : '🎲 GENERATING POSITION...'
+                  }
+                </p>
+                {entropy.error && entropyMode === 'entropy' && (
+                  <p className="font-display text-[7px] text-neon-orange">{entropy.error}</p>
+                )}
               </div>
               <div className="flex gap-1.5">
                 {[0, 1, 2, 3, 4].map(i => {
                   const barColor = i % 3 === 0 ? 'bg-neon-purple' : i % 3 === 1 ? 'bg-neon-orange' : 'bg-neon-green';
                   return <motion.div key={i} className={`w-2 sm:w-3 h-6 sm:h-8 ${barColor}`} animate={{ scaleY: [0.3, 1, 0.3] }} transition={{ duration: 0.5, repeat: Infinity, delay: i * 0.1 }} />;
                 })}
+              </div>
+            </motion.div>
+          )}
+
+          {/* ── PREVIEW: entropy pre-game rerolls ────────────────────────── */}
+          {status === 'PREVIEW' && ePreview && (
+            <motion.div key="preview" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+              className="flex flex-col items-center justify-center gap-2 sm:gap-3 flex-1 py-2"
+              style={{ overflowY: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
+              <motion.img src={getMascot('idle', isGainzy)} alt="Pirb" className="w-14 h-14 sm:w-20 sm:h-20 object-contain drop-shadow-[0_0_30px_hsl(265,66%,55%,0.4)]"
+                animate={{ y: [0, -5, 0] }} transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }} />
+
+              <div className="text-center">
+                <h2 className="font-display text-sm sm:text-lg text-neon-purple text-glow-purple tracking-wider">
+                  {ePostRerolls > 0 ? `REROLL ${ePostRerolls}/3` : 'YOUR POSITION'}
+                </h2>
+                <p className="font-display text-[7px] sm:text-[8px] text-neon-green/70 tracking-wider mt-0.5">
+                  TAP ANY PARAM TO TWEAK · {3 - ePreRerolls}/3 TWEAKS LEFT
+                </p>
+              </div>
+
+              {/* Param cards — tap to reroll */}
+              <div className="pixel-border p-2 sm:p-3 w-full max-w-sm bg-background/90">
+                <div className="grid grid-cols-5 gap-1">
+                  {([
+                    { idx: 1 as const, label: 'TOKEN', val: (SOLO_TOKENS[ePreview.tokenIndex] || SOLO_TOKENS[0]).ticker, icon: '🪙', locked: !!lockedFeed },
+                    { idx: 2 as const, label: 'DIR', val: ePreview.direction, icon: '📈', locked: false, color: ePreview.direction === 'LONG' ? 'text-neon-green' : 'text-neon-orange' },
+                    { idx: 3 as const, label: 'LEV', val: `${ePreview.leverage}×`, icon: '⚡', locked: eGainzy },
+                    { idx: 4 as const, label: 'SL', val: `-${ePreview.stopLoss}%`, icon: '🛑', locked: false },
+                    { idx: 5 as const, label: 'TP', val: `+${ePreview.takeProfit}%`, icon: '🎯', locked: false },
+                  ]).map(p => {
+                    const canReroll = !p.locked && ePreRerolls < 3;
+                    return (
+                      <motion.button key={p.idx} onClick={() => canReroll && preReroll(p.idx)}
+                        whileTap={canReroll ? { scale: 0.9 } : {}}
+                        className={`flex flex-col items-center gap-0.5 py-1.5 px-0.5 border font-display text-center transition-all duration-150 ${
+                          p.locked
+                            ? 'border-muted-foreground/10 text-muted-foreground/30 cursor-not-allowed'
+                            : canReroll
+                              ? 'border-neon-purple/40 text-neon-purple hover:bg-neon-purple/10 cursor-pointer'
+                              : 'border-muted-foreground/15 text-muted-foreground/40 cursor-not-allowed'
+                        }`} style={{ borderRadius: '2px' }}>
+                        <span className="text-[9px] sm:text-[11px]">{p.icon}</span>
+                        <span className="text-[5px] sm:text-[6px] tracking-wider opacity-50">{p.label}{p.locked ? ' 🔒' : ''}</span>
+                        <span className={`text-[8px] sm:text-[9px] font-bold ${p.color || (canReroll ? 'text-neon-green' : '')}`}>{p.val}</span>
+                      </motion.button>
+                    );
+                  })}
+                </div>
+                {/* Rarity badge */}
+                <div className={`mt-1.5 text-center py-0.5 border ${RARITY_STYLES[ePreview.rarity].border} ${RARITY_STYLES[ePreview.rarity].bg}`}>
+                  <span className={`font-display text-[7px] sm:text-[8px] tracking-wider ${RARITY_STYLES[ePreview.rarity].text}`}>
+                    {RARITY_STYLES[ePreview.rarity].label}
+                  </span>
+                </div>
+              </div>
+
+              <p className="font-display text-[5px] sm:text-[6px] text-muted-foreground/30 tracking-wider">
+                FREE · NO GAS · keccak256(seed, nonce)
+              </p>
+
+              <div className="flex gap-2 sm:gap-3">
+                <button onClick={confirmPreview} className="arcade-btn arcade-btn-primary text-[10px] sm:text-xs py-2 sm:py-3 px-6 sm:px-8">
+                  ▶ PLAY
+                </button>
+                <button onClick={() => { playCoinSound(); resetTerminal(); }}
+                  className="arcade-btn text-[9px] sm:text-[10px] py-2 sm:py-3 px-4"
+                  style={{ borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(var(--neon-orange) / 0.1)' }}>
+                  ✖ CANCEL
+                </button>
               </div>
             </motion.div>
           )}
@@ -689,11 +974,29 @@ export default function PirbTerminal() {
                     </div>
                   </motion.div>
 
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }} className="flex gap-2 sm:gap-3 shrink-0">
-                    <button onClick={() => generatePosition(undefined, isGainzy)} className="arcade-btn arcade-btn-primary text-[9px] sm:text-[10px] py-2 sm:py-3 px-4 sm:px-6"
-                      style={isGainzy ? { borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(var(--neon-orange) / 0.15)', boxShadow: 'var(--glow-orange)' } : {}}>
-                      {isGainzy ? '🔥 GAINZY AGAIN' : '🎲 ROLL AGAIN'}
-                    </button>
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }} className="flex flex-wrap justify-center gap-2 sm:gap-3 shrink-0">
+                    {/* Entropy mode: reroll → goes to PREVIEW for param tweaking */}
+                    {entropyMode === 'entropy' && eSeed && ePostRerolls < 3 && (
+                      <button onClick={() => postReroll()}
+                        className="arcade-btn arcade-btn-primary text-[9px] sm:text-[10px] py-2 sm:py-3 px-4 sm:px-6"
+                        style={isGainzy ? { borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(var(--neon-orange) / 0.15)', boxShadow: 'var(--glow-orange)' } : {}}>
+                        🎲 REROLL ({3 - ePostRerolls}/3)
+                      </button>
+                    )}
+                    {/* Entropy mode: rerolls exhausted → new GENERATE */}
+                    {entropyMode === 'entropy' && eSeed && ePostRerolls >= 3 && (
+                      <button onClick={() => startEntropy(lockedFeed || undefined, eGainzy)}
+                        className="arcade-btn arcade-btn-primary text-[9px] sm:text-[10px] py-2 sm:py-3 px-4 sm:px-6">
+                        🎲 GENERATE (NEW SEED)
+                      </button>
+                    )}
+                    {/* Classic mode: simple roll again */}
+                    {entropyMode === 'classic' && (
+                      <button onClick={() => generatePosition(undefined, isGainzy)} className="arcade-btn arcade-btn-primary text-[9px] sm:text-[10px] py-2 sm:py-3 px-4 sm:px-6"
+                        style={isGainzy ? { borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(var(--neon-orange) / 0.15)', boxShadow: 'var(--glow-orange)' } : {}}>
+                        {isGainzy ? '🔥 GAINZY AGAIN' : '🎲 ROLL AGAIN'}
+                      </button>
+                    )}
                     <button onClick={() => { playCoinSound(); resetTerminal(); }}
                       className="arcade-btn text-[9px] sm:text-[10px] py-2 sm:py-3 px-4 sm:px-6" style={{ borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(var(--neon-orange) / 0.1)', boxShadow: 'var(--glow-orange)' }}>
                       🏠 HOME
