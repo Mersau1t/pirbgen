@@ -5,23 +5,55 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useWallet, shortenAddress } from '@/contexts/WalletContext';
 
+// ── Avatar images ─────────────────────────────────────────────────────────────
+import avatarNft from '@/assets/avatars/avatar_nft.jpg';
+import avatarRobot from '@/assets/avatars/avatar_robot.jpg';
+import avatarRekt1 from '@/assets/avatars/avatar_rekt1.jpg';
+import avatarRekt2 from '@/assets/avatars/avatar_rekt2.jpg';
+import avatarKing from '@/assets/avatars/avatar_king.jpg';
+import avatarClown from '@/assets/avatars/avatar_clown.jpg';
+import avatarPepe from '@/assets/avatars/avatar_pepe.jpg';
+import avatarMoon from '@/assets/avatars/avatar_moon.jpg';
+import avatarLaser1 from '@/assets/avatars/avatar_laser1.jpg';
+import avatarLaser2 from '@/assets/avatars/avatar_laser2.jpg';
+import avatarSkull from '@/assets/avatars/avatar_skull.jpg';
+import avatarAstronaut from '@/assets/avatars/avatar_astronaut.jpg';
+import avatarDegen1 from '@/assets/avatars/avatar_degen1.jpg';
+import avatarDegen2 from '@/assets/avatars/avatar_degen2.jpg';
+import avatarFire from '@/assets/avatars/avatar_fire.jpg';
+// ─────────────────────────────────────────────────────────────────────────────
+
 const AVATARS = [
-  { id: 'pigeon', emoji: '🐦', label: 'Pirb' },
-  { id: 'skull', emoji: '💀', label: 'Skull' },
-  { id: 'rocket', emoji: '🚀', label: 'Rocket' },
-  { id: 'diamond', emoji: '💎', label: 'Diamond' },
-  { id: 'fire', emoji: '🔥', label: 'Fire' },
-  { id: 'alien', emoji: '👽', label: 'Alien' },
-  { id: 'robot', emoji: '🤖', label: 'Robot' },
-  { id: 'ghost', emoji: '👻', label: 'Ghost' },
-  { id: 'crown', emoji: '👑', label: 'Crown' },
-  { id: 'clown', emoji: '🤡', label: 'Clown' },
-  { id: 'frog', emoji: '🐸', label: 'Pepe' },
-  { id: 'moon', emoji: '🌙', label: 'Moon' },
+  { id: 'nft',        img: avatarNft,        label: 'NFT Chad' },
+  { id: 'robot',      img: avatarRobot,      label: 'Trader Bot' },
+  { id: 'rekt1',      img: avatarRekt1,      label: 'Rekt #1' },
+  { id: 'rekt2',      img: avatarRekt2,      label: 'Rekt #2' },
+  { id: 'king',       img: avatarKing,       label: 'King' },
+  { id: 'clown',      img: avatarClown,      label: 'Clown' },
+  { id: 'pepe',       img: avatarPepe,       label: 'Pepe' },
+  { id: 'moon',       img: avatarMoon,       label: 'Moonbag' },
+  { id: 'laser1',     img: avatarLaser1,     label: 'Laser #1' },
+  { id: 'laser2',     img: avatarLaser2,     label: 'Laser #2' },
+  { id: 'skull',      img: avatarSkull,      label: 'Skull' },
+  { id: 'astronaut',  img: avatarAstronaut,  label: 'Wen Moon' },
+  { id: 'degen1',     img: avatarDegen1,     label: 'Degen #1' },
+  { id: 'degen2',     img: avatarDegen2,     label: 'Degen #2' },
+  { id: 'fire',       img: avatarFire,       label: 'On Fire' },
 ];
 
 export function getAvatarEmoji(id: string): string {
-  return AVATARS.find(a => a.id === id)?.emoji || '🐦';
+  // Повертає fallback емодзі для хедера (там де немає місця для img)
+  const fallbacks: Record<string, string> = {
+    nft: '🐒', robot: '🤖', rekt1: '😵', rekt2: '😰',
+    king: '👑', clown: '🤡', pepe: '🐸', moon: '🌙',
+    laser1: '🔴', laser2: '💜', skull: '💀', astronaut: '🚀',
+    degen1: '😈', degen2: '💎', fire: '🔥',
+  };
+  return fallbacks[id] || '🐦';
+}
+
+export function getAvatarImg(id: string): string | null {
+  return AVATARS.find(a => a.id === id)?.img || null;
 }
 
 interface TradeEntry {
@@ -138,7 +170,18 @@ export default function Profile() {
         <img
           src={profile.avatar_url}
           alt="Avatar"
-          className="w-16 h-16 rounded-full object-cover border-2 border-primary/40"
+          className="w-16 h-16 rounded-sm object-cover border-2 border-neon-purple/40"
+        />
+      );
+    }
+    const avatarImg = getAvatarImg(profile.avatar);
+    if (avatarImg) {
+      return (
+        <img
+          src={avatarImg}
+          alt="Avatar"
+          className="w-16 h-16 rounded-sm object-cover border-2 border-neon-purple/40"
+          style={{ imageRendering: 'pixelated' }}
         />
       );
     }
@@ -320,21 +363,26 @@ export default function Profile() {
                   <button onClick={() => setAvatarPickerOpen(false)} className="text-neon-orange hover:text-glow-orange text-xl font-display">✕</button>
                 </div>
 
-                <div className="grid grid-cols-4 sm:grid-cols-6 gap-3">
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
                   {AVATARS.map(av => (
                     <motion.button
                       key={av.id}
-                      whileHover={{ scale: 1.08 }}
+                      whileHover={{ scale: 1.06 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={() => handleSelectAvatar(av.id)}
-                      className={`flex flex-col items-center gap-2 p-4 border-2 transition-all cursor-pointer ${
+                      className={`flex flex-col items-center gap-1.5 p-2 border-2 transition-all cursor-pointer ${
                         profile.avatar === av.id && !profile.avatar_url
                           ? 'border-neon-green bg-neon-green/10 box-glow-green'
                           : 'border-muted-foreground/20 bg-muted/10 hover:border-neon-purple/40'
                       }`}
                     >
-                      <span className="text-3xl">{av.emoji}</span>
-                      <span className="text-[8px] text-muted-foreground font-display tracking-wider">{av.label}</span>
+                      <img
+                        src={av.img}
+                        alt={av.label}
+                        className="w-16 h-16 object-cover rounded-sm"
+                        style={{ imageRendering: 'pixelated' }}
+                      />
+                      <span className="text-[7px] text-muted-foreground font-display tracking-wider">{av.label}</span>
                     </motion.button>
                   ))}
                 </div>

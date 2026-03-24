@@ -1,5 +1,16 @@
 import { motion } from 'framer-motion';
 import { getMascot } from '@/lib/mascots';
+import imgWin from '@/assets/icons/win.png';
+import imgPirbed from '@/assets/icons/pirbed.png';
+import imgDraw from '@/assets/icons/draw.png';
+import imgRematch from '@/assets/icons/rematch.png';
+import imgHome from '@/assets/icons/home.png';
+
+const Ico = ({ src, size = 26 }: { src: string; size?: number }) => (
+  <img src={src} alt="" width={size} height={size} draggable={false}
+    className="inline-block object-contain align-middle shrink-0"
+    style={{ imageRendering: 'pixelated' }} />
+);
 
 interface DuelResultProps {
   myName: string;
@@ -27,11 +38,23 @@ export default function DuelResult({ myName, opponentName, myPnl, opponentPnl, w
         className="text-center"
       >
         {isDraw ? (
-          <h1 className="font-display text-5xl sm:text-6xl text-neon-orange text-glow-orange tracking-wider">🤝 DRAW!</h1>
+          <div className="flex items-center gap-3">
+            <Ico src={imgDraw} size={48} />
+            <h1 className="font-display text-5xl sm:text-6xl text-neon-orange text-glow-orange tracking-wider">DRAW!</h1>
+            <Ico src={imgDraw} size={48} />
+          </div>
         ) : iWon ? (
-          <h1 className="font-display text-5xl sm:text-6xl text-neon-green text-glow-green tracking-wider animate-rainbow">🏆 YOU WIN!</h1>
+          <div className="flex items-center gap-3">
+            <Ico src={imgWin} size={48} />
+            <h1 className="font-display text-5xl sm:text-6xl text-neon-green text-glow-green tracking-wider animate-rainbow">YOU WIN!</h1>
+            <Ico src={imgWin} size={48} />
+          </div>
         ) : (
-          <h1 className="font-display text-5xl sm:text-6xl text-neon-orange text-glow-orange tracking-wider">💀 PIRBED!</h1>
+          <div className="flex items-center gap-3">
+            <Ico src={imgPirbed} size={48} />
+            <h1 className="font-display text-5xl sm:text-6xl text-neon-orange text-glow-orange tracking-wider">PIRBED!</h1>
+            <Ico src={imgPirbed} size={48} />
+          </div>
         )}
       </motion.div>
 
@@ -85,8 +108,12 @@ export default function DuelResult({ myName, opponentName, myPnl, opponentPnl, w
         transition={{ delay: 0.8 }}
         className="flex gap-4"
       >
-        <button onClick={onPlayAgain} className="arcade-btn arcade-btn-primary text-[10px] py-3 px-6">⚔️ REMATCH</button>
-        <button onClick={onHome} className="arcade-btn text-[10px] py-3 px-6">🏠 HOME</button>
+        <button onClick={onPlayAgain} className="arcade-btn arcade-btn-primary text-[10px] py-3 px-6 flex items-center gap-2">
+          <Ico src={imgRematch} size={48} /> REMATCH
+        </button>
+        <button onClick={onHome} className="arcade-btn text-[10px] py-3 px-6 flex items-center gap-2">
+          <Ico src={imgHome} size={48} /> HOME
+        </button>
       </motion.div>
     </div>
   );

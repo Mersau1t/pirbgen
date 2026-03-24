@@ -1,5 +1,7 @@
 import { motion } from 'framer-motion';
 import { type StreakData, getStreakMultiplier } from '@/lib/streaks';
+import imgStreak from '@/assets/icons/streak.png';
+import imgOnfire from '@/assets/icons/onfire.png';
 
 interface StreakBadgeProps {
   streak: StreakData;
@@ -26,12 +28,16 @@ export default function StreakBadge({ streak }: StreakBadgeProps) {
               : 'border-neon-green/40 text-neon-green bg-neon-green/10'
           }`}
         >
-          <motion.span
+          <motion.img
+            src={isOnFire ? imgOnfire : imgStreak}
+            alt=""
+            width={16}
+            height={16}
+            style={{ imageRendering: 'pixelated' }}
+            className="object-contain"
             animate={isHot ? { scale: [1, 1.2, 1] } : {}}
             transition={{ duration: 0.5, repeat: Infinity }}
-          >
-            {isOnFire ? '🔥' : isHot ? '⚡' : '✨'}
-          </motion.span>
+          />
           <span>{streak.current} STREAK</span>
           {mult > 1 && <span className="text-neon-orange">×{mult.toFixed(1)}</span>}
         </motion.div>

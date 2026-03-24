@@ -4,6 +4,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { generateRoomCode, pickTwoDifferentTokens, pickDuelRarity, randomInRange, DUEL_TIMER_SECONDS } from '@/lib/duelConstants';
 import { fetchPythPriceById } from '@/lib/pyth';
 import { useWallet } from '@/contexts/WalletContext';
+import imgJoinDuel from '@/assets/icons/join_duel.png';
+import imgDuelClassic from '@/assets/icons/duel.png';
+
+const Ico = ({ src, size = 16 }: { src: string; size?: number }) => (
+  <img src={src} alt="" width={size} height={size} draggable={false}
+    className="inline-block object-contain align-middle shrink-0"
+    style={{ imageRendering: 'pixelated' }} />
+);
 
 interface DuelLobbyProps {
   onRoomReady: (roomId: string, playerSlot: 'p1' | 'p2') => void;
@@ -172,9 +180,10 @@ export default function DuelLobby({ onRoomReady }: DuelLobbyProps) {
         >
           <button
             onClick={handleCreate}
-            className="arcade-btn arcade-btn-primary text-sm py-4 tracking-wider"
+            className="arcade-btn arcade-btn-primary text-sm py-4 tracking-wider flex items-center justify-center gap-2"
           >
-            🎮 CREATE ROOM
+            <Ico src={imgDuelClassic} size={40} />
+            CREATE ROOM
           </button>
 
           <div className="glass-panel rounded-sm p-4 space-y-3">
@@ -192,9 +201,10 @@ export default function DuelLobby({ onRoomReady }: DuelLobbyProps) {
             <button
               onClick={handleJoin}
               disabled={inputCode.length < 4}
-              className="arcade-btn w-full text-sm py-3 tracking-wider disabled:opacity-30" style={{ borderColor: 'hsl(var(--neon-green))', color: 'hsl(var(--neon-green))', background: 'hsl(var(--neon-green) / 0.1)' }}
+              className="arcade-btn w-full text-sm py-3 tracking-wider disabled:opacity-30 flex items-center justify-center gap-2" style={{ borderColor: 'hsl(var(--neon-green))', color: 'hsl(var(--neon-green))', background: 'hsl(var(--neon-green) / 0.1)' }}
             >
-              ⚡ JOIN DUEL
+              <Ico src={imgJoinDuel} size={40} />
+              JOIN DUEL
             </button>
           </div>
 

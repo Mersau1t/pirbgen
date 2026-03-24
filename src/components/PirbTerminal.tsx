@@ -13,9 +13,57 @@ import LiveTradePanel from '@/components/LiveTradePanel';
 import StreakBadge from '@/components/StreakBadge';
 import pythoilBarrel from '@/assets/pythoil-barrel.png';
 
+// ── Custom pixel icons ────────────────────────────────────────────────────────
+import iconPirb from '@/assets/icons/icon_pirb.png';
+import iconEntropy from '@/assets/icons/iconentropy.png';
+import iconClassic from '@/assets/icons/icon_classic.png';
+import iconEntropyMode from '@/assets/icons/entropyicon.png';
+import imgGenerate from '@/assets/icons/generate.png';
+import imgGenerateEntropy from '@/assets/icons/generateentropy.png';
+import imgGainzyClassic from '@/assets/icons/gainzyclassic.png';
+import imgGainzyEntropy from '@/assets/icons/gainzyentropy.png';
+import imgDuelClassic from '@/assets/icons/duel.png';
+import imgDuelEntropy from '@/assets/icons/duelentropy.png';
+import imgLeaderboardClassic from '@/assets/icons/leaderbord.png';
+import imgLeaderboardEntropy from '@/assets/icons/leaderboardentropy.png';
+import imgOraclePoop from '@/assets/icons/oraclepoop.png';
+import imgOraclePoopEntropy from '@/assets/icons/oracle_poopentropy.png';
+import imgProfile from '@/assets/icons/profile.png';
+import imgProfileEntropy from '@/assets/icons/profileentropy.png';
+import imgDaily from '@/assets/icons/daily.png';
+import imgHome from '@/assets/icons/home.png';
+import imgJoinDuel from '@/assets/icons/join_duel.png';
+import imgJoystick from '@/assets/icons/joystick.png';
+// Particles — 3 poop variants
+import imgPoop1 from '@/assets/icons/poop1.png';
+import imgPoop2 from '@/assets/icons/poop2.png';
+import imgPoop3 from '@/assets/icons/poop3.png';
+// Keep shitemoji for marquee only
+import imgShitemoji from '@/assets/icons/shitemoji.png';
+// Post-game emotions
+import imgWin from '@/assets/icons/win.png';
+import imgPirbed from '@/assets/icons/pirbed.png';
+import imgDraw from '@/assets/icons/draw.png';
+import imgRematch from '@/assets/icons/rematch.png';
+import imgStreak from '@/assets/icons/streak.png';
+import imgOnfire from '@/assets/icons/onfire.png';
+// ─────────────────────────────────────────────────────────────────────────────
+
 import { getStreak, recordWin, recordLoss, getStreakMultiplier, type StreakData } from '@/lib/streaks';
 import { hasDoneDaily, markDailyDone, getDailyParams } from '@/lib/dailyChallenge';
 import { useEntropy, derivePosition, type EntropySeed } from '@/hooks/useEntropy';
+
+// Helper: icon img — NO pixelated rendering (causes blur on PNG)
+const Ico = ({ src, size = 28, className = '' }: { src: string; size?: number; className?: string }) => (
+  <img
+    src={src}
+    alt=""
+    width={size}
+    height={size}
+    draggable={false}
+    className={`inline-block object-contain align-middle shrink-0 ${className}`}
+  />
+);
 
 // --- TYPES ---
 type TradeDirection = 'LONG' | 'SHORT';
@@ -61,13 +109,13 @@ const RARITY_STYLES: Record<string, { border: string; text: string; bg: string; 
   legendary: { border: 'border-neon-orange/50', text: 'text-neon-orange', bg: 'bg-neon-orange/10', label: 'LEGENDARY' },
   degen: { border: 'border-neon-purple/50', text: 'text-neon-purple', bg: 'bg-neon-purple/10', label: '☠ DEGEN ☠' },
 };
+
 function formatVolume(v: number): string {
   if (v >= 1e9) return '$' + (v / 1e9).toFixed(1) + 'B';
   if (v >= 1e6) return '$' + (v / 1e6).toFixed(1) + 'M';
   if (v >= 1e3) return '$' + (v / 1e3).toFixed(0) + 'K';
   return '$' + v.toFixed(0);
 }
-
 
 const MARQUEE_LINES = [
   "PIRB: ur gonna get rekt so hard 💀",
@@ -130,7 +178,8 @@ const MarqueeStrip = ({ ariaHidden }: { ariaHidden?: boolean }) => (
     {MARQUEE_LINES.map((t, i) => {
       const colorClass = i % 3 === 0 ? 'text-neon-purple text-glow-purple' : i % 3 === 1 ? 'text-neon-orange' : 'text-neon-green';
       return (
-        <span key={i} className={colorClass}>
+        <span key={i} className={`flex items-center gap-1.5 ${colorClass}`}>
+          {i % 3 === 2 && <img src={imgShitemoji} alt="" width={14} height={14} className="inline-block object-contain align-middle" style={{ imageRendering: 'pixelated' }} />}
           {t}
         </span>
       );
@@ -156,6 +205,69 @@ const GlitchText = ({ children, className = '' }: { children: React.ReactNode; c
   </span>
 );
 
+// Particle images pool — only 3 poop variants
+const PARTICLE_IMGS = [imgPoop1, imgPoop2, imgPoop3];
+
+// ── Entropy Dot Grid (Pyth style) ─────────────────────────────────────────────
+function EntropyDotGrid() {
+  const colors = [
+    'hsl(265 66% 55%)',
+    'hsl(25 95% 53%)',
+    'hsl(150 95% 46%)',
+    'hsl(265 40% 35%)',
+    'hsl(200 70% 45%)',
+    'hsl(30 60% 35%)',
+  ];
+  return (
+    <motion.div
+      className="fixed inset-0 pointer-events-none z-0 flex items-center justify-center overflow-hidden"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 1.5 }}
+    >
+      <motion.div
+        animate={{ rotate: [0, 360] }}
+        transition={{ duration: 90, repeat: Infinity, ease: 'linear' }}
+        style={{ opacity: 0.45, position: 'relative', width: 600, height: 600 }}
+      >
+        {Array.from({ length: 14 }, (_, row) =>
+          Array.from({ length: 14 }, (_, col) => {
+            const color = colors[(row * 3 + col * 2) % colors.length];
+            return (
+              <motion.div
+                key={`${row}-${col}`}
+                className="absolute rounded-full"
+                style={{
+                  width: 14, height: 14,
+                  backgroundColor: color,
+                  left: `calc(50% + ${(col - 7) * 42}px)`,
+                  top: `calc(50% + ${(row - 7) * 42}px)`,
+                  boxShadow: `0 0 8px ${color}`,
+                }}
+                animate={{ opacity: [0.5, 1, 0.5], scale: [0.85, 1.15, 0.85] }}
+                transition={{
+                  duration: 2.5 + (row + col) * 0.1,
+                  repeat: Infinity,
+                  delay: row * 0.08 + col * 0.06,
+                  ease: 'easeInOut',
+                }}
+              />
+            );
+          })
+        )}
+      </motion.div>
+      {/* Центральний радіальний glow */}
+      <motion.div
+        className="absolute inset-0"
+        animate={{ opacity: [0.06, 0.14, 0.06] }}
+        transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+        style={{ background: 'radial-gradient(ellipse at center, hsl(265 66% 55% / 0.2) 0%, transparent 65%)' }}
+      />
+    </motion.div>
+  );
+}
+
 export default function PirbTerminal() {
   const { walletAddress, profile, isConnecting, connectWallet } = useWallet();
   const navigate = useNavigate();
@@ -174,14 +286,15 @@ export default function PirbTerminal() {
   // ── Entropy mode ────────────────────────────────────────────────────
   const [entropyMode, setEntropyMode] = useState<'classic' | 'entropy'>('classic');
   const entropy = useEntropy();
-  // Entropy reroll tracking: seed + nonce counter + locked params
   const [eSeed, setESeed] = useState<`0x${string}` | null>(null);
-  const [eNonce, setENonce] = useState(0);           // increments on every reroll
-  const [ePreRerolls, setEPreRerolls] = useState(0);  // 0-3 pre-game rerolls used
-  const [ePostRerolls, setEPostRerolls] = useState(0); // 0-3 post-game rerolls used
-  const [ePreview, setEPreview] = useState<EntropySeed | null>(null); // current preview position
+  const [eNonce, setENonce] = useState(0);
+  const [ePreRerolls, setEPreRerolls] = useState(0);
+  const [ePostRerolls, setEPostRerolls] = useState(0);
+  const [ePreview, setEPreview] = useState<EntropySeed | null>(null);
   const [lockedFeed, setLockedFeed] = useState<{ id: string; ticker: string; pair: string } | null>(null);
-  const [eGainzy, setEGainzy] = useState(false); // gainzy locks leverage=200
+  const [eGainzy, setEGainzy] = useState(false);
+
+  const isEntropy = entropyMode === 'entropy';
 
   const toggleMusic = () => {
     if (isBgMusicPlaying()) {
@@ -201,12 +314,13 @@ export default function PirbTerminal() {
   }, [status]);
 
   const [particles] = useState(() =>
-    Array.from({ length: 25 }, () => ({
+    Array.from({ length: 25 }, (_, i) => ({
       left: Math.random() * 100,
       delay: Math.random() * 15,
       duration: 10 + Math.random() * 15,
-      size: 12 + Math.random() * 14,
-      opacity: 0.4 + Math.random() * 0.4,
+      size: 28 + Math.random() * 20,
+      opacity: 0.6 + Math.random() * 0.4,
+      imgIndex: i % 3, // evenly rotate poop1/2/3
     }))
   );
 
@@ -214,7 +328,7 @@ export default function PirbTerminal() {
   const [topVolatile, setTopVolatile] = useState<DisplayToken[]>([]);
   const [showAllTokens, setShowAllTokens] = useState(false);
   const [allVolatile, setAllVolatile] = useState<DisplayToken[]>([]);
-  
+
   useEffect(() => {
     const mapped: DisplayToken[] = SOLO_TOKENS.map(t => ({
       feed_id: t.feedId,
@@ -251,13 +365,11 @@ export default function PirbTerminal() {
 
   const buildHistoricalCandles = async (feedId: string, _price: number) => {
     let historyCandles: Candle[] = [];
-    
     const attempts = [
       { count: 10, interval: 5 },
       { count: 15, interval: 3 },
       { count: 20, interval: 2 },
     ];
-    
     for (const { count, interval } of attempts) {
       try {
         historyCandles = await fetchHistoricalCandles(feedId, count, interval);
@@ -266,11 +378,9 @@ export default function PirbTerminal() {
         console.error('Failed to load history:', err);
       }
     }
-
     if (historyCandles.length < 1) {
       console.warn('No Pyth historical data available for', feedId);
     }
-    
     return historyCandles;
   };
 
@@ -305,7 +415,6 @@ export default function PirbTerminal() {
     }
 
     let rarity, direction: TradeDirection, leverage, sl, rr;
-
     setIsGainzy(gainzyMode);
 
     if (gainzyMode) {
@@ -325,9 +434,9 @@ export default function PirbTerminal() {
 
     const pos: DegenPosition = {
       id: Date.now(),
-      asset: feed.ticker,
-      ticker: feed.ticker,
-      feedId: feed.id,
+      asset: feed!.ticker,
+      ticker: feed!.ticker,
+      feedId: feed!.id,
       direction,
       leverage,
       stopLoss: -sl,
@@ -335,15 +444,15 @@ export default function PirbTerminal() {
       rarity: rarity.rarity,
     };
 
-    const historyCandles = await buildHistoricalCandles(feed.id, price);
+    const historyCandles = await buildHistoricalCandles(feed!.id, price!);
     setActivePos(pos);
-    setEntryPrice(price);
+    setEntryPrice(price!);
     setInitialCandles(historyCandles);
     setFinalPnl(0);
     setStatus('PLAYING');
   }, []);
 
-  // ── ENTROPY: request seed (1 tx) then show preview ─────────────────
+  // ── ENTROPY ─────────────────────────────────────────────────────────
   const startEntropy = useCallback(async (feed?: { id: string; ticker: string; pair: string }, gainzy = false) => {
     if (!walletAddress) { connectWallet(); return; }
     playGenerateClick();
@@ -362,7 +471,6 @@ export default function PirbTerminal() {
     await entropy.requestSolo();
   }, [walletAddress, connectWallet, entropy]);
 
-  // When seed arrives → derive initial position → show PREVIEW
   useEffect(() => {
     if (entropy.status !== 'ready' || !entropy.seed) return;
     if (status !== 'GENERATING') return;
@@ -371,7 +479,6 @@ export default function PirbTerminal() {
     setESeed(seed);
     setENonce(0);
 
-    // Derive position from seed+nonce=0
     const lockToken = lockedFeed
       ? SOLO_TOKENS.findIndex(t => t.feedId === lockedFeed.id)
       : undefined;
@@ -381,24 +488,20 @@ export default function PirbTerminal() {
     setStatus('PREVIEW');
   }, [entropy.status, entropy.seed, status, lockedFeed, eGainzy]);
 
-  // Pre-game reroll: reroll a single param (token/dir/lev/sl/tp)
   const preReroll = useCallback((paramIndex: 1 | 2 | 3 | 4 | 5) => {
     if (!eSeed || !ePreview || ePreRerolls >= 3) return;
-    // Locked params: skip if trying to reroll locked param
-    if (lockedFeed && paramIndex === 1) return; // token locked (PYTHOIL)
-    if (eGainzy && paramIndex === 3) return;    // leverage locked (200)
+    if (lockedFeed && paramIndex === 1) return;
+    if (eGainzy && paramIndex === 3) return;
 
     const newNonce = eNonce + 1;
     setENonce(newNonce);
     setEPreRerolls(prev => prev + 1);
 
-    // Derive new random for this single param
     const derived = derivePosition(eSeed, newNonce,
       lockedFeed ? (SOLO_TOKENS.findIndex(t => t.feedId === lockedFeed.id)) : undefined,
       eGainzy ? 200 : undefined,
     );
 
-    // Apply only the rerolled param, keep the rest from current preview
     const updated = { ...ePreview };
     switch (paramIndex) {
       case 1: updated.tokenIndex = derived.tokenIndex; break;
@@ -410,19 +513,16 @@ export default function PirbTerminal() {
     setEPreview(updated as EntropySeed);
   }, [eSeed, ePreview, ePreRerolls, eNonce, lockedFeed, eGainzy]);
 
-  // Confirm preview → start playing (with token fallback if feed fails)
   const confirmPreview = useCallback(async () => {
     if (!ePreview) return;
-    setStatus('GENERATING'); // brief loading
+    setStatus('GENERATING');
 
-    // Determine token — locked feed or from preview index
     let token = lockedFeed
       ? { ticker: lockedFeed.ticker, feedId: lockedFeed.id, pair: lockedFeed.pair }
       : SOLO_TOKENS[ePreview.tokenIndex] || SOLO_TOKENS[0];
 
     let livePrice = await fetchPythPriceById(token.feedId);
 
-    // Fallback: if token feed fails, try other tokens (skip locked feeds)
     if (!livePrice && !lockedFeed) {
       for (let i = 0; i < SOLO_TOKENS.length; i++) {
         if (i === ePreview.tokenIndex) continue;
@@ -431,7 +531,6 @@ export default function PirbTerminal() {
         if (p) {
           token = { ticker: fallback.ticker, feedId: fallback.feedId, pair: fallback.pair };
           livePrice = p;
-          console.warn(`Token ${SOLO_TOKENS[ePreview.tokenIndex]?.ticker} feed failed, using ${fallback.ticker}`);
           break;
         }
       }
@@ -452,32 +551,19 @@ export default function PirbTerminal() {
     setStatus('PLAYING');
   }, [ePreview, lockedFeed]);
 
-  // Post-game reroll: derive new position → go to PREVIEW for param tweaking
   const postReroll = useCallback(() => {
     if (!eSeed || ePostRerolls >= 3) return;
-
     const newNonce = eNonce + 1;
     setENonce(newNonce);
     setEPostRerolls(prev => prev + 1);
-    // Reset pre-rerolls for the new preview round
-    setEPreRerolls(0);
-
-    const lockToken = lockedFeed
-      ? SOLO_TOKENS.findIndex(t => t.feedId === lockedFeed.id)
-      : undefined;
-    const lockLev = eGainzy ? 200 : undefined;
-    const pos = derivePosition(eSeed, newNonce, lockToken !== undefined && lockToken >= 0 ? lockToken : undefined, lockLev);
-
+    const lockToken = lockedFeed ? SOLO_TOKENS.findIndex(t => t.feedId === lockedFeed.id) : undefined;
+    const pos = derivePosition(eSeed, newNonce,
+      lockToken !== undefined && lockToken >= 0 ? lockToken : undefined,
+      eGainzy ? 200 : undefined,
+    );
     setEPreview(pos);
     setStatus('PREVIEW');
-  }, [eSeed, eNonce, ePostRerolls, lockedFeed, eGainzy]);
-
-  // If entropy errors, fall back to IDLE
-  useEffect(() => {
-    if (entropy.status === 'error' && status === 'GENERATING') {
-      setStatus('IDLE');
-    }
-  }, [entropy.status, status]);
+  }, [eSeed, ePostRerolls, eNonce, lockedFeed, eGainzy]);
 
   const generateDaily = useCallback(async () => {
     if (allVolatile.length === 0) return;
@@ -490,7 +576,7 @@ export default function PirbTerminal() {
 
     let livePrice = await fetchPythPriceById(token.feed_id);
     let usedToken = token;
-    
+
     if (!livePrice) {
       for (let i = 1; i < allVolatile.length; i++) {
         usedToken = allVolatile[(feedIndex + i) % allVolatile.length];
@@ -498,7 +584,7 @@ export default function PirbTerminal() {
         if (livePrice) break;
       }
     }
-    
+
     if (!livePrice) { setStatus('IDLE'); return; }
 
     const pos: DegenPosition = {
@@ -542,10 +628,10 @@ export default function PirbTerminal() {
   }, [isDaily]);
 
   const resetTerminal = () => {
-    setStatus('IDLE');
     setActivePos(null);
     setEntryPrice(null);
     setInitialCandles([]);
+    setStatus('IDLE');
     setFinalPnl(0);
     setIsDaily(false);
     setTimerSeconds(undefined);
@@ -558,24 +644,60 @@ export default function PirbTerminal() {
 
   return (
     <div className="h-screen bg-background grid-bg scanlines crt-vignette relative overflow-hidden flex flex-col">
-      {/* Particles on IDLE */}
+      {/* Falling poop particles on IDLE */}
       {status === 'IDLE' && (
         <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
           {particles.map((p, i) => (
             <div key={i} className="absolute animate-star-fall" style={{
-              left: `${p.left}%`, top: '-20px', fontSize: `${p.size}px`, opacity: p.opacity,
+              left: `${p.left}%`, top: '-30px',
+              width: `${p.size}px`, height: `${p.size}px`,
+              opacity: p.opacity,
               animationDuration: `${p.duration}s`, animationDelay: `${p.delay}s`,
-              filter: `drop-shadow(0 0 4px hsl(var(--neon-purple) / 0.5))`,
-            }}>💩</div>
+              filter: `drop-shadow(0 0 6px hsl(var(--neon-purple) / 0.5))`,
+            }}>
+              <img src={PARTICLE_IMGS[p.imgIndex]} alt="" width={p.size} height={p.size} style={{ display: 'block' }} />
+            </div>
           ))}
         </div>
       )}
+
+      {/* Entropy dot grid — тільки в entropy mode на IDLE */}
+      <AnimatePresence>
+        {isEntropy && status === 'IDLE' && <EntropyDotGrid />}
+      </AnimatePresence>
+
+      {/* Flash при переключенні на entropy */}
+      <AnimatePresence>
+        {isEntropy && (
+          <motion.div
+            key="entropy-flash"
+            className="fixed inset-0 pointer-events-none z-[1]"
+            initial={{ opacity: 0.25 }}
+            animate={{ opacity: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.8 }}
+            style={{ background: 'radial-gradient(ellipse at center, hsl(265 66% 55% / 0.2) 0%, transparent 60%)' }}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Top bar */}
       <header className="relative z-10 border-b-2 border-neon-purple/40 bg-background/90">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3">
           <div className="flex items-center gap-2 sm:gap-3">
-            <span className="text-xl sm:text-2xl">🕹️</span>
+            {/* Switches between icon_pirb (classic) and iconentropy (entropy) */}
+            <motion.img
+              key={entropyMode}
+              src={isEntropy ? iconEntropy : iconPirb}
+              alt="PIRBGEN"
+              width={60}
+              height={60}
+              draggable={false}
+              className="object-contain shrink-0"
+              initial={{ scale: 0.7, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.25 }}
+            />
             <span className="font-display text-[9px] sm:text-xs tracking-[0.3em] text-neon-purple text-glow-purple">PIRBGEN</span>
             <button onClick={toggleMusic} className="text-base sm:text-lg opacity-70 hover:opacity-100 transition-opacity" title={musicOn ? 'Mute music' : 'Play music'}>
               {musicOn ? '🔊' : '🔇'}
@@ -590,7 +712,8 @@ export default function PirbTerminal() {
             {walletAddress && profile ? (
               <button
                 onClick={() => { playCoinSound(); navigate('/profile'); }}
-                className="arcade-btn text-[8px] sm:text-[10px] py-1.5 sm:py-2 px-2 sm:px-3 flex items-center gap-1 sm:gap-2" style={{ borderColor: 'hsl(var(--neon-green))', color: 'hsl(var(--neon-green))', background: 'hsl(var(--neon-green) / 0.1)', boxShadow: 'var(--glow-green)' }}
+                className="arcade-btn text-[8px] sm:text-[10px] py-1.5 sm:py-2 px-2 sm:px-3 flex items-center gap-1 sm:gap-2"
+                style={{ borderColor: 'hsl(var(--neon-green))', color: 'hsl(var(--neon-green))', background: 'hsl(var(--neon-green) / 0.1)', boxShadow: 'var(--glow-green)' }}
               >
                 <span>{getAvatarEmoji(profile.avatar)}</span>
                 <span className="hidden sm:inline">{profile.display_name}</span>
@@ -620,34 +743,39 @@ export default function PirbTerminal() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="flex flex-col items-center justify-center gap-1 sm:gap-2 lg:gap-3 flex-1 py-1 sm:py-2"
-              style={{ overflowY: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              className="flex flex-col items-center flex-1 min-h-0"
             >
-              {/* Daily Challenge — above mascot */}
-              {!dailyDone && allVolatile.length > 0 && (
-                <motion.button
-                  onClick={() => generateDaily()}
-                  className="arcade-btn text-[8px] sm:text-[9px] py-1.5 sm:py-2 px-4 sm:px-5 tracking-wider shrink-0"
-                  style={{ borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(var(--neon-orange) / 0.1)', boxShadow: 'var(--glow-orange)' }}
-                  animate={{ scale: [1, 1.03, 1] }}
-                  transition={{ duration: 2, repeat: Infinity }}
+              {/* Голуб + PIRBGEN — завжди видимі, shrink-0, clamp розміри */}
+              <div className="flex flex-col items-center shrink-0 mt-1">
+                <motion.img
+                  src={getMascot('idle', isGainzy)}
+                  alt="Pirb the pigeon"
+                  className="object-contain drop-shadow-[0_0_40px_hsl(265,66%,55%,0.4)]"
+                  style={{ width: 'clamp(100px, 16vh, 220px)', height: 'clamp(100px, 16vh, 220px)' }}
+                  animate={{ y: [0, -8, 0] }}
+                  transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+                />
+                <h1
+                  className="font-display tracking-wider text-neon-purple text-glow-purple mt-1"
+                  style={{ fontSize: 'clamp(16px, 4vh, 52px)' }}
                 >
-                  📅 DAILY CHALLENGE (90s)
-                </motion.button>
-              )}
-              {dailyDone && (
-                <span className="font-display text-[7px] sm:text-[8px] text-muted-foreground/50 tracking-wider shrink-0">✅ DAILY DONE — COME BACK TOMORROW</span>
-              )}
+                  <GlitchText>PIRBGEN</GlitchText>
+                </h1>
+                <p
+                  className="font-display text-neon-orange text-glow-orange tracking-[0.2em] mt-0.5"
+                  style={{ fontSize: 'clamp(6px, 1.2vh, 11px)' }}
+                >
+                  INSERT COIN TO PLAY
+                </p>
+              </div>
 
-              <motion.img
-                src={getMascot('idle', isGainzy)}
-                alt="Pirb the pigeon"
-                className="w-20 h-20 sm:w-24 sm:h-24 lg:w-36 lg:h-36 xl:w-48 xl:h-48 object-contain drop-shadow-[0_0_40px_hsl(265,66%,55%,0.4)] shrink-0"
-                animate={{ y: [0, -10, 0] }}
-                transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
-              />
+              {/* Решта — скролиться якщо не вміщується */}
+              <div
+                className="flex flex-col items-center gap-1 sm:gap-2 w-full flex-1 overflow-y-auto pb-2"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
 
-              {/* Floating PYTHOIL barrel — transparent over buttons, visible in empty zones */}
+              {/* Floating PYTHOIL barrel */}
               <motion.button
                 onClick={() => {
                   const pf = { id: '0x67784f72e95ac01337edb7d7bd5bbd1c03669101b7068a620df228ed4e52ef14', ticker: 'PYTHOIL', pair: 'PYTHOIL/USD' };
@@ -675,46 +803,37 @@ export default function PirbTerminal() {
                   }}
                   draggable={false}
                 />
-                <span
-                  className="absolute -bottom-4 left-1/2 -translate-x-1/2 font-display text-[6px] sm:text-[7px] text-neon-purple/0 group-hover:text-neon-purple group-hover:text-glow-purple tracking-wider whitespace-nowrap transition-colors duration-300"
-                >
+                <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 font-display text-[6px] sm:text-[7px] text-neon-purple/0 group-hover:text-neon-purple group-hover:text-glow-purple tracking-wider whitespace-nowrap transition-colors duration-300">
                   PYTHOIL 24/7
                 </span>
               </motion.button>
-
-              <div className="text-center space-y-1 sm:space-y-2 shrink-0">
-                <h1 className="font-display text-xl sm:text-2xl lg:text-4xl xl:text-5xl tracking-wider text-neon-purple text-glow-purple">
-                  <GlitchText>PIRBGEN</GlitchText>
-                </h1>
-                <p className="font-display text-[7px] sm:text-[8px] lg:text-[10px] text-neon-orange text-glow-orange tracking-[0.2em]">
-                  INSERT COIN TO PLAY
-                </p>
-              </div>
 
               <div className="pixel-border p-3 sm:p-4 lg:p-6 w-full max-w-md space-y-2 sm:space-y-3 bg-background/90 shrink-0">
                 {/* ── Mode Toggle: ENTROPY / CLASSIC ────────────────── */}
                 <div className="flex items-center justify-center gap-0 font-display text-[8px] sm:text-[9px] tracking-wider">
                   <button
                     onClick={() => setEntropyMode('entropy')}
-                    className={`px-3 sm:px-4 py-1.5 sm:py-2 border transition-all duration-200 ${
+                    className={`px-3 sm:px-4 py-1.5 sm:py-2 border transition-all duration-200 flex items-center gap-1.5 ${
                       entropyMode === 'entropy'
                         ? 'bg-neon-purple/20 border-neon-purple/60 text-neon-purple text-glow-purple'
                         : 'bg-transparent border-muted-foreground/20 text-muted-foreground/50 hover:text-muted-foreground/80'
                     }`}
                     style={{ borderRadius: '2px 0 0 2px' }}
                   >
-                    🔗 ENTROPY
+                    <Ico src={iconEntropyMode} size={20} />
+                    ENTROPY
                   </button>
                   <button
                     onClick={() => setEntropyMode('classic')}
-                    className={`px-3 sm:px-4 py-1.5 sm:py-2 border border-l-0 transition-all duration-200 ${
+                    className={`px-3 sm:px-4 py-1.5 sm:py-2 border border-l-0 transition-all duration-200 flex items-center gap-1.5 ${
                       entropyMode === 'classic'
                         ? 'bg-neon-green/20 border-neon-green/60 text-neon-green text-glow-green'
                         : 'bg-transparent border-muted-foreground/20 text-muted-foreground/50 hover:text-muted-foreground/80'
                     }`}
                     style={{ borderRadius: '0 2px 2px 0' }}
                   >
-                    🎲 CLASSIC
+                    <Ico src={iconClassic} size={20} />
+                    CLASSIC
                   </button>
                 </div>
                 {entropyMode === 'entropy' && (
@@ -734,39 +853,71 @@ export default function PirbTerminal() {
                   </div>
                 )}
 
+                {/* GENERATE button */}
                 <button
                   onClick={() => entropyMode === 'entropy' ? startEntropy() : generatePosition()}
-                  className="arcade-btn arcade-btn-primary w-full text-xs sm:text-sm lg:text-base py-2 sm:py-3"
+                  className="arcade-btn arcade-btn-primary w-full text-xs sm:text-sm lg:text-base py-2 sm:py-3 flex items-center justify-center gap-2"
                 >
-                  🎲 GENERATE
+                  <Ico src={isEntropy ? imgGenerateEntropy : imgGenerate} size={40} />
+                  GENERATE
                 </button>
-                
+
+                {/* GAINZY button */}
                 <button
                   onClick={() => entropyMode === 'entropy' ? startEntropy(undefined, true) : generatePosition(undefined, true)}
-                  className="arcade-btn w-full text-[9px] sm:text-[10px] py-2 sm:py-3"
+                  className="arcade-btn w-full text-[9px] sm:text-[10px] py-2 sm:py-3 flex items-center justify-center gap-2"
                   style={{ borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(var(--neon-orange) / 0.15)', boxShadow: 'var(--glow-orange)' }}
                 >
-                  🔥 GAINZY MODE (200× MAX)
+                  <Ico src={isEntropy ? imgGainzyEntropy : imgGainzyClassic} size={40} />
+                  GAINZY MODE (200× MAX)
                 </button>
 
-                <Link to="/duel" onClick={() => playCoinSound()} className="arcade-btn w-full text-[9px] sm:text-[10px] py-2 sm:py-3 text-center block" style={{ borderColor: 'hsl(var(--neon-green))', color: 'hsl(var(--neon-green))', background: 'hsl(var(--neon-green) / 0.1)', boxShadow: 'var(--glow-green)' }}>
-                  ⚔️ PVP DUEL (1v1)
+                {/* PVP DUEL */}
+                <Link
+                  to="/duel"
+                  onClick={() => playCoinSound()}
+                  className="arcade-btn w-full text-[9px] sm:text-[10px] py-2 sm:py-3 text-center flex items-center justify-center gap-2"
+                  style={{ borderColor: 'hsl(var(--neon-green))', color: 'hsl(var(--neon-green))', background: 'hsl(var(--neon-green) / 0.1)', boxShadow: 'var(--glow-green)' }}
+                >
+                  <Ico src={isEntropy ? imgDuelEntropy : imgDuelClassic} size={40} />
+                  PVP DUEL (1v1)
                 </Link>
 
-                <Link to="/leaderboard" onClick={() => playCoinSound()} className="arcade-btn arcade-btn-secondary w-full text-[9px] sm:text-[10px] py-2 sm:py-3 text-center block" style={{ borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(25 95% 53% / 0.1)' }}>
-                  🏆 LEADERBOARD
+                {/* LEADERBOARD */}
+                <Link
+                  to="/leaderboard"
+                  onClick={() => playCoinSound()}
+                  className="arcade-btn arcade-btn-secondary w-full text-[9px] sm:text-[10px] py-2 sm:py-3 text-center flex items-center justify-center gap-2"
+                  style={{ borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(25 95% 53% / 0.1)' }}
+                >
+                  <Ico src={isEntropy ? imgLeaderboardEntropy : imgLeaderboardClassic} size={40} />
+                  LEADERBOARD
                 </Link>
 
-                <Link to="/benchmark" onClick={() => playCoinSound()} className="arcade-btn w-full text-[9px] sm:text-[10px] py-2 sm:py-3 text-center block" style={{ borderColor: 'hsl(var(--neon-purple))', color: 'hsl(var(--neon-purple))', background: 'hsl(var(--neon-purple) / 0.1)', boxShadow: 'var(--glow-purple)' }}>
-                  💩 ORACLE SPEED BENCHMARK
+                {/* ORACLE POOP RACE */}
+                <Link
+                  to="/benchmark"
+                  onClick={() => playCoinSound()}
+                  className="arcade-btn w-full text-[9px] sm:text-[10px] py-2 sm:py-3 text-center flex items-center justify-center gap-2"
+                  style={{ borderColor: 'hsl(var(--neon-purple))', color: 'hsl(var(--neon-purple))', background: 'hsl(var(--neon-purple) / 0.1)', boxShadow: 'var(--glow-purple)' }}
+                >
+                  <Ico src={isEntropy ? imgOraclePoopEntropy : imgOraclePoop} size={40} />
+                  ORACLE SPEED BENCHMARK
                 </Link>
+
+                {/* PROFILE */}
                 {walletAddress && (
-                  <Link to="/profile" onClick={() => playCoinSound()} className="arcade-btn w-full text-[9px] sm:text-[10px] py-2 sm:py-3 text-center block" style={{ borderColor: 'hsl(var(--neon-green))', color: 'hsl(var(--neon-green))', background: 'hsl(var(--neon-green) / 0.1)', boxShadow: 'var(--glow-green)' }}>
-                    👤 PROFILE
+                  <Link
+                    to="/profile"
+                    onClick={() => playCoinSound()}
+                    className="arcade-btn w-full text-[9px] sm:text-[10px] py-2 sm:py-3 text-center flex items-center justify-center gap-2"
+                    style={{ borderColor: 'hsl(var(--neon-green))', color: 'hsl(var(--neon-green))', background: 'hsl(var(--neon-green) / 0.1)', boxShadow: 'var(--glow-green)' }}
+                  >
+                    <Ico src={isEntropy ? imgProfileEntropy : imgProfile} size={40} />
+                    PROFILE
                   </Link>
                 )}
               </div>
-
 
               <div className="flex items-center gap-2 text-[7px] sm:text-[8px] font-display text-muted-foreground/40 shrink-0">
                 <span className="text-neon-purple/40">●</span>
@@ -776,6 +927,7 @@ export default function PirbTerminal() {
                 <span className="text-neon-green/40">●</span>
                 <span>BASE L2</span>
               </div>
+              </div> {/* кінець скролящого div */}
             </motion.div>
           )}
 
@@ -784,7 +936,7 @@ export default function PirbTerminal() {
               <motion.img src={getMascot(isDaily ? 'daily-generating' : 'generating', isGainzy)} alt="Pirb pecking" className="w-24 h-24 sm:w-32 sm:h-32 object-contain drop-shadow-[0_0_30px_hsl(265,66%,55%,0.4)]"
                 animate={{ rotate: [-5, 5, -10, 8, -5], y: [0, 3, 0, 2, 0] }} transition={{ duration: 0.6, repeat: Infinity }} />
               <div className="text-center space-y-2 sm:space-y-3">
-               <p className="font-display text-xs sm:text-lg text-neon-purple text-glow-purple tracking-wider">
+                <p className="font-display text-xs sm:text-lg text-neon-purple text-glow-purple tracking-wider">
                   {isDaily ? '📅 DAILY CHALLENGE LOADING...' : 'PIRB IS PECKING...'}
                 </p>
                 <p className="font-display text-[7px] sm:text-[8px] text-neon-orange animate-blink tracking-widest">
@@ -808,7 +960,7 @@ export default function PirbTerminal() {
             </motion.div>
           )}
 
-          {/* ── PREVIEW: entropy pre-game rerolls ────────────────────────── */}
+          {/* PREVIEW */}
           {status === 'PREVIEW' && ePreview && (
             <motion.div key="preview" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
               className="flex flex-col items-center justify-center gap-2 sm:gap-3 flex-1 py-2"
@@ -826,7 +978,6 @@ export default function PirbTerminal() {
                 </p>
               </div>
 
-              {/* Param cards — tap to reroll */}
               <div className="pixel-border p-2 sm:p-3 w-full max-w-sm bg-background/90">
                 <div className="grid grid-cols-5 gap-1">
                   {([
@@ -854,7 +1005,6 @@ export default function PirbTerminal() {
                     );
                   })}
                 </div>
-                {/* Rarity badge */}
                 <div className={`mt-1.5 text-center py-0.5 border ${RARITY_STYLES[ePreview.rarity].border} ${RARITY_STYLES[ePreview.rarity].bg}`}>
                   <span className={`font-display text-[7px] sm:text-[8px] tracking-wider ${RARITY_STYLES[ePreview.rarity].text}`}>
                     {RARITY_STYLES[ePreview.rarity].label}
@@ -903,9 +1053,28 @@ export default function PirbTerminal() {
                     transition={{ type: 'spring', stiffness: 150 }}
                     className="text-center shrink-0"
                   >
-                    <h1 className={`font-display text-2xl sm:text-3xl lg:text-5xl tracking-wider ${status === 'WIN' ? 'text-neon-green text-glow-green animate-rainbow' : 'text-neon-orange text-glow-orange'}`}>
-                      {status === 'WIN' ? '🏆 YOU WIN!' : '💀 PIRBED!'}
-                    </h1>
+                    {/* WIN / REKT heading with custom icons */}
+                    <div className="flex items-center justify-center gap-3">
+                      <motion.img
+                        src={status === 'WIN' ? imgWin : imgPirbed}
+                        alt={status === 'WIN' ? 'WIN' : 'PIRBED'}
+                        className="w-10 h-10 sm:w-14 sm:h-14 object-contain"
+                        style={{ imageRendering: 'pixelated', filter: status === 'WIN' ? 'drop-shadow(0 0 10px #07e46e)' : 'drop-shadow(0 0 10px #f97316)' }}
+                        animate={{ rotate: [0, -5, 5, 0], scale: [1, 1.05, 1] }}
+                        transition={{ duration: 1.5, repeat: Infinity }}
+                      />
+                      <h1 className={`font-display text-2xl sm:text-3xl lg:text-5xl tracking-wider ${status === 'WIN' ? 'text-neon-green text-glow-green animate-rainbow' : 'text-neon-orange text-glow-orange'}`}>
+                        {status === 'WIN' ? 'YOU WIN!' : 'PIRBED!'}
+                      </h1>
+                      <motion.img
+                        src={status === 'WIN' ? imgWin : imgPirbed}
+                        alt=""
+                        className="w-10 h-10 sm:w-14 sm:h-14 object-contain opacity-60"
+                        style={{ imageRendering: 'pixelated', filter: status === 'WIN' ? 'drop-shadow(0 0 8px #07e46e)' : 'drop-shadow(0 0 8px #f97316)', transform: 'scaleX(-1)' }}
+                        animate={{ rotate: [0, 5, -5, 0], scale: [1, 1.05, 1] }}
+                        transition={{ duration: 1.5, repeat: Infinity, delay: 0.3 }}
+                      />
+                    </div>
                   </motion.div>
 
                   <motion.div
@@ -945,9 +1114,10 @@ export default function PirbTerminal() {
                     </motion.div>
                   </motion.div>
 
-                  {/* Streak display on result */}
+                  {/* Streak */}
                   {streak.current > 0 && status === 'WIN' && (
-                    <motion.div initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4 }} className="shrink-0">
+                    <motion.div initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4 }} className="shrink-0 flex items-center gap-2">
+                      <Ico src={streak.current >= 5 ? imgOnfire : imgStreak} size={24} />
                       <StreakBadge streak={streak} />
                     </motion.div>
                   )}
@@ -965,41 +1135,44 @@ export default function PirbTerminal() {
                       <p className={`font-mono text-xl sm:text-3xl lg:text-4xl font-bold ${status === 'WIN' ? 'text-neon-green' : 'text-neon-orange'}`}>
                         {finalPnl >= 0 ? '+' : ''}{finalPnl.toFixed(2)}%
                       </p>
-                      
                       {streak.current > 1 && status === 'WIN' && (
-                        <p className="font-display text-[7px] sm:text-[8px] text-neon-orange tracking-wider mt-1 sm:mt-2">
-                          🔥 STREAK BONUS: ×{getStreakMultiplier(streak.current).toFixed(1)}
+                        <p className="font-display text-[7px] sm:text-[8px] text-neon-orange tracking-wider mt-1 sm:mt-2 flex items-center justify-center gap-1">
+                          <Ico src={imgOnfire} size={32} />
+                          STREAK BONUS: ×{getStreakMultiplier(streak.current).toFixed(1)}
                         </p>
                       )}
                     </div>
                   </motion.div>
 
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }} className="flex flex-wrap justify-center gap-2 sm:gap-3 shrink-0">
-                    {/* Entropy mode: reroll → goes to PREVIEW for param tweaking */}
                     {entropyMode === 'entropy' && eSeed && ePostRerolls < 3 && (
                       <button onClick={() => postReroll()}
-                        className="arcade-btn arcade-btn-primary text-[9px] sm:text-[10px] py-2 sm:py-3 px-4 sm:px-6"
+                        className="arcade-btn arcade-btn-primary text-[9px] sm:text-[10px] py-2 sm:py-3 px-4 sm:px-6 flex items-center gap-2"
                         style={isGainzy ? { borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(var(--neon-orange) / 0.15)', boxShadow: 'var(--glow-orange)' } : {}}>
-                        🎲 REROLL ({3 - ePostRerolls}/3)
+                        <Ico src={imgGenerateEntropy} size={32} />
+                        REROLL ({3 - ePostRerolls}/3)
                       </button>
                     )}
-                    {/* Entropy mode: rerolls exhausted → new GENERATE */}
                     {entropyMode === 'entropy' && eSeed && ePostRerolls >= 3 && (
                       <button onClick={() => startEntropy(lockedFeed || undefined, eGainzy)}
-                        className="arcade-btn arcade-btn-primary text-[9px] sm:text-[10px] py-2 sm:py-3 px-4 sm:px-6">
-                        🎲 GENERATE (NEW SEED)
+                        className="arcade-btn arcade-btn-primary text-[9px] sm:text-[10px] py-2 sm:py-3 px-4 sm:px-6 flex items-center gap-2">
+                        <Ico src={imgGenerateEntropy} size={32} />
+                        GENERATE (NEW SEED)
                       </button>
                     )}
-                    {/* Classic mode: simple roll again */}
                     {entropyMode === 'classic' && (
-                      <button onClick={() => generatePosition(undefined, isGainzy)} className="arcade-btn arcade-btn-primary text-[9px] sm:text-[10px] py-2 sm:py-3 px-4 sm:px-6"
+                      <button onClick={() => generatePosition(undefined, isGainzy)}
+                        className="arcade-btn arcade-btn-primary text-[9px] sm:text-[10px] py-2 sm:py-3 px-4 sm:px-6 flex items-center gap-2"
                         style={isGainzy ? { borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(var(--neon-orange) / 0.15)', boxShadow: 'var(--glow-orange)' } : {}}>
-                        {isGainzy ? '🔥 GAINZY AGAIN' : '🎲 ROLL AGAIN'}
+                        <Ico src={isGainzy ? imgGainzyClassic : imgGenerate} size={32} />
+                        {isGainzy ? 'GAINZY AGAIN' : 'ROLL AGAIN'}
                       </button>
                     )}
                     <button onClick={() => { playCoinSound(); resetTerminal(); }}
-                      className="arcade-btn text-[9px] sm:text-[10px] py-2 sm:py-3 px-4 sm:px-6" style={{ borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(var(--neon-orange) / 0.1)', boxShadow: 'var(--glow-orange)' }}>
-                      🏠 HOME
+                      className="arcade-btn text-[9px] sm:text-[10px] py-2 sm:py-3 px-4 sm:px-6 flex items-center gap-2"
+                      style={{ borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(var(--neon-orange) / 0.1)', boxShadow: 'var(--glow-orange)' }}>
+                      <Ico src={imgHome} size={32} />
+                      HOME
                     </button>
                   </motion.div>
                 </div>
