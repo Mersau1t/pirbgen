@@ -41,23 +41,36 @@ export const PIRB_ENTROPY_ABI = [
   },
 ] as const;
 
+// Cast for wagmi hooks (avoids readonly/authorizationList type conflicts)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const PIRB_ABI = PIRB_ENTROPY_ABI as any;
+
 // ════════════════════════════════════════════════════════════════════════════
-//  PURE HELPERS — exported for use in PirbTerminal
+//  PURE HELPERS — exported for PirbTerminal, Duel, etc.
 // ════════════════════════════════════════════════════════════════════════════
 
-export function mapContractRarity(r: number): 'common' | 'rare' | 'legendary' | 'degen' {
-  if (r <= 1) return 'common';
-  if (r === 2) return 'rare';
-  if (r === 3) return 'legendary';
-  return 'degen';
+/** 5-level rarity matching the smart contract enum */
+export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
+
+/** Map contract enum (0–4) → frontend rarity string */
+export function mapContractRarity(r: number): Rarity {
+  switch (r) {
+    case 0: return 'common';
+    case 1: return 'uncommon';
+    case 2: return 'rare';
+    case 3: return 'epic';
+    case 4: return 'legendary';
+    default: return 'common';
+  }
 }
 
-export function calcRarityFromLeverage(lev: number): 'common' | 'rare' | 'legendary' | 'degen' {
+/** Calculate rarity from leverage — mirrors contract _calcRarity exactly */
+export function calcRarityFromLeverage(lev: number): Rarity {
   if (lev <= 55) return 'common';
-  if (lev <= 90) return 'common';
+  if (lev <= 90) return 'uncommon';
   if (lev <= 130) return 'rare';
-  if (lev <= 170) return 'legendary';
-  return 'degen';
+  if (lev <= 170) return 'epic';
+  return 'legendary';
 }
 
 /** Mirrors contract _derive: keccak256(abi.encodePacked(seed, uint256(nonce))) */
@@ -71,48 +84,140 @@ export function randFromDerived(derived: Hex, label: string, min: number, max: n
   return min + Number(BigInt(hash) % BigInt(max - min + 1));
 }
 
-export const CFG = {
+// ── Config — matches contract defaults ──────────────────────────────────────
+export const ENTROPY_CFG = {
   tokenCount: 17,
-  leverageMin: 20, leverageMax: 200,
-  slMin: 3, slMax: 10,
-  rrMin: 2, rrMax: 20,
-  maxRerolls: 3,
+  leverageMin: 20,
+  leverageMax: 200,
+  slMin: 3,
+  slMax: 10,
+  rrMin: 2,
+  rrMax: 20,
+  maxRerollsSolo: 3,
+  maxRerollsDuel: 5,
 };
 
-// ── Seed data from contract ─────────────────────────────────────────────────
-export interface EntropySeed {
+/** @deprecated — use ENTROPY_CFG */
+export const CFG = ENTROPY_CFG;
+
+// ── Unified position type (used by solo + duel) ─────────────────────────────
+export interface EntropyPosition {
   seed: Hex;
+  nonce: number;
   tokenIndex: number;
   direction: 'LONG' | 'SHORT';
   leverage: number;
   stopLoss: number;
   rrRatio: number;
   takeProfit: number;
-  rarity: 'common' | 'rare' | 'legendary' | 'degen';
+  rarity: Rarity;
+  rerollsUsed: number;
+  maxRerolls: number;
 }
+
+/** @deprecated — use EntropyPosition */
+export type EntropySeed = EntropyPosition;
 
 /**
  * Derive a full position from seed + nonce.
- * nonce=0 is the original position from the contract.
- * nonce=1,2,3 are the rerolls — each gives a completely new position.
+ * nonce=0 → original contract position.
+ * Each nonce gives a completely different position (all params regenerated).
  */
-export function derivePosition(seed: Hex, nonce: number, lockToken?: number, lockLeverage?: number): EntropySeed {
+export function derivePosition(
+  seed: Hex,
+  nonce: number,
+  lockToken?: number,
+  lockLeverage?: number,
+  maxRerolls: number = ENTROPY_CFG.maxRerollsSolo,
+  rerollsUsed: number = 0,
+): EntropyPosition {
   const d = deriveSeed(seed, nonce);
-  const tokenIndex = lockToken != null ? lockToken : randFromDerived(d, 'token', 0, CFG.tokenCount - 1);
+  const tokenIndex = lockToken != null ? lockToken : randFromDerived(d, 'token', 0, ENTROPY_CFG.tokenCount - 1);
   const dir = randFromDerived(d, 'dir', 0, 1);
-  const leverage = lockLeverage != null ? lockLeverage : randFromDerived(d, 'lev', CFG.leverageMin, CFG.leverageMax);
-  const sl = randFromDerived(d, 'sl', CFG.slMin, CFG.slMax);
-  const rr = randFromDerived(d, 'rr', CFG.rrMin, CFG.rrMax);
+  const leverage = lockLeverage != null ? lockLeverage : randFromDerived(d, 'lev', ENTROPY_CFG.leverageMin, ENTROPY_CFG.leverageMax);
+  const sl = randFromDerived(d, 'sl', ENTROPY_CFG.slMin, ENTROPY_CFG.slMax);
+  const rr = randFromDerived(d, 'rr', ENTROPY_CFG.rrMin, ENTROPY_CFG.rrMax);
   return {
     seed,
+    nonce,
     tokenIndex,
     direction: dir === 0 ? 'LONG' : 'SHORT',
     leverage,
     stopLoss: sl,
     rrRatio: rr,
     takeProfit: sl * rr,
-    rarity: lockLeverage != null ? 'degen' : calcRarityFromLeverage(leverage),
+    rarity: lockLeverage != null ? 'legendary' : calcRarityFromLeverage(leverage),
+    rerollsUsed,
+    maxRerolls,
   };
+}
+
+/**
+ * Reroll a SINGLE parameter. The rest stays the same.
+ * paramIndex: 1=token, 2=direction, 3=leverage, 4=stopLoss, 5=rrRatio
+ */
+export function rerollSingleParam(
+  pos: EntropyPosition,
+  paramIndex: 1 | 2 | 3 | 4 | 5,
+  lockToken?: number,
+  lockLeverage?: number,
+): EntropyPosition {
+  if (pos.rerollsUsed >= pos.maxRerolls) throw new Error('No rerolls left');
+  if (lockToken != null && paramIndex === 1) throw new Error('Token is locked');
+  if (lockLeverage != null && paramIndex === 3) throw new Error('Leverage is locked');
+
+  const newNonce = pos.nonce + 1;
+  const derived = deriveSeed(pos.seed, newNonce);
+  const updated: EntropyPosition = {
+    ...pos,
+    nonce: newNonce,
+    rerollsUsed: pos.rerollsUsed + 1,
+  };
+
+  switch (paramIndex) {
+    case 1:
+      updated.tokenIndex = randFromDerived(derived, 'r', 0, ENTROPY_CFG.tokenCount - 1);
+      break;
+    case 2:
+      updated.direction = randFromDerived(derived, 'r', 0, 1) === 0 ? 'LONG' : 'SHORT';
+      break;
+    case 3:
+      updated.leverage = randFromDerived(derived, 'r', ENTROPY_CFG.leverageMin, ENTROPY_CFG.leverageMax);
+      updated.rarity = calcRarityFromLeverage(updated.leverage);
+      break;
+    case 4:
+      updated.stopLoss = randFromDerived(derived, 'r', ENTROPY_CFG.slMin, ENTROPY_CFG.slMax);
+      updated.takeProfit = updated.stopLoss * updated.rrRatio;
+      break;
+    case 5:
+      updated.rrRatio = randFromDerived(derived, 'r', ENTROPY_CFG.rrMin, ENTROPY_CFG.rrMax);
+      updated.takeProfit = updated.stopLoss * updated.rrRatio;
+      break;
+  }
+
+  return updated;
+}
+
+/**
+ * Reroll ALL parameters at once (full regeneration).
+ * Used for post-game rerolls and duel "reroll all" button.
+ */
+export function rerollFullPosition(
+  pos: EntropyPosition,
+  lockToken?: number,
+  lockLeverage?: number,
+): EntropyPosition {
+  if (pos.rerollsUsed >= pos.maxRerolls) throw new Error('No rerolls left');
+
+  const newNonce = pos.nonce + 1;
+  return derivePosition(
+    pos.seed,
+    newNonce,
+    lockToken,
+    lockLeverage,
+    pos.maxRerolls,
+    pos.rerollsUsed + 1,
+  );
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -123,10 +228,8 @@ export type EntropyStatus = 'idle' | 'requesting' | 'waiting_callback' | 'ready'
 
 export interface UseEntropyReturn {
   status: EntropyStatus;
-  /** The raw seed from contract (set once callback arrives). Used by PirbTerminal to derive positions. */
   seed: Hex | null;
-  /** The initial position from the contract (nonce=0 equivalent) */
-  initialPosition: EntropySeed | null;
+  initialPosition: EntropyPosition | null;
   fee: bigint | undefined;
   feeFormatted: string;
   requestSolo: () => Promise<void>;
@@ -141,7 +244,7 @@ export function useEntropy(): UseEntropyReturn {
 
   const [status, setStatus] = useState<EntropyStatus>('idle');
   const [seed, setSeed] = useState<Hex | null>(null);
-  const [initialPosition, setInitialPosition] = useState<EntropySeed | null>(null);
+  const [initialPosition, setInitialPosition] = useState<EntropyPosition | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [txHash, setTxHash] = useState<Hex | undefined>(undefined);
 
@@ -156,7 +259,7 @@ export function useEntropy(): UseEntropyReturn {
 
   // ── Fee ──────────────────────────────────────────────────────────────────
   const { data: feeData } = useReadContract({
-    address: PIRB_ENTROPY_ADDRESS, abi: PIRB_ENTROPY_ABI,
+    address: PIRB_ENTROPY_ADDRESS, abi: PIRB_ABI,
     functionName: 'getEntropyFee', chainId: base.id,
   });
   const fee = feeData as bigint | undefined;
@@ -182,7 +285,7 @@ export function useEntropy(): UseEntropyReturn {
       if (!mountedRef.current) return;
       try {
         const r = await publicClient.readContract({
-          address: PIRB_ENTROPY_ADDRESS, abi: PIRB_ENTROPY_ABI,
+          address: PIRB_ENTROPY_ADDRESS, abi: PIRB_ABI,
           functionName: 'soloStates', args: [address],
         }) as any[];
 
@@ -201,15 +304,19 @@ export function useEntropy(): UseEntropyReturn {
         if (pollRef.current) clearInterval(pollRef.current);
         if (!mountedRef.current) return;
 
-        const tokenIndex = Math.min(Number(r[2]), CFG.tokenCount - 1);
-        const pos: EntropySeed = {
-          seed: s, tokenIndex,
+        const tokenIndex = Math.min(Number(r[2]), ENTROPY_CFG.tokenCount - 1);
+        const pos: EntropyPosition = {
+          seed: s,
+          nonce: 0,
+          tokenIndex,
           direction: Number(r[3]) === 0 ? 'LONG' : 'SHORT',
           leverage: Number(r[4]),
           stopLoss: Number(r[5]),
           rrRatio: Number(r[6]),
           takeProfit: Number(r[7]),
           rarity: mapContractRarity(Number(r[8])),
+          rerollsUsed: 0,
+          maxRerolls: ENTROPY_CFG.maxRerollsSolo,
         };
 
         setSeed(s);
@@ -237,7 +344,7 @@ export function useEntropy(): UseEntropyReturn {
     try {
       setStatus('requesting'); setError(null); setSeed(null); setInitialPosition(null);
       const hash = await writeContractAsync({
-        address: PIRB_ENTROPY_ADDRESS, abi: PIRB_ENTROPY_ABI,
+        address: PIRB_ENTROPY_ADDRESS, abi: PIRB_ABI,
         functionName: 'requestSolo', value: fee, chainId: base.id,
       });
       setTxHash(hash);

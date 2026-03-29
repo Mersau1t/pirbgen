@@ -46,9 +46,9 @@
     --font-display: 'Press Start 2P', cursive;
     --font-mono: 'JetBrains Mono', monospace;
 
-    --glow-purple: 0 0 4px hsl(265 66% 55%), 0 0 12px hsl(265 66% 55% / 0.6), 0 0 30px hsl(265 66% 55% / 0.3);
-    --glow-orange: 0 0 4px hsl(25 95% 53%), 0 0 12px hsl(25 95% 53% / 0.6), 0 0 30px hsl(25 95% 53% / 0.3);
-    --glow-green: 0 0 4px hsl(150 95% 46%), 0 0 12px hsl(150 95% 46% / 0.6), 0 0 30px hsl(150 95% 46% / 0.3);
+    --glow-purple: 0 0 3px hsl(265 50% 50%), 0 0 8px hsl(265 50% 50% / 0.4), 0 0 20px hsl(265 50% 50% / 0.2);
+    --glow-orange: 0 0 3px hsl(25 80% 50%), 0 0 8px hsl(25 80% 50% / 0.4), 0 0 20px hsl(25 80% 50% / 0.2);
+    --glow-green: 0 0 3px hsl(150 80% 44%), 0 0 8px hsl(150 80% 44% / 0.4), 0 0 20px hsl(150 80% 44% / 0.2);
   }
 }
 
@@ -60,6 +60,20 @@
     @apply bg-background text-foreground;
     font-family: var(--font-mono);
     image-rendering: auto;
+  }
+}
+
+/* Scale center content on laptops */
+@media (max-height: 800px) {
+  main {
+    zoom: 0.7;
+  }
+}
+
+/* Scale center content on large desktop monitors */
+@media (min-height: 801px) {
+  main {
+    zoom: 0.9;
   }
 }
 
@@ -92,30 +106,32 @@
 
 /* Pixel border utility — purple primary */
 .pixel-border {
-  border: 3px solid hsl(var(--neon-purple));
+  border: 2px solid hsl(var(--neon-purple));
   box-shadow:
-    inset 0 0 0 1px hsl(var(--background)),
-    0 0 0 1px hsl(var(--neon-purple)),
-    var(--glow-purple);
+    inset 0 1px 0 hsl(265 66% 75% / 0.15),
+    inset 0 0 20px hsl(265 66% 55% / 0.05),
+    0 0 0 1px hsl(var(--neon-purple) / 0.3),
+    0 0 12px hsl(265 66% 55% / 0.15);
 }
 
 .pixel-border-orange {
-  border: 3px solid hsl(var(--neon-orange));
+  border: 2px solid hsl(var(--neon-orange));
   box-shadow:
-    inset 0 0 0 1px hsl(var(--background)),
-    0 0 0 1px hsl(var(--neon-orange)),
-    var(--glow-orange);
+    inset 0 1px 0 hsl(25 95% 65% / 0.15),
+    inset 0 0 20px hsl(25 95% 53% / 0.05),
+    0 0 0 1px hsl(var(--neon-orange) / 0.3),
+    0 0 12px hsl(25 95% 53% / 0.15);
 }
 
 .pixel-border-green {
-  border: 3px solid hsl(var(--neon-green));
+  border: 2px solid hsl(var(--neon-green));
   box-shadow:
-    inset 0 0 0 1px hsl(var(--background)),
-    0 0 0 1px hsl(var(--neon-green)),
-    var(--glow-green);
+    inset 0 1px 0 hsl(150 95% 60% / 0.15),
+    inset 0 0 20px hsl(150 95% 46% / 0.05),
+    0 0 0 1px hsl(var(--neon-green) / 0.3),
+    0 0 12px hsl(150 95% 46% / 0.15);
 }
 
-/* Scanline overlay — purple tint */
 .scanlines::after {
   content: '';
   position: absolute;
@@ -124,8 +140,8 @@
     0deg,
     transparent,
     transparent 2px,
-    hsl(265 66% 55% / 0.03) 2px,
-    hsl(265 66% 55% / 0.03) 4px
+    hsl(265 66% 55% / 0.02) 2px,
+    hsl(265 66% 55% / 0.02) 4px
   );
   pointer-events: none;
   z-index: 50;
@@ -207,11 +223,32 @@
 .animate-rainbow { animation: rainbow 3s linear infinite; }
 .animate-star-fall { animation: star-fall linear infinite; }
 
+/* Entropy dot grid — CSS-only animations (GPU-composited) */
+@keyframes entropy-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes entropy-pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes entropy-glow {
+  0%, 100% { opacity: 0.06; }
+  50% { opacity: 0.18; }
+}
+
+@keyframes entropy-dot-pulse {
+  0%, 100% { opacity: 0.5; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
 @keyframes star-fall {
-  0% { transform: translateY(-10px) translateX(0); opacity: 0; }
-  10% { opacity: 1; }
-  90% { opacity: 1; }
-  100% { transform: translateY(105vh) translateX(30px); opacity: 0; }
+  0% { transform: translateY(-10px) translateX(0) rotate(0deg); opacity: 0; }
+  10% { opacity: 0.8; }
+  90% { opacity: 0.6; }
+  100% { transform: translateY(105vh) translateX(30px) rotate(720deg); opacity: 0; }
 }
 
 /* Glass panel — purple accent */
@@ -246,7 +283,9 @@
 }
 
 .arcade-btn:active {
-  transform: translateY(1px);
+  transform: translateY(1px) scale(0.97);
+  filter: brightness(0.85);
+  transition: all 0.08s ease;
 }
 
 .arcade-btn-primary {

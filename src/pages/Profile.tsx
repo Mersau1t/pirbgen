@@ -4,6 +4,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useWallet, shortenAddress } from '@/contexts/WalletContext';
+import { playCoinSound } from '@/lib/sounds';
+import iconPirb from '@/assets/icons/icon_pirb.png';
 
 // ── Avatar images ─────────────────────────────────────────────────────────────
 import avatarNft from '@/assets/avatars/avatar_nft.jpg';
@@ -190,15 +192,15 @@ export default function Profile() {
 
   return (
     <div className="h-screen bg-background grid-bg scanlines crt-vignette relative overflow-hidden animate-flicker flex flex-col">
-      <header className="relative z-10 border-b-2 border-neon-purple/40 bg-background/90">
-        <div className="max-w-6xl mx-auto flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">🕹️</span>
-            <span className="font-display text-[10px] sm:text-xs tracking-[0.3em] text-neon-purple text-glow-purple">PIRBGEN</span>
-          </div>
-          <Link to="/" className="arcade-btn arcade-btn-primary text-[8px] sm:text-[10px] py-2 px-3">
-            ← TERMINAL
+      <header className="relative z-10 border-b-2 border-neon-purple/40 bg-background/90 shrink-0">
+        <div className="max-w-6xl mx-auto flex items-center justify-center px-4 py-3 relative min-h-[56px] sm:min-h-[64px]">
+          <Link to="/" onClick={() => playCoinSound()} className="font-display text-sm text-muted-foreground hover:text-neon-purple transition-colors absolute left-4 z-10">
+            ← BACK
           </Link>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <img src={iconPirb} alt="PROFILE" width={40} height={40} className="object-contain shrink-0" />
+            <span className="font-display text-[8px] sm:text-xs tracking-[0.3em] text-neon-purple text-glow-purple">PROFILE</span>
+          </div>
         </div>
       </header>
 
@@ -301,9 +303,9 @@ export default function Profile() {
                 {trades.map((trade, i) => (
                   <motion.div
                     key={trade.id}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.02 }}
+                    initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ delay: i * 0.05, type: "spring", stiffness: 120, damping: 18 }}
                     className="flex items-center justify-between px-4 py-2.5 hover:bg-muted/20 transition-colors"
                   >
                     <div className="flex items-center gap-3">
@@ -333,11 +335,6 @@ export default function Profile() {
             )}
           </div>
 
-          <div className="shrink-0 text-center py-2">
-            <Link to="/" className="arcade-btn arcade-btn-primary text-[10px] py-2.5 px-8 inline-block">
-              🎲 BACK TO TERMINAL
-            </Link>
-          </div>
         </motion.div>
       </main>
 
@@ -404,7 +401,7 @@ export default function Profile() {
 
                 <button
                   onClick={() => setAvatarPickerOpen(false)}
-                  className="arcade-btn arcade-btn-primary w-full text-[10px] py-2.5"
+                  className="font-display text-sm text-muted-foreground hover:text-neon-purple transition-colors w-full text-center py-2"
                 >
                   ← BACK
                 </button>

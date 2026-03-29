@@ -4,21 +4,37 @@ import { type EntropyPosition } from '@/hooks/useEntropy';
 
 interface RerollPanelProps {
   position: EntropyPosition;
-  /** Called when user clicks a reroll button. Parent does the actual reroll via entropy.reroll() */
+  /** Called when user clicks a single-param reroll button */
   onReroll: (paramIndex: 1 | 2 | 3 | 4 | 5) => void;
-  /** Is this a gainzy game? If so, leverage/rarity are locked */
+  /** Called when user clicks "REROLL ALL" button (full regeneration) */
+  onRerollAll?: () => void;
+  /** Is this a gainzy game? If so, leverage is locked */
   isGainzy?: boolean;
+  /** Is direction locked? (PLAYER_CHOICE duel mode) */
+  isDirectionLocked?: boolean;
+  /** Is token locked? (specific feed selected) */
+  isTokenLocked?: boolean;
+  /** Mode label */
+  mode?: 'solo' | 'duel';
 }
 
-const PARAM_LABELS: Record<number, { icon: string; label: string; key: string }> = {
-  1: { icon: '🪙', label: 'TOKEN', key: 'token' },
-  2: { icon: '📈', label: 'DIRECTION', key: 'direction' },
-  3: { icon: '⚡', label: 'LEVERAGE', key: 'leverage' },
-  4: { icon: '🛑', label: 'STOP LOSS', key: 'stopLoss' },
-  5: { icon: '🎯', label: 'TAKE PROFIT', key: 'takeProfit' },
+const PARAM_LABELS: Record<number, { icon: string; label: string }> = {
+  1: { icon: '🪙', label: 'TOKEN' },
+  2: { icon: '📈', label: 'DIRECTION' },
+  3: { icon: '⚡', label: 'LEVERAGE' },
+  4: { icon: '🛑', label: 'STOP LOSS' },
+  5: { icon: '🎯', label: 'TAKE PROFIT' },
 };
 
-export default function RerollPanel({ position, onReroll, isGainzy = false }: RerollPanelProps) {
+export default function RerollPanel({
+  position,
+  onReroll,
+  onRerollAll,
+  isGainzy = false,
+  isDirectionLocked = false,
+  isTokenLocked = false,
+  mode = 'solo',
+}: RerollPanelProps) {
   const rerollsLeft = position.maxRerolls - position.rerollsUsed;
   const token = SOLO_TOKENS[position.tokenIndex] || SOLO_TOKENS[0];
 
@@ -40,21 +56,22 @@ export default function RerollPanel({ position, onReroll, isGainzy = false }: Re
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
         <span className="font-display text-[8px] sm:text-[9px] text-neon-purple tracking-wider">
-          🔗 ENTROPY REROLLS
+          🔗 {mode === 'duel' ? 'DUEL' : 'ENTROPY'} REROLLS
         </span>
-        <span className={`font-display text-[8px] sm:text-[9px] tracking-wider ${
-          rerollsLeft > 0 ? 'text-neon-green' : 'text-muted-foreground/50'
-        }`}>
+        <span className={`font-display text-[8px] sm:text-[9px] tracking-wider ${rerollsLeft > 0 ? 'text-neon-green' : 'text-muted-foreground/50'
+          }`}>
           {rerollsLeft}/{position.maxRerolls} LEFT
         </span>
       </div>
 
-      {/* Reroll buttons grid */}
+      {/* Single-param reroll buttons */}
       <div className="grid grid-cols-5 gap-1 sm:gap-1.5">
         {([1, 2, 3, 4, 5] as const).map((idx) => {
           const param = PARAM_LABELS[idx];
           const isDisabled = rerollsLeft <= 0
-            || (isGainzy && idx === 3);  // Gainzy locks leverage at 200×
+            || (isGainzy && idx === 3)           // Gainzy locks leverage
+            || (isTokenLocked && idx === 1)       // Locked token
+            || (isDirectionLocked && idx === 2);  // PLAYER_CHOICE locks direction
 
           return (
             <motion.button
@@ -74,15 +91,34 @@ export default function RerollPanel({ position, onReroll, isGainzy = false }: Re
             >
               <span className="text-[10px] sm:text-xs">{param.icon}</span>
               <span className="text-[6px] sm:text-[7px] tracking-wider opacity-60">{param.label}</span>
-              <span className={`text-[8px] sm:text-[9px] font-bold tracking-wide ${
-                isDisabled ? '' : 'text-neon-green'
-              }`}>
+              <span className={`text-[8px] sm:text-[9px] font-bold tracking-wide ${isDisabled ? '' : 'text-neon-green'
+                }`}>
                 {values[idx]}
               </span>
             </motion.button>
           );
         })}
       </div>
+
+      {/* REROLL ALL button — shown when onRerollAll is provided */}
+      {onRerollAll && (
+        <motion.button
+          onClick={rerollsLeft > 0 ? onRerollAll : undefined}
+          disabled={rerollsLeft <= 0}
+          whileTap={rerollsLeft > 0 ? { scale: 0.95 } : {}}
+          className={`
+            w-full mt-2 py-2 border font-display text-[9px] sm:text-[10px]
+            tracking-wider transition-all duration-150
+            ${rerollsLeft <= 0
+              ? 'border-muted-foreground/15 text-muted-foreground/30 cursor-not-allowed'
+              : 'border-neon-green/40 text-neon-green hover:bg-neon-green/10 hover:border-neon-green/70 cursor-pointer active:bg-neon-green/20'
+            }
+          `}
+          style={{ borderRadius: '2px' }}
+        >
+          🔄 REROLL ALL
+        </motion.button>
+      )}
 
       {/* Subtext */}
       <p className="font-display text-[6px] sm:text-[7px] text-muted-foreground/40 tracking-wider text-center mt-1.5">

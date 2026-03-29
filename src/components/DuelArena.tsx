@@ -3,17 +3,21 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import LiveTradePanel, { type DegenPosition } from '@/components/LiveTradePanel';
 import SpectatorChart from '@/components/SpectatorChart';
+import AbilityBar from '@/components/AbilityBar';
+import AbilityEffects from '@/components/AbilityEffects';
 import { type Candle } from '@/components/PriceChart';
 import { fetchHistoricalCandles } from '@/lib/pyth';
 import { DUEL_TIMER_SECONDS } from '@/lib/duelConstants';
+import { useDuelAbilities, type AbilityEvent, type AbilityId, ABILITY_DEFS } from '@/hooks/useDuelAbilities';
 
 interface DuelArenaProps {
   roomId: string;
   playerSlot: 'p1' | 'p2';
   onFinished: (room: any) => void;
+  abilitiesMode?: boolean;
 }
 
-export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaProps) {
+export default function DuelArena({ roomId, playerSlot, onFinished, abilitiesMode = false }: DuelArenaProps) {
   const [room, setRoom] = useState<any>(null);
   const [myPosition, setMyPosition] = useState<DegenPosition | null>(null);
   const [oppPosition, setOppPosition] = useState<DegenPosition | null>(null);
@@ -31,6 +35,11 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
   const lastSyncedPnl = useRef(0);
   const countdownRef = useRef<number>(0);
 
+  // Track my outgoing attack abilities → show effects on opponent's chart panel
+  const [myLastAttackEvent, setMyLastAttackEvent] = useState<AbilityEvent | null>(null);
+  // Track if pirb rage was sent BY ME (to show on opp chart)
+  const [sentPirbRage, setSentPirbRage] = useState(false);
+
   const opponentSlot = playerSlot === 'p1' ? 'p2' : 'p1';
   const myName = room ? (room[`${playerSlot}_name`] || 'You') : 'You';
   const opponentName = room ? (room[`${opponentSlot}_name`] || '???') : '???';
@@ -39,6 +48,28 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
     r[`${slot}_${field}`] || r[field] || '';
   const getNumField = (r: any, slot: string, field: string) =>
     r[`${slot}_${field}`] ?? r[field] ?? 0;
+
+  // ── Abilities hook ────────────────────────────────────────────────
+  const abilities = useDuelAbilities(
+    roomId, playerSlot, myPosition?.ticker || '',
+    abilitiesMode && started && !finished,
+  );
+
+  // Wrap useAbility to also track outgoing attacks for visual on opp panel
+  const handleUseAbility = useCallback((id: AbilityId) => {
+    abilities.useAbility(id);
+
+    const def = ABILITY_DEFS.find(a => a.id === id);
+    if (def?.target === 'opponent') {
+      const event: AbilityEvent = { abilityId: id, from: playerSlot, timestamp: Date.now() };
+      setMyLastAttackEvent(event);
+
+      if (id === 'pirb_rage') {
+        setSentPirbRage(true);
+        setTimeout(() => setSentPirbRage(false), 5000);
+      }
+    }
+  }, [abilities.useAbility, playerSlot]);
 
   // Load room
   useEffect(() => {
@@ -72,11 +103,9 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
         rarity: (getField(r, opponentSlot, 'rarity') || 'common') as any,
       });
 
-      const oppFeedId = getField(r, opponentSlot, 'feed_id');
-      const myFeedId = getField(r, playerSlot, 'feed_id');
       const [mC, oC] = await Promise.all([
-        fetchHistoricalCandles(myFeedId, 10, 5).catch(() => []),
-        fetchHistoricalCandles(oppFeedId, 10, 5).catch(() => []),
+        fetchHistoricalCandles(getField(r, playerSlot, 'feed_id'), 10, 5).catch(() => []),
+        fetchHistoricalCandles(getField(r, opponentSlot, 'feed_id'), 10, 5).catch(() => []),
       ]);
       setMyCandles(mC);
       setOppCandles(oC);
@@ -85,19 +114,13 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
     load();
   }, [roomId, playerSlot]);
 
-  // Server-synced countdown
+  // Countdown
   useEffect(() => {
     if (loading || !room?.started_at) return;
     const startTime = new Date(room.started_at).getTime();
     const tick = () => {
-      const now = Date.now();
-      const diff = startTime - now;
-      if (diff <= 0) {
-        setCountdown(0);
-        setStarted(true);
-        clearInterval(countdownRef.current);
-        return;
-      }
+      const diff = startTime - Date.now();
+      if (diff <= 0) { setCountdown(0); setStarted(true); clearInterval(countdownRef.current); return; }
       setCountdown(Math.ceil(diff / 1000));
     };
     tick();
@@ -105,50 +128,34 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
     return () => clearInterval(countdownRef.current);
   }, [loading, room?.started_at]);
 
-  // Realtime opponent updates
+  // Realtime opponent
   useEffect(() => {
     if (!room) return;
-    const channel = supabase
-      .channel(`duel-arena-${roomId}`)
+    const channel = supabase.channel(`duel-arena-${roomId}`)
       .on('postgres_changes', {
         event: 'UPDATE', schema: 'public', table: 'duel_rooms', filter: `id=eq.${roomId}`,
       }, (payload) => {
         const u = payload.new as any;
         if (u[`${opponentSlot}_closed`] && !opponentClosed) {
           setOpponentClosed(true);
-          const finalOppPnl = u[`${opponentSlot}_pnl`];
-          if (finalOppPnl != null) setOppPnl(finalOppPnl);
+          if (u[`${opponentSlot}_pnl`] != null) setOppPnl(u[`${opponentSlot}_pnl`]);
         }
-        if (u[`${playerSlot}_closed`] && !myClosed) {
-          setMyClosed(true);
-        }
-        if (u.status === 'finished') {
-          // Use fresh data from the payload, not stale room state
-          setRoom((prev: any) => prev ? { ...prev, ...u } : u);
-          setFinished(true);
-        }
-        // If opponent closed and I'm already closed, try to finalize
-        if (u[`${opponentSlot}_closed`] && myClosed && u.status !== 'finished') {
-          checkBothClosed();
-        }
-      })
-      .subscribe();
+        if (u[`${playerSlot}_closed`] && !myClosed) setMyClosed(true);
+        if (u.status === 'finished') { setRoom((p: any) => p ? { ...p, ...u } : u); setFinished(true); }
+        if (u[`${opponentSlot}_closed`] && myClosed && u.status !== 'finished') checkBothClosed();
+      }).subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [room, roomId, opponentSlot, playerSlot, opponentClosed, myClosed]);
 
-  // Polling fallback: if both closed but no 'finished' event after 5s, check manually
+  // Polling fallback
   useEffect(() => {
     if (!myClosed || finished) return;
     const pollId = setInterval(async () => {
       const { data } = await supabase.from('duel_rooms').select('*').eq('id', roomId).single();
       if (data) {
         const r = data as any;
-        if (r.status === 'finished') {
-          setRoom(r);
-          setFinished(true);
-          clearInterval(pollId);
-        } else if (r.p1_closed && r.p2_closed && r.status !== 'finished') {
-          // Both closed but not finalized — finalize now
+        if (r.status === 'finished') { setRoom(r); setFinished(true); clearInterval(pollId); }
+        else if (r.p1_closed && r.p2_closed) {
           const winner = r.p1_pnl > r.p2_pnl ? 'p1' : r.p2_pnl > r.p1_pnl ? 'p2' : 'draw';
           await supabase.from('duel_rooms').update({ status: 'finished', winner } as any).eq('id', roomId);
         }
@@ -157,26 +164,22 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
     return () => clearInterval(pollId);
   }, [myClosed, finished, roomId]);
 
-  // Sync my PnL to DB every 2s
+  // Sync PnL
   useEffect(() => {
     if (!started || finished || myClosed) return;
     pnlUpdateInterval.current = window.setInterval(async () => {
       if (Math.abs(myPnl - lastSyncedPnl.current) > 0.01) {
         lastSyncedPnl.current = myPnl;
-        await supabase.from('duel_rooms')
-          .update({ [`${playerSlot}_pnl`]: Number(myPnl.toFixed(2)) } as any)
-          .eq('id', roomId);
+        await supabase.from('duel_rooms').update({ [`${playerSlot}_pnl`]: Number(myPnl.toFixed(2)) } as any).eq('id', roomId);
       }
     }, 2000);
     return () => clearInterval(pnlUpdateInterval.current);
   }, [started, myPnl, finished, myClosed, playerSlot, roomId]);
 
   const handleMyPnlChange = useCallback((pnl: number) => setMyPnl(pnl), []);
-  const handleOppPnlChange = useCallback((pnl: number) => setOppPnl(pnl), []);
 
   const handleResult = useCallback(async (_status: 'WIN' | 'REKT', pnl: number) => {
-    setMyPnl(pnl);
-    setMyClosed(true);
+    setMyPnl(pnl); setMyClosed(true);
     await supabase.from('duel_rooms').update({
       [`${playerSlot}_pnl`]: Number(pnl.toFixed(2)),
       [`${playerSlot}_closed`]: true,
@@ -186,8 +189,7 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
   }, [playerSlot, roomId]);
 
   const handleExitEarly = useCallback(async (pnl: number) => {
-    setMyPnl(pnl);
-    setMyClosed(true);
+    setMyPnl(pnl); setMyClosed(true);
     await supabase.from('duel_rooms').update({
       [`${playerSlot}_pnl`]: Number(pnl.toFixed(2)),
       [`${playerSlot}_closed`]: true,
@@ -209,16 +211,10 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
 
   useEffect(() => {
     if (!finished) return;
-    // Fetch fresh room data to ensure we have winner + final PnL
-    const fetchFinal = async () => {
+    (async () => {
       const { data } = await supabase.from('duel_rooms').select('*').eq('id', roomId).single();
-      if (data) {
-        onFinished(data);
-      } else if (room) {
-        onFinished(room);
-      }
-    };
-    fetchFinal();
+      onFinished(data || room);
+    })();
   }, [finished]);
 
   const myEntryPrice = room ? getNumField(room, playerSlot, 'entry_price') : 0;
@@ -228,9 +224,7 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
     return (
       <div className="flex items-center justify-center flex-1">
         <motion.p animate={{ opacity: [0.4, 1, 0.4] }} transition={{ duration: 1, repeat: Infinity }}
-          className="text-neon-orange font-display text-sm tracking-wider">
-          ⏳ LOADING DUEL...
-        </motion.p>
+          className="text-neon-orange font-display text-sm tracking-wider">⏳ LOADING DUEL...</motion.p>
       </div>
     );
   }
@@ -241,9 +235,7 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
         <AnimatePresence mode="wait">
           {countdown === null ? (
             <motion.p key="sync" animate={{ opacity: [0.4, 1, 0.4] }} transition={{ duration: 1, repeat: Infinity }}
-              className="text-neon-orange font-display text-sm tracking-wider">
-              ⏳ SYNCING...
-            </motion.p>
+              className="text-neon-orange font-display text-sm tracking-wider">⏳ SYNCING...</motion.p>
           ) : countdown > 0 ? (
             <motion.div key={countdown} initial={{ scale: 2, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.5, opacity: 0 }} transition={{ duration: 0.4 }} className="text-center">
@@ -268,6 +260,11 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
           <div className="flex items-center gap-2">
             <span className="font-display text-sm text-neon-purple text-glow-purple">⚔️</span>
             <span className="text-[10px] font-mono text-muted-foreground">{room.room_code}</span>
+            {abilitiesMode && (
+              <span className="text-[7px] font-display tracking-wider text-neon-orange bg-neon-orange/10 border border-neon-orange/30 px-1 py-0.5">
+                💥 ABILITIES
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-4">
             <div className="text-center">
@@ -288,8 +285,9 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
         </div>
       </div>
 
-      {/* Split screen */}
+      {/* Split screen charts */}
       <div className="flex flex-1 min-h-0 gap-1.5">
+        {/* MY panel (left) */}
         <div className="basis-1/2 min-h-0 min-w-0 flex flex-col relative">
           <LiveTradePanel
             position={myPosition}
@@ -304,31 +302,40 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
             compact
             onPnlChange={handleMyPnlChange}
             label="YOU"
+            feedSource={abilities.myEffects.feedSource}
+            directionFlipped={abilities.myEffects.directionFlipped}
+            blocked={abilities.myEffects.pirbRageActive}
+            priceFrozen={abilities.myEffects.priceFrozen}
+            frozenReason={abilities.myEffects.frozenReason}
           />
+
+          {/* Effects applied TO ME by opponent (received) */}
+          {abilitiesMode && (
+            <AbilityEffects
+              event={abilities.lastReceivedEvent}
+              onEventClear={abilities.clearLastEvent}
+              pirbRageActive={abilities.myEffects.pirbRageActive}
+              activeOracle={abilities.myEffects.feedSource}
+              pirbRageScope="full"
+            />
+          )}
+
           {myClosed && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="absolute inset-0 bg-background/60 backdrop-blur-sm flex items-center justify-center z-10 rounded-sm"
-            >
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              className="absolute inset-0 bg-background/60 backdrop-blur-sm flex items-center justify-center z-30 rounded-sm">
               <div className="text-center space-y-2">
                 <p className="font-display text-lg text-neon-purple text-glow-purple tracking-wider">✅ LOCKED IN</p>
                 <p className={`font-mono text-2xl font-bold ${myPnl >= 0 ? 'text-neon-green' : 'text-neon-orange'}`}>
-                  {myPnl >= 0 ? '+' : ''}{myPnl.toFixed(2)}%
-                </p>
-                <motion.p
-                  animate={{ opacity: [0.4, 1, 0.4] }}
-                  transition={{ duration: 1.5, repeat: Infinity }}
-                  className="font-display text-xs text-neon-orange tracking-wider mt-2"
-                >
-                  ⏳ DUEL IN PROGRESS...
-                </motion.p>
+                  {myPnl >= 0 ? '+' : ''}{myPnl.toFixed(2)}%</p>
+                <motion.p animate={{ opacity: [0.4, 1, 0.4] }} transition={{ duration: 1.5, repeat: Infinity }}
+                  className="font-display text-xs text-neon-orange tracking-wider mt-2">⏳ DUEL IN PROGRESS...</motion.p>
               </div>
             </motion.div>
           )}
         </div>
 
-        <div className="basis-1/2 min-h-0 min-w-0 flex flex-col">
+        {/* OPPONENT panel (right) */}
+        <div className="basis-1/2 min-h-0 min-w-0 flex flex-col relative">
           <SpectatorChart
             ticker={oppPosition.ticker}
             feedId={oppPosition.feedId}
@@ -337,8 +344,31 @@ export default function DuelArena({ roomId, playerSlot, onFinished }: DuelArenaP
             timerSeconds={DUEL_TIMER_SECONDS}
             started={started}
           />
+
+          {/* Effects I SENT to opponent — shown on their chart panel (right side) */}
+          {abilitiesMode && (
+            <AbilityEffects
+              event={myLastAttackEvent}
+              onEventClear={() => setMyLastAttackEvent(null)}
+              pirbRageActive={sentPirbRage}
+              activeOracle="pyth"
+              pirbRageScope="panel"
+            />
+          )}
         </div>
       </div>
+
+      {/* Bottom: Ability bar (replaces trash talk when abilities enabled) */}
+      {abilitiesMode && !myClosed && !finished && (
+        <div className="shrink-0 glass-panel rounded-sm px-2 py-1">
+          <AbilityBar
+            usedAbilities={abilities.usedAbilities}
+            onUse={handleUseAbility}
+            canUse={abilities.canUse}
+            disabled={myClosed || finished}
+          />
+        </div>
+      )}
     </div>
   );
 }

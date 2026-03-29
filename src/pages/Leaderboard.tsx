@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
+import { playCoinSound } from '@/lib/sounds';
+import iconPirb from '@/assets/icons/icon_pirb.png';
 
 interface LeaderboardEntry {
   id: string;
@@ -75,14 +77,14 @@ export default function Leaderboard() {
   return (
     <div className="h-screen bg-background grid-bg scanlines crt-vignette relative overflow-hidden animate-flicker flex flex-col">
       <header className="relative z-10 border-b-2 border-neon-purple/40 bg-background/90 shrink-0">
-        <div className="max-w-6xl mx-auto flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <span className="text-xl sm:text-2xl">🕹️</span>
-            <span className="font-display text-[8px] sm:text-xs tracking-[0.3em] text-neon-purple text-glow-purple">PIRBGEN</span>
-          </div>
-          <Link to="/" className="arcade-btn arcade-btn-primary text-[8px] sm:text-[10px] py-1.5 sm:py-2 px-2 sm:px-3">
+        <div className="max-w-6xl mx-auto flex items-center justify-center px-3 sm:px-4 py-2 sm:py-3 relative min-h-[56px] sm:min-h-[64px]">
+          <Link to="/" onClick={() => playCoinSound()} className="font-display text-sm text-muted-foreground hover:text-neon-purple transition-colors absolute left-3 sm:left-4 z-10">
             ← BACK
           </Link>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <img src={iconPirb} alt="LEADERBOARD" width={40} height={40} className="object-contain shrink-0" />
+            <span className="font-display text-[8px] sm:text-xs tracking-[0.3em] text-neon-purple text-glow-purple">LEADERBOARD</span>
+          </div>
         </div>
       </header>
 
@@ -151,9 +153,9 @@ export default function Leaderboard() {
                 {entries.map((entry, i) => (
                   <motion.div
                     key={entry.id}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.03 }}
+                    initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ delay: i * 0.06, type: "spring", stiffness: 120, damping: 18 }}
                   >
                     {/* Desktop row */}
                     <div className={`hidden sm:grid grid-cols-[50px_1fr_80px_70px_80px_120px_90px] gap-1 px-4 py-2.5 items-center hover:bg-muted/20 transition-colors ${
@@ -211,11 +213,6 @@ export default function Leaderboard() {
             )}
           </div>
 
-          <div className="shrink-0 text-center py-1 sm:py-2">
-            <Link to="/" className="arcade-btn arcade-btn-primary text-[9px] sm:text-[10px] py-2 sm:py-2.5 px-6 sm:px-8 inline-block">
-              🎲 BACK TO TERMINAL
-            </Link>
-          </div>
         </motion.div>
       </main>
     </div>

@@ -35,7 +35,7 @@ export interface DailyChallengeParams {
   leverage: number;
   stopLoss: number;
   takeProfit: number;
-  rarity: 'common' | 'rare' | 'legendary' | 'degen';
+  rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
   timerSeconds: number;
 }
 
@@ -46,11 +46,17 @@ export function getDailyParams(feedCount: number): { feedIndex: number; params: 
   const feedIndex = Math.floor(rng() * feedCount);
   const direction = rng() > 0.5 ? 'LONG' as const : 'SHORT' as const;
 
-  const rarities = ['common', 'rare', 'legendary', 'degen'] as const;
-  const rarityIdx = Math.min(Math.floor(rng() * 4), 3);
+  const rarities = ['common', 'uncommon', 'rare', 'epic', 'legendary'] as const;
+  const rarityIdx = Math.min(Math.floor(rng() * 5), 4);
   const rarity = rarities[rarityIdx];
 
-  const leverageRanges = { common: [30, 50], rare: [50, 100], legendary: [100, 150], degen: [150, 200] };
+  const leverageRanges: Record<string, [number, number]> = {
+    common: [20, 55],
+    uncommon: [56, 90],
+    rare: [91, 130],
+    epic: [131, 170],
+    legendary: [171, 200],
+  };
   const lr = leverageRanges[rarity];
   const leverage = Math.floor(rng() * (lr[1] - lr[0] + 1)) + lr[0];
 

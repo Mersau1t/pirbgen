@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import PriceChart, { type Candle } from '@/components/PriceChart';
 import PixelConfetti from '@/components/PixelConfetti';
 import { streamPythPriceById, type PythPriceTick } from '@/lib/pyth';
+import { startOraclePolling, getOracleSymbol } from '@/lib/oracleFetchers';
 import { playWinSound, playRektSound, playCoinSound } from '@/lib/sounds';
 import { playTimerTick, playTimerUrgent } from '@/lib/timerSounds';
 import { startTensionAudio, setTensionIntensity, stopTensionAudio } from '@/lib/tensionSounds';
@@ -18,14 +19,15 @@ interface DegenPosition {
   leverage: number;
   stopLoss: number;
   takeProfit: number;
-  rarity: 'common' | 'rare' | 'legendary' | 'degen';
+  rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
 }
 
 const RARITY_STYLES: Record<string, { border: string; text: string; bg: string; label: string }> = {
   common: { border: 'border-muted-foreground/30', text: 'text-muted-foreground', bg: 'bg-muted/20', label: 'COMMON' },
+  uncommon: { border: 'border-blue-400/50', text: 'text-blue-400', bg: 'bg-blue-400/10', label: 'UNCOMMON' },
   rare: { border: 'border-neon-green/50', text: 'text-neon-green', bg: 'bg-neon-green/10', label: 'RARE' },
-  legendary: { border: 'border-neon-orange/50', text: 'text-neon-orange', bg: 'bg-neon-orange/10', label: 'LEGENDARY' },
-  degen: { border: 'border-neon-purple/50', text: 'text-neon-purple', bg: 'bg-neon-purple/10', label: '☠ DEGEN ☠' },
+  epic: { border: 'border-neon-orange/50', text: 'text-neon-orange', bg: 'bg-neon-orange/10', label: 'EPIC' },
+  legendary: { border: 'border-neon-purple/50', text: 'text-neon-purple', bg: 'bg-neon-purple/10', label: '☠ LEGENDARY ☠' },
 };
 
 interface LiveTradePanelProps {
@@ -43,6 +45,12 @@ interface LiveTradePanelProps {
   readOnly?: boolean;
   label?: string;
   gainzyMode?: boolean;
+  /** Ability overrides */
+  feedSource?: 'pyth' | 'chainlink' | 'redstone';
+  directionFlipped?: boolean;
+  blocked?: boolean; // Can't close (Pirb Rage)
+  priceFrozen?: boolean; // Price stops updating
+  frozenReason?: string | null;
 }
 
 const formatTime = (s: number) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
@@ -68,7 +76,7 @@ function fmtPriceMobile(p: number): string {
   return '$' + p.toPrecision(4);
 }
 
-function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandles, onResult, onExitEarly, playerName, walletAddress, timerSeconds, duelMode, onPnlChange, compact, readOnly, label, gainzyMode }: LiveTradePanelProps) {
+function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandles, onResult, onExitEarly, playerName, walletAddress, timerSeconds, duelMode, onPnlChange, compact, readOnly, label, gainzyMode, feedSource = 'pyth', directionFlipped = false, blocked = false, priceFrozen = false, frozenReason }: LiveTradePanelProps) {
   const [entryPrice] = useState(initialEntryPrice);
   const [currentPrice, setCurrentPrice] = useState(initialEntryPrice);
   const [pnl, setPnl] = useState(0);
@@ -111,11 +119,15 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
   }, []);
 
   const hasTimer = !!timerSeconds && timerSeconds > 0;
-  const rarityStyle = RARITY_STYLES[position.rarity];
+  const rarityStyle = RARITY_STYLES[position.rarity] || RARITY_STYLES.common;
 
-  // Pyth streaming
+  // Price streaming — switches based on feedSource prop
   useEffect(() => {
     if (result) return;
+
+    // If price is frozen, don't update
+    if (priceFrozen) return;
+
     let rafId = 0;
     let pendingPrice: number | null = null;
 
@@ -127,30 +139,52 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
       rafId = 0;
     };
 
-    const cleanup = streamPythPriceById(position.feedId, (tick) => {
-      candleRef.current.ticks.push(tick);
-      pendingPrice = tick.price;
-      if (!rafId) {
-        rafId = requestAnimationFrame(flushPrice);
+    let cleanup: () => void;
+
+    if (feedSource === 'pyth') {
+      // Default: Pyth SSE streaming
+      cleanup = streamPythPriceById(position.feedId, (tick) => {
+        candleRef.current.ticks.push(tick);
+        pendingPrice = tick.price;
+        if (!rafId) rafId = requestAnimationFrame(flushPrice);
+      });
+    } else {
+      // Alternative oracle: polling
+      const hasSymbol = getOracleSymbol(position.ticker, feedSource);
+      if (!hasSymbol) {
+        // Token not available on this oracle — will be handled by priceFrozen prop
+        cleanup = () => {};
+      } else {
+        cleanup = startOraclePolling(
+          feedSource,
+          position.ticker,
+          (price) => {
+            candleRef.current.ticks.push({ price, confidence: 0, timestamp: Date.now() / 1000 });
+            pendingPrice = price;
+            if (!rafId) rafId = requestAnimationFrame(flushPrice);
+          },
+          (_reason) => {
+            // Error handled by parent via priceFrozen prop
+          },
+          2000,
+        );
       }
-    });
+    }
 
     const candleTick = setInterval(() => {
       if (candleRef.current.ticks.length >= 2) {
         const ticks = candleRef.current.ticks;
         const nextCandle: Candle = {
           open: ticks[0].price,
-          high: Math.max(...ticks.map(t => t.price + t.confidence)),
-          low: Math.min(...ticks.map(t => t.price - t.confidence)),
+          high: Math.max(...ticks.map(t => t.price + (t.confidence || 0))),
+          low: Math.min(...ticks.map(t => t.price - (t.confidence || 0))),
           close: ticks[ticks.length - 1].price,
           time: 0,
         };
-
         setCandles(prev => {
           const lastLiveTime = [...prev].reverse().find(c => c.time >= 0)?.time ?? 0;
           return [...prev.slice(-27), { ...nextCandle, time: lastLiveTime + 2 }];
         });
-
         candleRef.current.ticks = [];
       }
     }, 1000);
@@ -163,7 +197,7 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
       clearInterval(candleTick);
       clearInterval(elapsedTimer);
     };
-  }, [position.feedId, result]);
+  }, [position.feedId, position.ticker, result, feedSource, priceFrozen]);
 
   // Countdown timer
   useEffect(() => {
@@ -203,14 +237,17 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
     return () => stopTensionAudio();
   }, []);
 
-  // PnL calculation + tension
+  // PnL calculation + tension (supports direction flip via ability)
   useEffect(() => {
     if (result) {
       stopTensionAudio();
       return;
     }
+    const effectiveDirection = directionFlipped
+      ? (position.direction === 'LONG' ? 'SHORT' : 'LONG')
+      : position.direction;
     const diff = ((currentPrice - entryPrice) / entryPrice) * 100;
-    const calculatedPnl = position.direction === 'LONG' ? diff * position.leverage : -diff * position.leverage;
+    const calculatedPnl = effectiveDirection === 'LONG' ? diff * position.leverage : -diff * position.leverage;
     setPnl(calculatedPnl);
     onPnlChange?.(calculatedPnl);
 
@@ -240,7 +277,7 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
         setTimeout(() => setShowResultAnim(true), 1500);
       }
     }
-  }, [currentPrice, entryPrice, position, result, duelMode]);
+  }, [currentPrice, entryPrice, position, result, duelMode, directionFlipped]);
 
   const saveToLeaderboard = (finalPnl: number) => {
     supabase.from('leaderboard').insert({
@@ -255,7 +292,7 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
   };
 
   const handleExit = useCallback(() => {
-    if (result || readOnly) return;
+    if (result || readOnly || blocked) return;
     playCoinSound();
     resultFiredRef.current = true;
     const finalResult = pnl >= 0 ? 'WIN' : 'REKT';
@@ -264,7 +301,12 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
     if (!readOnly) saveToLeaderboard(pnl);
     onExitEarly(pnl);
     setTimeout(() => setShowResultAnim(true), 1500);
-  }, [pnl, result, readOnly]);
+  }, [pnl, result, readOnly, blocked]);
+
+  // Effective direction for display
+  const effectiveDirection = directionFlipped
+    ? (position.direction === 'LONG' ? 'SHORT' : 'LONG')
+    : position.direction;
 
   const timerPct = hasTimer ? (timeLeft / timerSeconds!) * 100 : 0;
   const timerUrgent = hasTimer && timeLeft <= 15;
@@ -279,14 +321,22 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
             {label && <span className="text-[8px] sm:text-[9px] font-display text-muted-foreground tracking-wider uppercase">{label}</span>}
             <h2 className={`font-display ${compact ? 'text-xs sm:text-sm' : 'text-base sm:text-2xl'} text-foreground text-glow-purple truncate`}>{position.ticker}/USD</h2>
             <span className={`px-1 sm:px-1.5 py-0.5 text-[8px] sm:text-[9px] font-display tracking-wider shrink-0 ${
-              position.direction === 'LONG'
+              effectiveDirection === 'LONG'
                 ? 'bg-neon-green/10 text-neon-green border border-neon-green/30'
                 : 'bg-neon-orange/10 text-neon-orange border border-neon-orange/30'
             }`}>
-              {position.direction}
+              {effectiveDirection}
+              {directionFlipped && <span className="ml-0.5 text-[7px]">↕</span>}
             </span>
             <span className={`${compact ? 'text-[9px] sm:text-[10px]' : 'text-xs sm:text-sm'} font-display ${rarityStyle.text} shrink-0`}>{position.leverage}x</span>
             <span className={`hidden sm:inline text-[8px] font-display tracking-[0.15em] px-1.5 py-0.5 border ${rarityStyle.border} ${rarityStyle.text} ${rarityStyle.bg}`}>{rarityStyle.label}</span>
+            {feedSource !== 'pyth' && (
+              <span className={`text-[7px] font-display tracking-wider px-1 py-0.5 border ${
+                priceFrozen ? 'border-neon-orange/40 text-neon-orange bg-neon-orange/10' : 'border-muted-foreground/30 text-muted-foreground bg-muted/20'
+              }`}>
+                {priceFrozen ? '❄️ FROZEN' : feedSource === 'chainlink' ? '⛓️ CL' : '🔴 RS'}
+              </span>
+            )}
           </div>
 
           {/* PnL - always visible */}
@@ -382,12 +432,20 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
       </div>
 
       {/* Chart */}
-      <div className="glass-panel rounded-sm overflow-hidden flex-1 min-h-0 border border-border/20">
+      <div className="glass-panel rounded-sm overflow-hidden flex-1 min-h-0 border border-border/20 relative">
+        {priceFrozen && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-background/40 backdrop-blur-[1px]">
+            <div className="text-center">
+              <p className="font-display text-sm text-neon-orange tracking-wider">❄️ PRICE FROZEN</p>
+              {frozenReason && <p className="font-mono text-[9px] text-muted-foreground mt-1">{frozenReason}</p>}
+            </div>
+          </div>
+        )}
         <PriceChart
           candles={candles}
           entryPrice={entryPrice}
           positive={pnl >= 0}
-          direction={position.direction}
+          direction={effectiveDirection}
           stopLoss={duelMode ? -9999 : position.stopLoss}
           takeProfit={duelMode ? 9999 : position.takeProfit}
           leverage={position.leverage}
@@ -406,8 +464,9 @@ function LiveTradePanel({ position, entryPrice: initialEntryPrice, initialCandle
                 {getPirbTrashTalkCycled(elapsedTime, gainzyMode ? 'gainzy' : duelMode ? 'duel' : hasTimer ? 'daily' : 'solo')}
               </span>
             </div>
-            <button onClick={handleExit} className="arcade-btn arcade-btn-primary text-[8px] sm:text-[10px] py-1.5 sm:py-2 px-3 sm:px-4 shrink-0 whitespace-nowrap">
-              ⚡ CLOSE
+            <button onClick={handleExit} disabled={blocked}
+              className={`arcade-btn arcade-btn-primary text-[8px] sm:text-[10px] py-1.5 sm:py-2 px-3 sm:px-4 shrink-0 whitespace-nowrap ${blocked ? 'opacity-30 cursor-not-allowed' : ''}`}>
+              {blocked ? '🔒 BLOCKED' : '⚡ CLOSE'}
             </button>
           </div>
         )}

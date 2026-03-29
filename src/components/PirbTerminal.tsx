@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { getMascot } from '@/lib/mascots';
@@ -51,7 +51,7 @@ import imgOnfire from '@/assets/icons/onfire.png';
 
 import { getStreak, recordWin, recordLoss, getStreakMultiplier, type StreakData } from '@/lib/streaks';
 import { hasDoneDaily, markDailyDone, getDailyParams } from '@/lib/dailyChallenge';
-import { useEntropy, derivePosition, type EntropySeed } from '@/hooks/useEntropy';
+import { useEntropy, derivePosition, rerollSingleParam, rerollFullPosition, ENTROPY_CFG, type EntropyPosition } from '@/hooks/useEntropy';
 
 // Helper: icon img — NO pixelated rendering (causes blur on PNG)
 const Ico = ({ src, size = 28, className = '' }: { src: string; size?: number; className?: string }) => (
@@ -78,15 +78,16 @@ interface DegenPosition {
   leverage: number;
   stopLoss: number;
   takeProfit: number;
-  rarity: 'common' | 'rare' | 'legendary' | 'degen';
+  rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
 }
 
 // --- RARITY CONFIG ---
 const RARITY_CONFIG = [
-  { rarity: 'common' as const, weight: 40, leverageRange: [20, 50], slRange: [5, 10], rrRange: [2, 4] },
-  { rarity: 'rare' as const, weight: 30, leverageRange: [50, 100], slRange: [5, 8], rrRange: [3, 8] },
-  { rarity: 'legendary' as const, weight: 20, leverageRange: [100, 150], slRange: [4, 7], rrRange: [5, 12] },
-  { rarity: 'degen' as const, weight: 10, leverageRange: [150, 200], slRange: [3, 6], rrRange: [8, 20] },
+  { rarity: 'common' as const, weight: 30, leverageRange: [20, 55], slRange: [5, 10], rrRange: [2, 4] },
+  { rarity: 'uncommon' as const, weight: 25, leverageRange: [56, 90], slRange: [5, 8], rrRange: [3, 6] },
+  { rarity: 'rare' as const, weight: 22, leverageRange: [91, 130], slRange: [5, 8], rrRange: [3, 8] },
+  { rarity: 'epic' as const, weight: 15, leverageRange: [131, 170], slRange: [4, 7], rrRange: [5, 12] },
+  { rarity: 'legendary' as const, weight: 8, leverageRange: [171, 200], slRange: [3, 6], rrRange: [8, 20] },
 ];
 
 function pickRarity() {
@@ -105,9 +106,10 @@ function randInt(min: number, max: number) {
 
 const RARITY_STYLES: Record<string, { border: string; text: string; bg: string; label: string }> = {
   common: { border: 'border-muted-foreground/30', text: 'text-muted-foreground', bg: 'bg-muted/20', label: 'COMMON' },
+  uncommon: { border: 'border-blue-400/50', text: 'text-blue-400', bg: 'bg-blue-400/10', label: 'UNCOMMON' },
   rare: { border: 'border-neon-green/50', text: 'text-neon-green', bg: 'bg-neon-green/10', label: 'RARE' },
-  legendary: { border: 'border-neon-orange/50', text: 'text-neon-orange', bg: 'bg-neon-orange/10', label: 'LEGENDARY' },
-  degen: { border: 'border-neon-purple/50', text: 'text-neon-purple', bg: 'bg-neon-purple/10', label: '☠ DEGEN ☠' },
+  epic: { border: 'border-neon-orange/50', text: 'text-neon-orange', bg: 'bg-neon-orange/10', label: 'EPIC' },
+  legendary: { border: 'border-neon-purple/50', text: 'text-neon-purple', bg: 'bg-neon-purple/10', label: '☠ LEGENDARY ☠' },
 };
 
 function formatVolume(v: number): string {
@@ -208,63 +210,118 @@ const GlitchText = ({ children, className = '' }: { children: React.ReactNode; c
 // Particle images pool — only 3 poop variants
 const PARTICLE_IMGS = [imgPoop1, imgPoop2, imgPoop3];
 
-// ── Entropy Dot Grid (Pyth style) ─────────────────────────────────────────────
+// ── Entropy Dot Grid — canvas-based, zero DOM nodes per dot ───────────────────
+
+const DOT_PALETTE = [
+  [272, 60, 35],  // deep purple
+  [262, 50, 65],  // lavender / light purple
+  [157, 72, 45],  // bright emerald
+  [165, 55, 28],  // dark teal
+  [28,  85, 55],  // orange
+  [28,  55, 32],  // brown
+  [250, 12, 50],  // muted grey
+];
+
 function EntropyDotGrid() {
-  const colors = [
-    'hsl(265 66% 55%)',
-    'hsl(25 95% 53%)',
-    'hsl(150 95% 46%)',
-    'hsl(265 40% 35%)',
-    'hsl(200 70% 45%)',
-    'hsl(30 60% 35%)',
-  ];
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const rafRef = useRef<number>(0);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const COLS = 19;
+    const ROWS = 19;
+    const GAP = 30;         // px between dot centres — more space
+    const RADIUS = 7;       // dot radius px
+    const ROTATE_DEG = 45;  // diamond tilt
+
+    // Pre-compute dot positions — each dot gets its own random phase & speed
+    const dots: { x: number; y: number; phase: number; speed: number; colorOff: number }[] = [];
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const dr = r - (ROWS - 1) / 2;
+        const dc = c - (COLS - 1) / 2;
+        if (Math.abs(dr) + Math.abs(dc) > (ROWS - 1) / 2 + 0.5) continue;
+        dots.push({
+          x: dc * GAP,
+          y: dr * GAP,
+          phase: Math.random(),                    // random start phase
+          speed: 0.08 + Math.random() * 0.1,       // each dot: own slow speed (0.08–0.18 cycles/s)
+          colorOff: Math.random() * DOT_PALETTE.length, // random palette offset
+        });
+      }
+    }
+
+    const startTime = performance.now();
+
+    function draw(now: number) {
+      const t = (now - startTime) / 1000;
+
+      const W = canvas!.width;
+      const H = canvas!.height;
+
+      ctx!.clearRect(0, 0, W, H);
+      ctx!.save();
+      ctx!.translate(W / 2, H / 2);
+      const angle = (ROTATE_DEG * Math.PI) / 180 + t * 0.08; // slower rotation
+      ctx!.rotate(angle);
+
+      for (const dot of dots) {
+        // Each dot independently cycles through palette at its own speed
+        const raw = (t * dot.speed + dot.phase) % 1;
+        const pIdx = (raw * DOT_PALETTE.length + dot.colorOff) % DOT_PALETTE.length;
+        const lo = Math.floor(pIdx) % DOT_PALETTE.length;
+        const hi = (lo + 1) % DOT_PALETTE.length;
+        const frac = pIdx - Math.floor(pIdx);
+        const [h1, s1, l1] = DOT_PALETTE[lo];
+        const [h2, s2, l2] = DOT_PALETTE[hi];
+        const h = h1 + (h2 - h1) * frac;
+        const s = s1 + (s2 - s1) * frac;
+        const l = l1 + (l2 - l1) * frac;
+
+        // Gentle pulse
+        const scale = 0.88 + 0.12 * Math.sin(t * 0.8 + dot.phase * Math.PI * 2);
+        // Subtle opacity variation per dot
+        const alpha = 0.55 + 0.25 * Math.sin(t * 0.5 + dot.colorOff);
+
+        ctx!.beginPath();
+        ctx!.arc(dot.x, dot.y, RADIUS * scale, 0, Math.PI * 2);
+        ctx!.fillStyle = `hsla(${h}, ${s}%, ${l}%, ${alpha})`;
+        ctx!.fill();
+      }
+
+      ctx!.restore();
+      rafRef.current = requestAnimationFrame(draw);
+    }
+
+    // Resize canvas to fill window
+    function resize() {
+      canvas!.width = window.innerWidth;
+      canvas!.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+    rafRef.current = requestAnimationFrame(draw);
+
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+      window.removeEventListener('resize', resize);
+    };
+  }, []);
+
   return (
-    <motion.div
-      className="fixed inset-0 pointer-events-none z-0 flex items-center justify-center overflow-hidden"
+    <motion.canvas
+      ref={canvasRef}
+      className="fixed inset-0 pointer-events-none z-0"
+      style={{ willChange: 'transform' }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 1.5 }}
-    >
-      <motion.div
-        animate={{ rotate: [0, 360] }}
-        transition={{ duration: 90, repeat: Infinity, ease: 'linear' }}
-        style={{ opacity: 0.45, position: 'relative', width: 600, height: 600 }}
-      >
-        {Array.from({ length: 14 }, (_, row) =>
-          Array.from({ length: 14 }, (_, col) => {
-            const color = colors[(row * 3 + col * 2) % colors.length];
-            return (
-              <motion.div
-                key={`${row}-${col}`}
-                className="absolute rounded-full"
-                style={{
-                  width: 14, height: 14,
-                  backgroundColor: color,
-                  left: `calc(50% + ${(col - 7) * 42}px)`,
-                  top: `calc(50% + ${(row - 7) * 42}px)`,
-                  boxShadow: `0 0 8px ${color}`,
-                }}
-                animate={{ opacity: [0.5, 1, 0.5], scale: [0.85, 1.15, 0.85] }}
-                transition={{
-                  duration: 2.5 + (row + col) * 0.1,
-                  repeat: Infinity,
-                  delay: row * 0.08 + col * 0.06,
-                  ease: 'easeInOut',
-                }}
-              />
-            );
-          })
-        )}
-      </motion.div>
-      {/* Центральний радіальний glow */}
-      <motion.div
-        className="absolute inset-0"
-        animate={{ opacity: [0.06, 0.14, 0.06] }}
-        transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-        style={{ background: 'radial-gradient(ellipse at center, hsl(265 66% 55% / 0.2) 0%, transparent 65%)' }}
-      />
-    </motion.div>
+      transition={{ duration: 0.8 }}
+    />
   );
 }
 
@@ -287,14 +344,20 @@ export default function PirbTerminal() {
   const [entropyMode, setEntropyMode] = useState<'classic' | 'entropy'>('classic');
   const entropy = useEntropy();
   const [eSeed, setESeed] = useState<`0x${string}` | null>(null);
-  const [eNonce, setENonce] = useState(0);
-  const [ePreRerolls, setEPreRerolls] = useState(0);
-  const [ePostRerolls, setEPostRerolls] = useState(0);
-  const [ePreview, setEPreview] = useState<EntropySeed | null>(null);
+  const [ePreview, setEPreview] = useState<EntropyPosition | null>(null);
   const [lockedFeed, setLockedFeed] = useState<{ id: string; ticker: string; pair: string } | null>(null);
   const [eGainzy, setEGainzy] = useState(false);
+  /** Are we in post-game reroll phase? (true = full rerolls, false = single-param rerolls) */
+  const [ePostPhase, setEPostPhase] = useState(false);
+  /** How many post-game full rerolls have been used (max 3) */
+  const [ePostCount, setEPostCount] = useState(0);
 
   const isEntropy = entropyMode === 'entropy';
+
+  // Derived from ePreview — no separate counters needed
+  const eRerollsUsed = ePreview?.rerollsUsed ?? 0;
+  const eMaxRerolls = ePreview?.maxRerolls ?? 3;
+  const eRerollsLeft = eMaxRerolls - eRerollsUsed;
 
   const toggleMusic = () => {
     if (isBgMusicPlaying()) {
@@ -314,7 +377,7 @@ export default function PirbTerminal() {
   }, [status]);
 
   const [particles] = useState(() =>
-    Array.from({ length: 25 }, (_, i) => ({
+    Array.from({ length: 15 }, (_, i) => ({
       left: Math.random() * 100,
       delay: Math.random() * 15,
       duration: 10 + Math.random() * 15,
@@ -390,66 +453,71 @@ export default function PirbTerminal() {
     setIsDaily(false);
     setTimerSeconds(undefined);
 
-    let feed: { id: string; ticker: string; pair: string };
-    let price: number;
+    try {
+      let feed: { id: string; ticker: string; pair: string };
+      let price: number;
 
-    if (specificFeed) {
-      const livePrice = await fetchPythPriceById(specificFeed.id);
-      if (!livePrice) { setStatus('IDLE'); return; }
-      feed = specificFeed;
-      price = livePrice;
-    } else {
-      const shuffled = [...SOLO_TOKENS].sort(() => Math.random() - 0.5);
-      let found = false;
-      for (const token of shuffled) {
-        const livePrice = await fetchPythPriceById(token.feedId);
-        if (livePrice) {
-          feed = { id: token.feedId, ticker: token.ticker, pair: token.pair };
-          price = livePrice;
-          found = true;
-          break;
+      if (specificFeed) {
+        const livePrice = await fetchPythPriceById(specificFeed.id).catch(() => null);
+        if (!livePrice) { console.warn('[PirbTerminal] Price fetch failed for', specificFeed.ticker); setStatus('IDLE'); return; }
+        feed = specificFeed;
+        price = livePrice;
+      } else {
+        const shuffled = [...SOLO_TOKENS].sort(() => Math.random() - 0.5);
+        let found = false;
+        for (const token of shuffled) {
+          const livePrice = await fetchPythPriceById(token.feedId).catch(() => null);
+          if (livePrice) {
+            feed = { id: token.feedId, ticker: token.ticker, pair: token.pair };
+            price = livePrice;
+            found = true;
+            break;
+          }
+          console.warn(`Token ${token.ticker} feed failed, trying next...`);
         }
-        console.warn(`Token ${token.ticker} feed failed, trying next...`);
+        if (!found) { console.warn('[PirbTerminal] All token feeds failed'); setStatus('IDLE'); return; }
       }
-      if (!found) { setStatus('IDLE'); return; }
+
+      let rarity, direction: TradeDirection, leverage, sl, rr;
+      setIsGainzy(gainzyMode);
+
+      if (gainzyMode) {
+        rarity = RARITY_CONFIG[4]; // legendary for 200× gainzy
+        direction = Math.random() > 0.5 ? 'LONG' : 'SHORT';
+        leverage = 200;
+        sl = randInt(3, 5);
+        rr = randInt(10, 20);
+      } else {
+        const picked = pickRarity();
+        rarity = picked;
+        direction = Math.random() > 0.5 ? 'LONG' : 'SHORT';
+        leverage = randInt(picked.leverageRange[0], picked.leverageRange[1]);
+        sl = randInt(picked.slRange[0], picked.slRange[1]);
+        rr = randInt(picked.rrRange[0], picked.rrRange[1]);
+      }
+
+      const pos: DegenPosition = {
+        id: Date.now(),
+        asset: feed!.ticker,
+        ticker: feed!.ticker,
+        feedId: feed!.id,
+        direction,
+        leverage,
+        stopLoss: -sl,
+        takeProfit: sl * rr,
+        rarity: rarity.rarity,
+      };
+
+      const historyCandles = await buildHistoricalCandles(feed!.id, price!).catch(() => [] as Candle[]);
+      setActivePos(pos);
+      setEntryPrice(price!);
+      setInitialCandles(historyCandles);
+      setFinalPnl(0);
+      setStatus('PLAYING');
+    } catch (err) {
+      console.error('[PirbTerminal] generatePosition failed:', err);
+      setStatus('IDLE');
     }
-
-    let rarity, direction: TradeDirection, leverage, sl, rr;
-    setIsGainzy(gainzyMode);
-
-    if (gainzyMode) {
-      rarity = RARITY_CONFIG[3];
-      direction = Math.random() > 0.5 ? 'LONG' : 'SHORT';
-      leverage = 200;
-      sl = randInt(3, 5);
-      rr = randInt(10, 20);
-    } else {
-      const picked = pickRarity();
-      rarity = picked;
-      direction = Math.random() > 0.5 ? 'LONG' : 'SHORT';
-      leverage = randInt(picked.leverageRange[0], picked.leverageRange[1]);
-      sl = randInt(picked.slRange[0], picked.slRange[1]);
-      rr = randInt(picked.rrRange[0], picked.rrRange[1]);
-    }
-
-    const pos: DegenPosition = {
-      id: Date.now(),
-      asset: feed!.ticker,
-      ticker: feed!.ticker,
-      feedId: feed!.id,
-      direction,
-      leverage,
-      stopLoss: -sl,
-      takeProfit: sl * rr,
-      rarity: rarity.rarity,
-    };
-
-    const historyCandles = await buildHistoricalCandles(feed!.id, price!);
-    setActivePos(pos);
-    setEntryPrice(price!);
-    setInitialCandles(historyCandles);
-    setFinalPnl(0);
-    setStatus('PLAYING');
   }, []);
 
   // ── ENTROPY ─────────────────────────────────────────────────────────
@@ -463,10 +531,9 @@ export default function PirbTerminal() {
     setEGainzy(gainzy);
     setIsGainzy(gainzy);
     setESeed(null);
-    setENonce(0);
-    setEPreRerolls(0);
-    setEPostRerolls(0);
     setEPreview(null);
+    setEPostPhase(false);
+    setEPostCount(0);
     entropy.reset();
     await entropy.requestSolo();
   }, [walletAddress, connectWallet, entropy]);
@@ -477,93 +544,118 @@ export default function PirbTerminal() {
 
     const seed = entropy.seed;
     setESeed(seed);
-    setENonce(0);
 
     const lockToken = lockedFeed
       ? SOLO_TOKENS.findIndex(t => t.feedId === lockedFeed.id)
       : undefined;
     const lockLev = eGainzy ? 200 : undefined;
-    const pos = derivePosition(seed, 0, lockToken !== undefined && lockToken >= 0 ? lockToken : undefined, lockLev);
+    const pos = derivePosition(seed, 0, lockToken !== undefined && lockToken >= 0 ? lockToken : undefined, lockLev, 3, 0);
     setEPreview(pos);
+    setEPostPhase(false);
     setStatus('PREVIEW');
   }, [entropy.status, entropy.seed, status, lockedFeed, eGainzy]);
 
+  // Recover from entropy errors — don't leave user on stuck GENERATING screen
+  useEffect(() => {
+    if (entropy.status === 'error' && status === 'GENERATING') {
+      console.warn('[PirbTerminal] Entropy error, returning to IDLE:', entropy.error);
+      const t = setTimeout(() => setStatus('IDLE'), 2500);
+      return () => clearTimeout(t);
+    }
+  }, [entropy.status, entropy.error, status]);
+
   const preReroll = useCallback((paramIndex: 1 | 2 | 3 | 4 | 5) => {
-    if (!eSeed || !ePreview || ePreRerolls >= 3) return;
+    if (!eSeed || !ePreview || ePreview.rerollsUsed >= ePreview.maxRerolls) return;
     if (lockedFeed && paramIndex === 1) return;
     if (eGainzy && paramIndex === 3) return;
 
-    const newNonce = eNonce + 1;
-    setENonce(newNonce);
-    setEPreRerolls(prev => prev + 1);
-
-    const derived = derivePosition(eSeed, newNonce,
-      lockedFeed ? (SOLO_TOKENS.findIndex(t => t.feedId === lockedFeed.id)) : undefined,
-      eGainzy ? 200 : undefined,
-    );
-
-    const updated = { ...ePreview };
-    switch (paramIndex) {
-      case 1: updated.tokenIndex = derived.tokenIndex; break;
-      case 2: updated.direction = derived.direction; break;
-      case 3: updated.leverage = derived.leverage; updated.rarity = derived.rarity; break;
-      case 4: updated.stopLoss = derived.stopLoss; updated.takeProfit = derived.stopLoss * updated.rrRatio; break;
-      case 5: updated.rrRatio = derived.rrRatio; updated.takeProfit = updated.stopLoss * derived.rrRatio; break;
+    try {
+      const lockToken = lockedFeed ? SOLO_TOKENS.findIndex(t => t.feedId === lockedFeed.id) : undefined;
+      const lockLev = eGainzy ? 200 : undefined;
+      const updated = rerollSingleParam(ePreview, paramIndex, lockToken !== undefined && lockToken >= 0 ? lockToken : undefined, lockLev);
+      setEPreview(updated);
+    } catch (err) {
+      console.warn('[PirbTerminal] preReroll failed:', err);
     }
-    setEPreview(updated as EntropySeed);
-  }, [eSeed, ePreview, ePreRerolls, eNonce, lockedFeed, eGainzy]);
+  }, [eSeed, ePreview, lockedFeed, eGainzy]);
 
   const confirmPreview = useCallback(async () => {
     if (!ePreview) return;
     setStatus('GENERATING');
 
-    let token = lockedFeed
-      ? { ticker: lockedFeed.ticker, feedId: lockedFeed.id, pair: lockedFeed.pair }
-      : SOLO_TOKENS[ePreview.tokenIndex] || SOLO_TOKENS[0];
+    try {
+      let token = lockedFeed
+        ? { ticker: lockedFeed.ticker, feedId: lockedFeed.id, pair: lockedFeed.pair }
+        : SOLO_TOKENS[ePreview.tokenIndex] || SOLO_TOKENS[0];
 
-    let livePrice = await fetchPythPriceById(token.feedId);
+      let livePrice = await fetchPythPriceById(token.feedId).catch(() => null);
 
-    if (!livePrice && !lockedFeed) {
-      for (let i = 0; i < SOLO_TOKENS.length; i++) {
-        if (i === ePreview.tokenIndex) continue;
-        const fallback = SOLO_TOKENS[i];
-        const p = await fetchPythPriceById(fallback.feedId);
-        if (p) {
-          token = { ticker: fallback.ticker, feedId: fallback.feedId, pair: fallback.pair };
-          livePrice = p;
-          break;
+      if (!livePrice && !lockedFeed) {
+        for (let i = 0; i < SOLO_TOKENS.length; i++) {
+          if (i === ePreview.tokenIndex) continue;
+          const fallback = SOLO_TOKENS[i];
+          const p = await fetchPythPriceById(fallback.feedId).catch(() => null);
+          if (p) {
+            token = { ticker: fallback.ticker, feedId: fallback.feedId, pair: fallback.pair };
+            livePrice = p;
+            break;
+          }
         }
       }
+
+      if (!livePrice) {
+        console.warn('[PirbTerminal] No live price found for any token — returning to PREVIEW');
+        setStatus('PREVIEW');
+        return;
+      }
+
+      const historyCandles = await buildHistoricalCandles(token.feedId, livePrice).catch(() => [] as Candle[]);
+
+      setActivePos({
+        id: Date.now(),
+        asset: token.ticker, ticker: token.ticker, feedId: token.feedId,
+        direction: ePreview.direction, leverage: ePreview.leverage,
+        stopLoss: -ePreview.stopLoss, takeProfit: ePreview.takeProfit,
+        rarity: ePreview.rarity,
+      });
+      setEntryPrice(livePrice);
+      setInitialCandles(historyCandles);
+      setFinalPnl(0);
+      setStatus('PLAYING');
+    } catch (err) {
+      console.error('[PirbTerminal] confirmPreview failed:', err);
+      setStatus('PREVIEW');
     }
-
-    if (!livePrice) { setStatus('IDLE'); return; }
-
-    setActivePos({
-      id: Date.now(),
-      asset: token.ticker, ticker: token.ticker, feedId: token.feedId,
-      direction: ePreview.direction, leverage: ePreview.leverage,
-      stopLoss: -ePreview.stopLoss, takeProfit: ePreview.takeProfit,
-      rarity: ePreview.rarity,
-    });
-    setEntryPrice(livePrice);
-    setInitialCandles(await buildHistoricalCandles(token.feedId, livePrice));
-    setFinalPnl(0);
-    setStatus('PLAYING');
   }, [ePreview, lockedFeed]);
 
   const postReroll = useCallback(() => {
-    if (!eSeed || ePostRerolls >= 3) return;
-    const newNonce = eNonce + 1;
-    setENonce(newNonce);
-    setEPostRerolls(prev => prev + 1);
-    const lockToken = lockedFeed ? SOLO_TOKENS.findIndex(t => t.feedId === lockedFeed.id) : undefined;
-    const pos = derivePosition(eSeed, newNonce,
-      lockToken !== undefined && lockToken >= 0 ? lockToken : undefined,
-      eGainzy ? 200 : undefined,
-    );
-    setEPreview(pos);
-    setStatus('PREVIEW');
-  }, [eSeed, ePostRerolls, eNonce, lockedFeed, eGainzy]);
+    if (!eSeed || !ePreview || ePostCount >= 3) return;
+
+    try {
+      const lockToken = lockedFeed ? SOLO_TOKENS.findIndex(t => t.feedId === lockedFeed.id) : undefined;
+      const lockLev = eGainzy ? 200 : undefined;
+
+      // For post-game rerolls: create a fresh position to reroll from
+      // We need a position with rerollsUsed=0 so rerollFullPosition doesn't throw
+      const posForReroll: EntropyPosition = {
+        ...ePreview,
+        rerollsUsed: 0,
+        maxRerolls: 1, // Just need 1 reroll to succeed
+      };
+
+      const newPos = rerollFullPosition(posForReroll, lockToken !== undefined && lockToken >= 0 ? lockToken : undefined, lockLev);
+      // Reset the new position's rerolls for display in PREVIEW
+      newPos.rerollsUsed = 0;
+      newPos.maxRerolls = 3;
+
+      setEPreview(newPos);
+      setEPostCount(prev => prev + 1);
+      setEPostPhase(true);
+      setStatus('PREVIEW');
+    } catch (err) {
+      console.warn('[PirbTerminal] postReroll failed:', err);
+    }
+  }, [eSeed, ePreview, ePostCount, lockedFeed, eGainzy]);
 
   const generateDaily = useCallback(async () => {
     if (allVolatile.length === 0) return;
@@ -571,21 +663,22 @@ export default function PirbTerminal() {
     setStatus('GENERATING');
     setIsDaily(true);
 
-    const { feedIndex, params } = getDailyParams(allVolatile.length);
-    const token = allVolatile[feedIndex % allVolatile.length];
+    try {
+      const { feedIndex, params } = getDailyParams(allVolatile.length);
+      const token = allVolatile[feedIndex % allVolatile.length];
 
-    let livePrice = await fetchPythPriceById(token.feed_id);
-    let usedToken = token;
+      let livePrice = await fetchPythPriceById(token.feed_id).catch(() => null);
+      let usedToken = token;
 
-    if (!livePrice) {
-      for (let i = 1; i < allVolatile.length; i++) {
-        usedToken = allVolatile[(feedIndex + i) % allVolatile.length];
-        livePrice = await fetchPythPriceById(usedToken.feed_id);
-        if (livePrice) break;
+      if (!livePrice) {
+        for (let i = 1; i < allVolatile.length; i++) {
+          usedToken = allVolatile[(feedIndex + i) % allVolatile.length];
+          livePrice = await fetchPythPriceById(usedToken.feed_id).catch(() => null);
+          if (livePrice) break;
+        }
       }
-    }
 
-    if (!livePrice) { setStatus('IDLE'); return; }
+      if (!livePrice) { console.warn('[PirbTerminal] Daily: no price found'); setStatus('IDLE'); return; }
 
     const pos: DegenPosition = {
       id: Date.now(),
@@ -599,13 +692,17 @@ export default function PirbTerminal() {
       rarity: params.rarity,
     };
 
-    const historyCandles = await buildHistoricalCandles(usedToken.feed_id, livePrice);
+    const historyCandles = await buildHistoricalCandles(usedToken.feed_id, livePrice).catch(() => [] as Candle[]);
     setActivePos(pos);
     setEntryPrice(livePrice);
     setInitialCandles(historyCandles);
     setTimerSeconds(params.timerSeconds);
     setFinalPnl(0);
     setStatus('PLAYING');
+    } catch (err) {
+      console.error('[PirbTerminal] generateDaily failed:', err);
+      setStatus('IDLE');
+    }
   }, [allVolatile]);
 
   const handleTradeResult = useCallback((result: 'WIN' | 'REKT', pnl: number) => {
@@ -635,18 +732,26 @@ export default function PirbTerminal() {
     setFinalPnl(0);
     setIsDaily(false);
     setTimerSeconds(undefined);
-    setESeed(null); setENonce(0); setEPreRerolls(0); setEPostRerolls(0);
-    setEPreview(null); setLockedFeed(null); setEGainzy(false);
+    setESeed(null);
+    setEPreview(null); setLockedFeed(null); setEGainzy(false); setEPostPhase(false); setEPostCount(0);
     entropy.reset();
   };
 
-  const rarityStyle = activePos ? RARITY_STYLES[activePos.rarity] : RARITY_STYLES.common;
+  const rarityStyle = activePos ? (RARITY_STYLES[activePos.rarity] || RARITY_STYLES.common) : RARITY_STYLES.common;
 
   return (
     <div className="h-screen bg-background grid-bg scanlines crt-vignette relative overflow-hidden flex flex-col">
       {/* Falling poop particles on IDLE */}
       {status === 'IDLE' && (
-        <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
+        <div
+          className="fixed inset-0 pointer-events-none z-0 overflow-hidden"
+          aria-hidden="true"
+          style={{
+            opacity: isEntropy ? 0 : 1,
+            transition: 'opacity 0.5s ease',
+            visibility: isEntropy ? 'hidden' as const : 'visible' as const,
+          }}
+        >
           {particles.map((p, i) => (
             <div key={i} className="absolute animate-star-fall" style={{
               left: `${p.left}%`, top: '-30px',
@@ -663,7 +768,7 @@ export default function PirbTerminal() {
 
       {/* Entropy dot grid — тільки в entropy mode на IDLE */}
       <AnimatePresence>
-        {isEntropy && status === 'IDLE' && <EntropyDotGrid />}
+        {isEntropy && status === 'IDLE' && <EntropyDotGrid key="entropy-dot-grid" />}
       </AnimatePresence>
 
       {/* Flash при переключенні на entropy */}
@@ -731,7 +836,7 @@ export default function PirbTerminal() {
         </div>
       </header>
 
-      <TickerMarquee />
+
 
       {/* Main content */}
       <main className={`relative z-10 mx-auto px-3 sm:px-4 py-1 sm:py-2 flex-1 min-h-0 overflow-hidden flex flex-col w-full ${(status === 'PLAYING' || status === 'WIN' || status === 'REKT') ? 'max-w-6xl' : 'max-w-4xl'}`}>
@@ -751,13 +856,13 @@ export default function PirbTerminal() {
                   src={getMascot('idle', isGainzy)}
                   alt="Pirb the pigeon"
                   className="object-contain drop-shadow-[0_0_40px_hsl(265,66%,55%,0.4)]"
-                  style={{ width: 'clamp(100px, 16vh, 220px)', height: 'clamp(100px, 16vh, 220px)' }}
+                  style={{ width: 'clamp(140px, 22vh, 300px)', height: 'clamp(140px, 22vh, 300px)' }}
                   animate={{ y: [0, -8, 0] }}
                   transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
                 />
                 <h1
                   className="font-display tracking-wider text-neon-purple text-glow-purple mt-1"
-                  style={{ fontSize: 'clamp(16px, 4vh, 52px)' }}
+                  style={{ fontSize: 'clamp(22px, 5.5vh, 72px)' }}
                 >
                   <GlitchText>PIRBGEN</GlitchText>
                 </h1>
@@ -771,7 +876,7 @@ export default function PirbTerminal() {
 
               {/* Решта — скролиться якщо не вміщується */}
               <div
-                className="flex flex-col items-center gap-1 sm:gap-2 w-full flex-1 overflow-y-auto pb-2"
+                className="flex flex-col items-center gap-0.5 sm:gap-1.5 w-full flex-1 overflow-y-auto pb-1"
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               >
 
@@ -808,7 +913,7 @@ export default function PirbTerminal() {
                 </span>
               </motion.button>
 
-              <div className="pixel-border p-3 sm:p-4 lg:p-6 w-full max-w-md space-y-2 sm:space-y-3 bg-background/90 shrink-0">
+              <div className="pixel-border p-2 sm:p-3 lg:p-5 w-full max-w-md space-y-1.5 sm:space-y-2 bg-background/90 shrink-0">
                 {/* ── Mode Toggle: ENTROPY / CLASSIC ────────────────── */}
                 <div className="flex items-center justify-center gap-0 font-display text-[8px] sm:text-[9px] tracking-wider">
                   <button
@@ -856,7 +961,7 @@ export default function PirbTerminal() {
                 {/* GENERATE button */}
                 <button
                   onClick={() => entropyMode === 'entropy' ? startEntropy() : generatePosition()}
-                  className="arcade-btn arcade-btn-primary w-full text-xs sm:text-sm lg:text-base py-2 sm:py-3 flex items-center justify-center gap-2"
+                  className="arcade-btn arcade-btn-primary w-full text-xs sm:text-sm lg:text-base py-1.5 sm:py-2.5 flex items-center justify-center gap-2"
                 >
                   <Ico src={isEntropy ? imgGenerateEntropy : imgGenerate} size={40} />
                   GENERATE
@@ -865,7 +970,7 @@ export default function PirbTerminal() {
                 {/* GAINZY button */}
                 <button
                   onClick={() => entropyMode === 'entropy' ? startEntropy(undefined, true) : generatePosition(undefined, true)}
-                  className="arcade-btn w-full text-[9px] sm:text-[10px] py-2 sm:py-3 flex items-center justify-center gap-2"
+                  className="arcade-btn w-full text-[9px] sm:text-[10px] py-1.5 sm:py-2.5 flex items-center justify-center gap-2"
                   style={{ borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(var(--neon-orange) / 0.15)', boxShadow: 'var(--glow-orange)' }}
                 >
                   <Ico src={isEntropy ? imgGainzyEntropy : imgGainzyClassic} size={40} />
@@ -874,20 +979,20 @@ export default function PirbTerminal() {
 
                 {/* PVP DUEL */}
                 <Link
-                  to="/duel"
+                  to={isEntropy ? '/duel?mode=entropy' : '/duel'}
                   onClick={() => playCoinSound()}
-                  className="arcade-btn w-full text-[9px] sm:text-[10px] py-2 sm:py-3 text-center flex items-center justify-center gap-2"
+                  className="arcade-btn w-full text-[9px] sm:text-[10px] py-1.5 sm:py-2.5 text-center flex items-center justify-center gap-2"
                   style={{ borderColor: 'hsl(var(--neon-green))', color: 'hsl(var(--neon-green))', background: 'hsl(var(--neon-green) / 0.1)', boxShadow: 'var(--glow-green)' }}
                 >
                   <Ico src={isEntropy ? imgDuelEntropy : imgDuelClassic} size={40} />
-                  PVP DUEL (1v1)
+                  PVP DUEL (1v1) {isEntropy ? '🔗' : ''}
                 </Link>
 
                 {/* LEADERBOARD */}
                 <Link
                   to="/leaderboard"
                   onClick={() => playCoinSound()}
-                  className="arcade-btn arcade-btn-secondary w-full text-[9px] sm:text-[10px] py-2 sm:py-3 text-center flex items-center justify-center gap-2"
+                  className="arcade-btn arcade-btn-secondary w-full text-[9px] sm:text-[10px] py-1.5 sm:py-2.5 text-center flex items-center justify-center gap-2"
                   style={{ borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(25 95% 53% / 0.1)' }}
                 >
                   <Ico src={isEntropy ? imgLeaderboardEntropy : imgLeaderboardClassic} size={40} />
@@ -898,7 +1003,7 @@ export default function PirbTerminal() {
                 <Link
                   to="/benchmark"
                   onClick={() => playCoinSound()}
-                  className="arcade-btn w-full text-[9px] sm:text-[10px] py-2 sm:py-3 text-center flex items-center justify-center gap-2"
+                  className="arcade-btn w-full text-[9px] sm:text-[10px] py-1.5 sm:py-2.5 text-center flex items-center justify-center gap-2"
                   style={{ borderColor: 'hsl(var(--neon-purple))', color: 'hsl(var(--neon-purple))', background: 'hsl(var(--neon-purple) / 0.1)', boxShadow: 'var(--glow-purple)' }}
                 >
                   <Ico src={isEntropy ? imgOraclePoopEntropy : imgOraclePoop} size={40} />
@@ -910,7 +1015,7 @@ export default function PirbTerminal() {
                   <Link
                     to="/profile"
                     onClick={() => playCoinSound()}
-                    className="arcade-btn w-full text-[9px] sm:text-[10px] py-2 sm:py-3 text-center flex items-center justify-center gap-2"
+                    className="arcade-btn w-full text-[9px] sm:text-[10px] py-1.5 sm:py-2.5 text-center flex items-center justify-center gap-2"
                     style={{ borderColor: 'hsl(var(--neon-green))', color: 'hsl(var(--neon-green))', background: 'hsl(var(--neon-green) / 0.1)', boxShadow: 'var(--glow-green)' }}
                   >
                     <Ico src={isEntropy ? imgProfileEntropy : imgProfile} size={40} />
@@ -919,13 +1024,29 @@ export default function PirbTerminal() {
                 )}
               </div>
 
-              <div className="flex items-center gap-2 text-[7px] sm:text-[8px] font-display text-muted-foreground/40 shrink-0">
-                <span className="text-neon-purple/40">●</span>
-                <span>PYTH ENTROPY</span>
-                <span className="text-neon-orange/40">●</span>
-                <span>PYTH NETWORK</span>
-                <span className="text-neon-green/40">●</span>
-                <span>BASE L2</span>
+              <div className="flex items-center justify-center gap-4 sm:gap-6 shrink-0 py-1">
+                <a href="https://www.pyth.network/" target="_blank" rel="noopener noreferrer"
+                  className="opacity-40 hover:opacity-100 hover:text-neon-purple transition-all duration-200 hover:scale-110" title="Pyth Network">
+                  <svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                  </svg>
+                </a>
+                <a href="https://x.com/PythNetwork" target="_blank" rel="noopener noreferrer"
+                  className="opacity-40 hover:opacity-100 hover:text-neon-green transition-all duration-200 hover:scale-110" title="Pyth X">
+                  <svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                  </svg>
+                </a>
+                <a href="https://discord.gg/pythnetwork" target="_blank" rel="noopener noreferrer"
+                  className="opacity-40 hover:opacity-100 hover:text-neon-orange transition-all duration-200 hover:scale-110" title="Pyth Discord">
+                  <svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189z"/>
+                  </svg>
+                </a>
+                <span className="font-display text-[7px] sm:text-[8px] text-muted-foreground/30 tracking-wider">
+                  by <a href="https://x.com/StanovAndrew" target="_blank" rel="noopener noreferrer"
+                    className="text-neon-purple/50 hover:text-neon-purple transition-colors duration-200">Mersault</a>
+                </span>
               </div>
               </div> {/* кінець скролящого div */}
             </motion.div>
@@ -957,13 +1078,20 @@ export default function PirbTerminal() {
                   return <motion.div key={i} className={`w-2 sm:w-3 h-6 sm:h-8 ${barColor}`} animate={{ scaleY: [0.3, 1, 0.3] }} transition={{ duration: 0.5, repeat: Infinity, delay: i * 0.1 }} />;
                 })}
               </div>
+              {/* Cancel button — escape from stuck generating state */}
+              <button
+                onClick={() => { entropy.reset(); resetTerminal(); }}
+                className="text-[9px] text-muted-foreground/50 hover:text-neon-orange transition-colors font-mono mt-2"
+              >
+                ✕ CANCEL
+              </button>
             </motion.div>
           )}
 
           {/* PREVIEW */}
           {status === 'PREVIEW' && ePreview && (
             <motion.div key="preview" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
-              className="flex flex-col items-center justify-center gap-2 sm:gap-3 flex-1 py-2"
+              className="flex flex-col items-center justify-center gap-2 sm:gap-3 flex-1 py-2 sm:scale-150 origin-center"
               style={{ overflowY: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
               <motion.img src={getMascot('idle', isGainzy)} alt="Pirb" className="w-14 h-14 sm:w-20 sm:h-20 object-contain drop-shadow-[0_0_30px_hsl(265,66%,55%,0.4)]"
@@ -971,10 +1099,10 @@ export default function PirbTerminal() {
 
               <div className="text-center">
                 <h2 className="font-display text-sm sm:text-lg text-neon-purple text-glow-purple tracking-wider">
-                  {ePostRerolls > 0 ? `REROLL ${ePostRerolls}/3` : 'YOUR POSITION'}
+                  {ePostPhase ? `REROLL ${ePreview.rerollsUsed}/3` : 'YOUR POSITION'}
                 </h2>
                 <p className="font-display text-[7px] sm:text-[8px] text-neon-green/70 tracking-wider mt-0.5">
-                  TAP ANY PARAM TO TWEAK · {3 - ePreRerolls}/3 TWEAKS LEFT
+                  TAP ANY PARAM TO TWEAK · {eRerollsLeft}/{eMaxRerolls} TWEAKS LEFT
                 </p>
               </div>
 
@@ -987,7 +1115,7 @@ export default function PirbTerminal() {
                     { idx: 4 as const, label: 'SL', val: `-${ePreview.stopLoss}%`, icon: '🛑', locked: false },
                     { idx: 5 as const, label: 'TP', val: `+${ePreview.takeProfit}%`, icon: '🎯', locked: false },
                   ]).map(p => {
-                    const canReroll = !p.locked && ePreRerolls < 3;
+                    const canReroll = !p.locked && eRerollsLeft > 0;
                     return (
                       <motion.button key={p.idx} onClick={() => canReroll && preReroll(p.idx)}
                         whileTap={canReroll ? { scale: 0.9 } : {}}
@@ -1145,15 +1273,15 @@ export default function PirbTerminal() {
                   </motion.div>
 
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }} className="flex flex-wrap justify-center gap-2 sm:gap-3 shrink-0">
-                    {entropyMode === 'entropy' && eSeed && ePostRerolls < 3 && (
+                    {entropyMode === 'entropy' && eSeed && ePostCount < 3 && (
                       <button onClick={() => postReroll()}
                         className="arcade-btn arcade-btn-primary text-[9px] sm:text-[10px] py-2 sm:py-3 px-4 sm:px-6 flex items-center gap-2"
                         style={isGainzy ? { borderColor: 'hsl(var(--neon-orange))', color: 'hsl(var(--neon-orange))', background: 'hsl(var(--neon-orange) / 0.15)', boxShadow: 'var(--glow-orange)' } : {}}>
                         <Ico src={imgGenerateEntropy} size={32} />
-                        REROLL ({3 - ePostRerolls}/3)
+                        REROLL ({3 - ePostCount}/3)
                       </button>
                     )}
-                    {entropyMode === 'entropy' && eSeed && ePostRerolls >= 3 && (
+                    {entropyMode === 'entropy' && eSeed && ePostCount >= 3 && (
                       <button onClick={() => startEntropy(lockedFeed || undefined, eGainzy)}
                         className="arcade-btn arcade-btn-primary text-[9px] sm:text-[10px] py-2 sm:py-3 px-4 sm:px-6 flex items-center gap-2">
                         <Ico src={imgGenerateEntropy} size={32} />
@@ -1183,7 +1311,7 @@ export default function PirbTerminal() {
         </div>
       </main>
 
-      <footer className="relative z-10 border-t-2 border-neon-green/15 bg-background/90 py-1 sm:py-2 px-3 sm:px-4 shrink-0">
+      <footer className="relative z-10 border-t-2 border-neon-purple/30 bg-background/90 py-1 sm:py-1.5 px-3 sm:px-4 shrink-0">
         <div className="max-w-6xl mx-auto flex items-center justify-between text-[7px] sm:text-[8px] font-display text-muted-foreground/40 tracking-wider">
           <span className="text-neon-purple/40">PIRBGEN v0.1</span>
           <span className="text-neon-green/40 animate-pulse-neon">● LIVE</span>

@@ -15,6 +15,8 @@ import {
   randFromDerived,
   mapContractRarity,
   calcRarityFromLeverage,
+  type EntropyPosition,
+  type Rarity,
 } from './useEntropy';
 
 // ── Duel-specific ABI entries ───────────────────────────────────────────────
@@ -95,7 +97,6 @@ const DUEL_ABI = [
     inputs: [],
     outputs: [{ name: '', type: 'uint256' }],
   },
-  // Events for polling duel state
   {
     name: 'DuelCreated',
     type: 'event',
@@ -127,19 +128,10 @@ const DUEL_ABI = [
   },
 ] as const;
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const DUEL_ABI_M = DUEL_ABI as any;
+
 // ── Types ───────────────────────────────────────────────────────────────────
-export interface DuelPlayerPosition {
-  address: string;
-  seed: Hex; // We derive a local seed from txHash + player address
-  nonce: number;
-  tokenIndex: number;
-  direction: 'LONG' | 'SHORT';
-  leverage: number;
-  rarity: 'common' | 'rare' | 'legendary' | 'degen';
-  rerollsUsed: number;
-  maxRerolls: number;
-  ready: boolean;
-}
 
 export type DuelEntropyStatus =
   | 'idle'
@@ -155,8 +147,8 @@ export type DuelEntropyStatus =
 export interface UseDuelEntropyReturn {
   status: DuelEntropyStatus;
   duelId: bigint | null;
-  player1: DuelPlayerPosition | null;
-  player2: DuelPlayerPosition | null;
+  player1: EntropyPosition | null;
+  player2: EntropyPosition | null;
   fee: bigint | undefined;
   feeFormatted: string;
   isPlayer1: boolean;
@@ -164,47 +156,130 @@ export interface UseDuelEntropyReturn {
   createDuel: (fullRandom: boolean, chosenDirection?: 0 | 1) => Promise<void>;
   /** P2 joins an existing duel. */
   joinDuel: (duelId: bigint, chosenDirection?: 0 | 1) => Promise<void>;
-  /** FREE local reroll for current player. paramIndex: 1=token 2=leverage 3=direction(fullRandom only) */
-  rerollDuel: (paramIndex: 1 | 2 | 3) => DuelPlayerPosition | null;
+  /** Reroll a SINGLE parameter for the current player. */
+  rerollSingle: (paramIndex: 1 | 2 | 3 | 4 | 5) => EntropyPosition | null;
+  /** Reroll ALL parameters (full regeneration) for the current player. */
+  rerollAll: () => EntropyPosition | null;
   reset: () => void;
   error: string | null;
   isCorrectChain: boolean;
+  isFullRandom: boolean;
 }
 
 // ── Helper: build local seed for duel player ────────────────────────────────
-// Since duel contract doesn't expose per-player seed easily,
-// we derive a deterministic seed from txHash + playerAddress
+// The duel contract provides seed per-player via Entropy callback.
+// We derive a deterministic local seed from txHash + playerAddress for rerolls.
 function buildDuelSeed(txHash: Hex, playerAddr: string): Hex {
   return keccak256(encodePacked(['bytes32', 'address'], [txHash, playerAddr as `0x${string}`]));
 }
 
-// ── Helper: apply duel reroll locally ───────────────────────────────────────
-export function rerollDuelParamLocally(
-  dp: DuelPlayerPosition,
-  paramIndex: 1 | 2 | 3,
-  isFullRandom: boolean,
-): DuelPlayerPosition {
-  if (dp.rerollsUsed >= dp.maxRerolls) throw new Error('No rerolls left');
-  if (paramIndex === 3 && !isFullRandom) throw new Error('Direction reroll only in FULL_RANDOM');
+/**
+ * Build a full EntropyPosition from on-chain duel data + derived SL/TP.
+ * Contract gives us: tokenIndex, direction, leverage, rarity.
+ * We derive SL, rrRatio, takeProfit from the seed locally.
+ */
+function buildDuelPosition(
+  seed: Hex,
+  nonce: number,
+  tokenIndex: number,
+  direction: 'LONG' | 'SHORT',
+  leverage: number,
+  rarity: Rarity,
+  rerollsUsed: number = 0,
+): EntropyPosition {
+  // Derive SL and rrRatio from the seed — same logic as solo
+  const d = deriveSeed(seed, nonce);
+  const sl = randFromDerived(d, 'sl', ENTROPY_CFG.slMin, ENTROPY_CFG.slMax);
+  const rr = randFromDerived(d, 'rr', ENTROPY_CFG.rrMin, ENTROPY_CFG.rrMax);
 
-  const newNonce = dp.nonce + 1;
-  const derived = deriveSeed(dp.seed, newNonce);
-  const updated = { ...dp, nonce: newNonce, rerollsUsed: dp.rerollsUsed + 1 };
+  return {
+    seed,
+    nonce,
+    tokenIndex,
+    direction,
+    leverage,
+    stopLoss: sl,
+    rrRatio: rr,
+    takeProfit: sl * rr,
+    rarity,
+    rerollsUsed,
+    maxRerolls: ENTROPY_CFG.maxRerollsDuel,
+  };
+}
+
+/**
+ * Reroll a single duel parameter locally.
+ * paramIndex: 1=token, 2=direction, 3=leverage, 4=stopLoss, 5=rrRatio
+ * For PLAYER_CHOICE mode, direction (2) is locked.
+ */
+function rerollDuelSingle(
+  pos: EntropyPosition,
+  paramIndex: 1 | 2 | 3 | 4 | 5,
+  isFullRandom: boolean,
+): EntropyPosition {
+  if (pos.rerollsUsed >= pos.maxRerolls) throw new Error('No rerolls left');
+  if (paramIndex === 2 && !isFullRandom) throw new Error('Direction locked in PLAYER_CHOICE mode');
+
+  const newNonce = pos.nonce + 1;
+  const derived = deriveSeed(pos.seed, newNonce);
+  const updated: EntropyPosition = {
+    ...pos,
+    nonce: newNonce,
+    rerollsUsed: pos.rerollsUsed + 1,
+  };
 
   switch (paramIndex) {
-    case 1: // token
+    case 1:
       updated.tokenIndex = randFromDerived(derived, 'r', 0, ENTROPY_CFG.tokenCount - 1);
       break;
-    case 2: // leverage
+    case 2:
+      updated.direction = randFromDerived(derived, 'r', 0, 1) === 0 ? 'LONG' : 'SHORT';
+      break;
+    case 3:
       updated.leverage = randFromDerived(derived, 'r', ENTROPY_CFG.leverageMin, ENTROPY_CFG.leverageMax);
       updated.rarity = calcRarityFromLeverage(updated.leverage);
       break;
-    case 3: // direction (FULL_RANDOM only)
-      updated.direction = randFromDerived(derived, 'r', 0, 1) === 0 ? 'LONG' : 'SHORT';
+    case 4:
+      updated.stopLoss = randFromDerived(derived, 'r', ENTROPY_CFG.slMin, ENTROPY_CFG.slMax);
+      updated.takeProfit = updated.stopLoss * updated.rrRatio;
+      break;
+    case 5:
+      updated.rrRatio = randFromDerived(derived, 'r', ENTROPY_CFG.rrMin, ENTROPY_CFG.rrMax);
+      updated.takeProfit = updated.stopLoss * updated.rrRatio;
       break;
   }
 
   return updated;
+}
+
+/**
+ * Reroll ALL parameters at once (full regeneration).
+ */
+function rerollDuelFull(pos: EntropyPosition): EntropyPosition {
+  if (pos.rerollsUsed >= pos.maxRerolls) throw new Error('No rerolls left');
+
+  const newNonce = pos.nonce + 1;
+  const d = deriveSeed(pos.seed, newNonce);
+
+  const tokenIndex = randFromDerived(d, 'token', 0, ENTROPY_CFG.tokenCount - 1);
+  const dir = randFromDerived(d, 'dir', 0, 1);
+  const leverage = randFromDerived(d, 'lev', ENTROPY_CFG.leverageMin, ENTROPY_CFG.leverageMax);
+  const sl = randFromDerived(d, 'sl', ENTROPY_CFG.slMin, ENTROPY_CFG.slMax);
+  const rr = randFromDerived(d, 'rr', ENTROPY_CFG.rrMin, ENTROPY_CFG.rrMax);
+
+  return {
+    seed: pos.seed,
+    nonce: newNonce,
+    tokenIndex,
+    direction: dir === 0 ? 'LONG' : 'SHORT',
+    leverage,
+    stopLoss: sl,
+    rrRatio: rr,
+    takeProfit: sl * rr,
+    rarity: calcRarityFromLeverage(leverage),
+    rerollsUsed: pos.rerollsUsed + 1,
+    maxRerolls: pos.maxRerolls,
+  };
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -217,8 +292,8 @@ export function useDuelEntropy(): UseDuelEntropyReturn {
 
   const [status, setStatus] = useState<DuelEntropyStatus>('idle');
   const [duelId, setDuelId] = useState<bigint | null>(null);
-  const [player1, setPlayer1] = useState<DuelPlayerPosition | null>(null);
-  const [player2, setPlayer2] = useState<DuelPlayerPosition | null>(null);
+  const [player1, setPlayer1] = useState<EntropyPosition | null>(null);
+  const [player2, setPlayer2] = useState<EntropyPosition | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [txHash, setTxHash] = useState<Hex | undefined>(undefined);
   const [isP1, setIsP1] = useState(true);
@@ -239,7 +314,7 @@ export function useDuelEntropy(): UseDuelEntropyReturn {
   // ── Fee ─────────────────────────────────────────────────────────────────
   const { data: feeData } = useReadContract({
     address: PIRB_ENTROPY_ADDRESS,
-    abi: DUEL_ABI,
+    abi: DUEL_ABI_M,
     functionName: 'getEntropyFee',
     chainId: base.id,
   });
@@ -255,7 +330,6 @@ export function useDuelEntropy(): UseDuelEntropyReturn {
     if (!isConfirmed || !receipt) return;
 
     if (status === 'creating') {
-      // Try to extract duelId from nextDuelId - 1
       setStatus('waiting_create');
     } else if (status === 'joining') {
       setStatus('waiting_join');
@@ -268,31 +342,26 @@ export function useDuelEntropy(): UseDuelEntropyReturn {
     if (!publicClient || !address || duelId === null) return;
 
     let attempts = 0;
+    const ZERO_ADDR = '0x0000000000000000000000000000000000000000';
 
     const poll = async () => {
       attempts++;
       if (!mountedRef.current) return;
 
       try {
-        const [p1Data, p2Data, infoData] = await Promise.all([
+        const [p1Data, p2Data] = await Promise.all([
           publicClient.readContract({
             address: PIRB_ENTROPY_ADDRESS,
-            abi: DUEL_ABI,
+            abi: DUEL_ABI_M,
             functionName: 'getDuelPlayer1',
             args: [duelId],
-          }) as Promise<any[]>,
+          }) as any,
           publicClient.readContract({
             address: PIRB_ENTROPY_ADDRESS,
-            abi: DUEL_ABI,
+            abi: DUEL_ABI_M,
             functionName: 'getDuelPlayer2',
             args: [duelId],
-          }) as Promise<any[]>,
-          publicClient.readContract({
-            address: PIRB_ENTROPY_ADDRESS,
-            abi: DUEL_ABI,
-            functionName: 'getDuelInfo',
-            args: [duelId],
-          }) as Promise<any[]>,
+          }) as any,
         ]);
 
         // getDuelPlayer: [addr, tokenIndex, direction, leverage, rarity, rerollsUsed, ready]
@@ -301,24 +370,18 @@ export function useDuelEntropy(): UseDuelEntropyReturn {
         const p1Leverage = Number(p1Data[3]);
         const p2Leverage = Number(p2Data[3]);
 
-        // P1 is ready once their leverage > 0 (contract sets params on callback)
         const p1HasData = p1Leverage > 0;
-        const p2HasData = p2Leverage > 0 && p2Addr !== '0x0000000000000000000000000000000000000000';
+        const p2HasData = p2Leverage > 0 && p2Addr !== ZERO_ADDR;
 
         if (status === 'waiting_create' && p1HasData) {
           const seed = txHash ? buildDuelSeed(txHash, p1Addr) : ('0x' + '00'.repeat(32)) as Hex;
-          setPlayer1({
-            address: p1Addr,
-            seed,
-            nonce: 0,
-            tokenIndex: Math.min(Number(p1Data[1]), ENTROPY_CFG.tokenCount - 1),
-            direction: Number(p1Data[2]) === 0 ? 'LONG' : 'SHORT',
-            leverage: p1Leverage,
-            rarity: mapContractRarity(Number(p1Data[4])),
-            rerollsUsed: 0,
-            maxRerolls: ENTROPY_CFG.maxRerollsDuel,
-            ready: false,
-          });
+          setPlayer1(buildDuelPosition(
+            seed, 0,
+            Math.min(Number(p1Data[1]), ENTROPY_CFG.tokenCount - 1),
+            Number(p1Data[2]) === 0 ? 'LONG' : 'SHORT',
+            p1Leverage,
+            mapContractRarity(Number(p1Data[4])),
+          ));
           if (pollRef.current) clearInterval(pollRef.current);
           setStatus('lobby');
           return;
@@ -327,31 +390,23 @@ export function useDuelEntropy(): UseDuelEntropyReturn {
         if (status === 'waiting_join' && p2HasData) {
           const seed = txHash ? buildDuelSeed(txHash, p2Addr) : ('0x' + '00'.repeat(32)) as Hex;
           // Also refresh P1 data
-          const p1Seed = player1?.seed || buildDuelSeed(txHash || ('0x' + '00'.repeat(32)) as Hex, p1Addr);
-          setPlayer1(prev => prev ? { ...prev } : {
-            address: p1Addr,
-            seed: p1Seed,
-            nonce: 0,
-            tokenIndex: Math.min(Number(p1Data[1]), ENTROPY_CFG.tokenCount - 1),
-            direction: Number(p1Data[2]) === 0 ? 'LONG' : 'SHORT',
-            leverage: p1Leverage,
-            rarity: mapContractRarity(Number(p1Data[4])),
-            rerollsUsed: 0,
-            maxRerolls: ENTROPY_CFG.maxRerollsDuel,
-            ready: false,
-          });
-          setPlayer2({
-            address: p2Addr,
-            seed,
-            nonce: 0,
-            tokenIndex: Math.min(Number(p2Data[1]), ENTROPY_CFG.tokenCount - 1),
-            direction: Number(p2Data[2]) === 0 ? 'LONG' : 'SHORT',
-            leverage: p2Leverage,
-            rarity: mapContractRarity(Number(p2Data[4])),
-            rerollsUsed: 0,
-            maxRerolls: ENTROPY_CFG.maxRerollsDuel,
-            ready: false,
-          });
+          if (!player1) {
+            const p1Seed = buildDuelSeed(txHash || ('0x' + '00'.repeat(32)) as Hex, p1Addr);
+            setPlayer1(buildDuelPosition(
+              p1Seed, 0,
+              Math.min(Number(p1Data[1]), ENTROPY_CFG.tokenCount - 1),
+              Number(p1Data[2]) === 0 ? 'LONG' : 'SHORT',
+              p1Leverage,
+              mapContractRarity(Number(p1Data[4])),
+            ));
+          }
+          setPlayer2(buildDuelPosition(
+            seed, 0,
+            Math.min(Number(p2Data[1]), ENTROPY_CFG.tokenCount - 1),
+            Number(p2Data[2]) === 0 ? 'LONG' : 'SHORT',
+            p2Leverage,
+            mapContractRarity(Number(p2Data[4])),
+          ));
           if (pollRef.current) clearInterval(pollRef.current);
           setStatus('rerolling');
           return;
@@ -360,18 +415,13 @@ export function useDuelEntropy(): UseDuelEntropyReturn {
         // In lobby, also poll for P2 joining
         if (status === 'lobby' && p2HasData) {
           const seed = buildDuelSeed(txHash || ('0x' + '00'.repeat(32)) as Hex, p2Addr);
-          setPlayer2({
-            address: p2Addr,
-            seed,
-            nonce: 0,
-            tokenIndex: Math.min(Number(p2Data[1]), ENTROPY_CFG.tokenCount - 1),
-            direction: Number(p2Data[2]) === 0 ? 'LONG' : 'SHORT',
-            leverage: p2Leverage,
-            rarity: mapContractRarity(Number(p2Data[4])),
-            rerollsUsed: 0,
-            maxRerolls: ENTROPY_CFG.maxRerollsDuel,
-            ready: false,
-          });
+          setPlayer2(buildDuelPosition(
+            seed, 0,
+            Math.min(Number(p2Data[1]), ENTROPY_CFG.tokenCount - 1),
+            Number(p2Data[2]) === 0 ? 'LONG' : 'SHORT',
+            p2Leverage,
+            mapContractRarity(Number(p2Data[4])),
+          ));
           if (pollRef.current) clearInterval(pollRef.current);
           setStatus('rerolling');
           return;
@@ -406,17 +456,16 @@ export function useDuelEntropy(): UseDuelEntropyReturn {
       setPlayer1(null);
       setPlayer2(null);
 
-      // First read nextDuelId to know what ID we'll get
       const nextId = await publicClient!.readContract({
         address: PIRB_ENTROPY_ADDRESS,
-        abi: DUEL_ABI,
+        abi: DUEL_ABI_M,
         functionName: 'nextDuelId',
       }) as bigint;
       setDuelId(nextId);
 
       const hash = await writeContractAsync({
         address: PIRB_ENTROPY_ADDRESS,
-        abi: DUEL_ABI,
+        abi: DUEL_ABI_M,
         functionName: 'createDuel',
         args: [fullRandom, chosenDirection],
         value: fee,
@@ -444,7 +493,7 @@ export function useDuelEntropy(): UseDuelEntropyReturn {
 
       const hash = await writeContractAsync({
         address: PIRB_ENTROPY_ADDRESS,
-        abi: DUEL_ABI,
+        abi: DUEL_ABI_M,
         functionName: 'joinDuel',
         args: [id, chosenDirection],
         value: fee,
@@ -458,21 +507,35 @@ export function useDuelEntropy(): UseDuelEntropyReturn {
     }
   }, [address, isCorrectChain, fee, writeContractAsync]);
 
-  // ── Local reroll for current player ─────────────────────────────────────
-  const rerollDuel = useCallback((paramIndex: 1 | 2 | 3): DuelPlayerPosition | null => {
-    const isMeP1 = isP1;
-    const myPos = isMeP1 ? player1 : player2;
+  // ── Reroll SINGLE param for current player ─────────────────────────────
+  const rerollSingle = useCallback((paramIndex: 1 | 2 | 3 | 4 | 5): EntropyPosition | null => {
+    const myPos = isP1 ? player1 : player2;
     if (!myPos || myPos.rerollsUsed >= myPos.maxRerolls) return null;
 
     try {
-      const updated = rerollDuelParamLocally(myPos, paramIndex, isFullRandom);
-      if (isMeP1) setPlayer1(updated);
+      const updated = rerollDuelSingle(myPos, paramIndex, isFullRandom);
+      if (isP1) setPlayer1(updated);
       else setPlayer2(updated);
       return updated;
     } catch {
       return null;
     }
   }, [isP1, player1, player2, isFullRandom]);
+
+  // ── Reroll ALL params for current player ───────────────────────────────
+  const rerollAll = useCallback((): EntropyPosition | null => {
+    const myPos = isP1 ? player1 : player2;
+    if (!myPos || myPos.rerollsUsed >= myPos.maxRerolls) return null;
+
+    try {
+      const updated = rerollDuelFull(myPos);
+      if (isP1) setPlayer1(updated);
+      else setPlayer2(updated);
+      return updated;
+    } catch {
+      return null;
+    }
+  }, [isP1, player1, player2]);
 
   // ── Reset ───────────────────────────────────────────────────────────────
   const reset = useCallback(() => {
@@ -495,9 +558,11 @@ export function useDuelEntropy(): UseDuelEntropyReturn {
     isPlayer1: isP1,
     createDuel,
     joinDuel,
-    rerollDuel,
+    rerollSingle,
+    rerollAll,
     reset,
     error,
     isCorrectChain,
+    isFullRandom,
   };
 }
