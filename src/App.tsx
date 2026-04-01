@@ -13,6 +13,7 @@ import Profile from "./pages/Profile";
 import Duel from "./pages/Duel";
 import OracleBenchmark from "./pages/OracleBenchmark";
 import NotFound from "./pages/NotFound";
+import Guide from '@/pages/Guide';
 
 const queryClient = new QueryClient();
 
@@ -39,6 +40,7 @@ const App = () => (
                 <Route path="/duel" element={<Duel />} />
                 <Route path="/benchmark" element={<OracleBenchmark />} />
                 <Route path="*" element={<NotFound />} />
+                <Route path="/guide" element={<Guide />} />
               </Routes>
             </BrowserRouter>
           </WalletProvider>

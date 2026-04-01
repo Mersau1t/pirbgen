@@ -82,6 +82,9 @@ interface DegenPosition {
 }
 
 // --- RARITY CONFIG ---
+// ── Dev toggle: set to false to hide the floating PYTHOIL barrel ─────
+const SHOW_BARREL = false;
+
 const RARITY_CONFIG = [
   { rarity: 'common' as const, weight: 30, leverageRange: [20, 55], slRange: [5, 10], rrRange: [2, 4] },
   { rarity: 'uncommon' as const, weight: 25, leverageRange: [56, 90], slRange: [5, 8], rrRange: [3, 6] },
@@ -807,6 +810,9 @@ export default function PirbTerminal() {
             <button onClick={toggleMusic} className="text-base sm:text-lg opacity-70 hover:opacity-100 transition-opacity" title={musicOn ? 'Mute music' : 'Play music'}>
               {musicOn ? '🔊' : '🔇'}
             </button>
+            <Link to="/guide" className="text-base sm:text-lg opacity-70 hover:opacity-100 transition-opacity" title="How to play">
+              ❓
+            </Link>
             <StreakBadge streak={streak} />
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
@@ -880,13 +886,14 @@ export default function PirbTerminal() {
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               >
 
-              {/* Floating PYTHOIL barrel */}
+              {/* Floating PYTHOIL barrel — clickable in open areas, behind menu/buttons */}
+              {SHOW_BARREL && (
               <motion.button
                 onClick={() => {
                   const pf = { id: '0x67784f72e95ac01337edb7d7bd5bbd1c03669101b7068a620df228ed4e52ef14', ticker: 'PYTHOIL', pair: 'PYTHOIL/USD' };
                   entropyMode === 'entropy' ? startEntropy(pf) : generatePosition(pf);
                 }}
-                className="fixed z-[1] cursor-pointer group"
+                className="fixed z-[1] cursor-pointer"
                 initial={{ left: '8%', top: '35%' }}
                 animate={{
                   left:    ['8%',  '25%', '68%', '80%', '55%', '12%', '72%', '35%', '18%', '8%'],
@@ -902,18 +909,16 @@ export default function PirbTerminal() {
                 <img
                   src={pythoilBarrel}
                   alt="PYTHOIL Barrel"
-                  className="w-12 h-10 sm:w-16 sm:h-12 lg:w-20 lg:h-14 object-contain group-hover:opacity-100 transition-opacity duration-500"
+                  className="w-12 h-10 sm:w-16 sm:h-12 lg:w-20 lg:h-14 object-contain"
                   style={{
                     filter: 'drop-shadow(0 0 8px hsl(265 66% 55% / 0.4)) drop-shadow(0 0 16px hsl(265 66% 55% / 0.2))',
                   }}
                   draggable={false}
                 />
-                <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 font-display text-[6px] sm:text-[7px] text-neon-purple/0 group-hover:text-neon-purple group-hover:text-glow-purple tracking-wider whitespace-nowrap transition-colors duration-300">
-                  PYTHOIL 24/7
-                </span>
               </motion.button>
+              )}
 
-              <div className="pixel-border p-2 sm:p-3 lg:p-5 w-full max-w-md space-y-1.5 sm:space-y-2 bg-background/90 shrink-0">
+              <div className="pixel-border p-2 sm:p-3 lg:p-5 w-full max-w-md space-y-1.5 sm:space-y-2 bg-background/90 shrink-0 relative z-10">
                 {/* ── Mode Toggle: ENTROPY / CLASSIC ────────────────── */}
                 <div className="flex items-center justify-center gap-0 font-display text-[8px] sm:text-[9px] tracking-wider">
                   <button
